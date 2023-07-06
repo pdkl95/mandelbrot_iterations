@@ -16,7 +16,7 @@ class MandelIter
     @graph_canvas    = @context.getElementById('graph')
     @graph_ui_canvas = @context.getElementById('graph_ui')
 
-    @graph_ctx    = @graph_canvas.getContext('2d', alpha: true)
+    @graph_ctx    = @graph_canvas.getContext('2d', alpha: false)
     @graph_ui_ctx = @graph_ui_canvas.getContext('2d', alpha: true)
 
     @graph_width  = @graph_canvas.width
@@ -33,9 +33,9 @@ class MandelIter
       x: 0
       y: 0
 
-    @context.addEventListener('mousemove',  @on_mousemove)
-    @context.addEventListener('mouseenter', @on_mouseenter)
-    @context.addEventListener('mouseout',   @on_mouseout)
+    @graph_wrapper.addEventListener('mousemove',  @on_mousemove)
+    @graph_wrapper.addEventListener('mouseenter', @on_mouseenter)
+    @graph_wrapper.addEventListener('mouseout',   @on_mouseout)
 
     @maxiter = 100
 
@@ -73,6 +73,7 @@ class MandelIter
     @mouse.x = event.pageX - cc.left
     @mouse.y = event.pageY - cc.top
     if (oldx != @mouse.x) or (oldy != @mouse.y)
+      @mouse_active = true
       @schedule_ui_draw()
 
   on_mouseenter: (event) =>
@@ -87,6 +88,11 @@ class MandelIter
     return
       r: @renderbox.start.r + (x / @graph_width)  * (@renderbox.end.r - @renderbox.start.r)
       i: @renderbox.start.i + (y / @graph_height) * (@renderbox.end.i - @renderbox.start.i)
+
+  render_coord_to_canvas: (z) ->
+    return
+      x: ((z.r - @renderbox.start.r) / (@renderbox.end.r - @renderbox.start.r)) * @graph_width
+      y: ((z.i - @renderbox.start.i) / (@renderbox.end.i - @renderbox.start.i)) * @graph_height
 
   mandelbrot: (c) ->
     n = 0
@@ -126,8 +132,8 @@ class MandelIter
           pos = 4 * (x + (y * @graph_width))
           val = Math.pow((n / @maxiter), 0.5) * 255
           data[pos    ] = val
-          data[pos + 1] = Math.floor(val - (n/1))
-          data[pos + 2] = Math.floor(val - (n/2))
+          data[pos + 1] = val  #Math.floor(val - (n/1))
+          data[pos + 2] = val  #Math.floor(val - (n/2))
 
     console.log('putImageData()')
 
@@ -157,31 +163,46 @@ class MandelIter
   draw_ui: ->
     @draw_ui_scheduled = false
 
-    @graph_ui_ctx.fillStyle = 'rgba(0,0,0,0.0)'
-    @graph_ui_ctx.fillRect(0, 0, @graph_width, @graph_height)
+    @graph_ui_ctx.clearRect(0, 0, @graph_width, @graph_height)
 
-    if true #@mouse_active
+    if @mouse_active
       pos = @canvas_to_render_coord(@mouse.x, @mouse.y)
-      console.log('draw', @mouse, pos)
-      for step from @mandelbrot_orbit(pos, 10)
-        console.log(step)
 
-      msize = 10
+      @graph_ui_ctx.beginPath()
+      @graph_ui_ctx.moveTo(@mouse.x, @mouse.y)
+
+      for step from @mandelbrot_orbit(pos, 30)
+        p = @render_coord_to_canvas(step.z)
+        @graph_ui_ctx.lineTo(p.x, p.y)
+
+      @graph_ui_ctx.lineWidth = 1
+      @graph_ui_ctx.strokeStyle = '#fffe9b'
+      @graph_ui_ctx.stroke()
+
+      isize = 3
+      osize = isize * 3
 
       @graph_ui_ctx.beginPath()
 
-      @graph_ui_ctx.moveTo(@mouse.x + msize, @mouse.y)
+      @graph_ui_ctx.moveTo(@mouse.x + isize, @mouse.y + isize)  # BR
+      @graph_ui_ctx.lineTo(@mouse.x + osize, @mouse.y)          #    R
+      @graph_ui_ctx.lineTo(@mouse.x + isize, @mouse.y - isize)  # TR
+      @graph_ui_ctx.lineTo(@mouse.x,         @mouse.y - osize)  #    T
+      @graph_ui_ctx.lineTo(@mouse.x - isize, @mouse.y - isize)  # TL
+      @graph_ui_ctx.lineTo(@mouse.x - osize, @mouse.y        )  #    L
+      @graph_ui_ctx.lineTo(@mouse.x - isize, @mouse.y + isize)  # BL
+      @graph_ui_ctx.lineTo(@mouse.x,         @mouse.y + osize)  #    B
+      @graph_ui_ctx.lineTo(@mouse.x + isize, @mouse.y + isize)  # BR
 
-      @graph_ui_ctx.arc(@mouse.x + msize, @mouse.y - msize, msize, 0, TAU/4)
 
-      @graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.33)'
+      @graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.1)'
       @graph_ui_ctx.fill()
 
-      @graph_ui_ctx.lineWidth = 3
+      @graph_ui_ctx.lineWidth = 2
       @graph_ui_ctx.strokeStyle = '#bb7e24'
       @graph_ui_ctx.stroke()
 
-      @graph_ui_ctx.lineWidth = 2
+      @graph_ui_ctx.lineWidth = 1
       @graph_ui_ctx.strokeStyle = '#d5c312'
       @graph_ui_ctx.stroke()
 

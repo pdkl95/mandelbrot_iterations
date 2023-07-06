@@ -24,7 +24,7 @@
       this.graph_canvas = this.context.getElementById('graph');
       this.graph_ui_canvas = this.context.getElementById('graph_ui');
       this.graph_ctx = this.graph_canvas.getContext('2d', {
-        alpha: true
+        alpha: false
       });
       this.graph_ui_ctx = this.graph_ui_canvas.getContext('2d', {
         alpha: true
@@ -41,9 +41,9 @@
         x: 0,
         y: 0
       };
-      this.context.addEventListener('mousemove', this.on_mousemove);
-      this.context.addEventListener('mouseenter', this.on_mouseenter);
-      this.context.addEventListener('mouseout', this.on_mouseout);
+      this.graph_wrapper.addEventListener('mousemove', this.on_mousemove);
+      this.graph_wrapper.addEventListener('mouseenter', this.on_mouseenter);
+      this.graph_wrapper.addEventListener('mouseout', this.on_mouseout);
       this.maxiter = 100;
       this.renderbox = {
         start: {
@@ -80,6 +80,7 @@
       this.mouse.x = event.pageX - cc.left;
       this.mouse.y = event.pageY - cc.top;
       if ((oldx !== this.mouse.x) || (oldy !== this.mouse.y)) {
+        this.mouse_active = true;
         return this.schedule_ui_draw();
       }
     };
@@ -98,6 +99,13 @@
       return {
         r: this.renderbox.start.r + (x / this.graph_width) * (this.renderbox.end.r - this.renderbox.start.r),
         i: this.renderbox.start.i + (y / this.graph_height) * (this.renderbox.end.i - this.renderbox.start.i)
+      };
+    };
+
+    MandelIter.prototype.render_coord_to_canvas = function(z) {
+      return {
+        x: ((z.r - this.renderbox.start.r) / (this.renderbox.end.r - this.renderbox.start.r)) * this.graph_width,
+        y: ((z.i - this.renderbox.start.i) / (this.renderbox.end.i - this.renderbox.start.i)) * this.graph_height
       };
     };
 
@@ -140,8 +148,8 @@
             pos = 4 * (x + (y * this.graph_width));
             val = Math.pow(n / this.maxiter, 0.5) * 255;
             data[pos] = val;
-            data[pos + 1] = Math.floor(val - (n / 1));
-            data[pos + 2] = Math.floor(val - (n / 2));
+            data[pos + 1] = val;
+            data[pos + 2] = val;
           }
         }
       }
@@ -185,27 +193,39 @@
     };
 
     MandelIter.prototype.draw_ui = function() {
-      var msize, pos, ref, step;
+      var isize, osize, p, pos, ref, step;
       this.draw_ui_scheduled = false;
-      this.graph_ui_ctx.fillStyle = 'rgba(0,0,0,0.0)';
-      this.graph_ui_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
-      if (true) {
+      this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
+      if (this.mouse_active) {
         pos = this.canvas_to_render_coord(this.mouse.x, this.mouse.y);
-        console.log('draw', this.mouse, pos);
-        ref = this.mandelbrot_orbit(pos, 10);
-        for (step of ref) {
-          console.log(step);
-        }
-        msize = 10;
         this.graph_ui_ctx.beginPath();
-        this.graph_ui_ctx.moveTo(this.mouse.x + msize, this.mouse.y);
-        this.graph_ui_ctx.arc(this.mouse.x + msize, this.mouse.y - msize, msize, 0, TAU / 4);
-        this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.33)';
+        this.graph_ui_ctx.moveTo(this.mouse.x, this.mouse.y);
+        ref = this.mandelbrot_orbit(pos, 30);
+        for (step of ref) {
+          p = this.render_coord_to_canvas(step.z);
+          this.graph_ui_ctx.lineTo(p.x, p.y);
+        }
+        this.graph_ui_ctx.lineWidth = 1;
+        this.graph_ui_ctx.strokeStyle = '#fffe9b';
+        this.graph_ui_ctx.stroke();
+        isize = 3;
+        osize = isize * 3;
+        this.graph_ui_ctx.beginPath();
+        this.graph_ui_ctx.moveTo(this.mouse.x + isize, this.mouse.y + isize);
+        this.graph_ui_ctx.lineTo(this.mouse.x + osize, this.mouse.y);
+        this.graph_ui_ctx.lineTo(this.mouse.x + isize, this.mouse.y - isize);
+        this.graph_ui_ctx.lineTo(this.mouse.x, this.mouse.y - osize);
+        this.graph_ui_ctx.lineTo(this.mouse.x - isize, this.mouse.y - isize);
+        this.graph_ui_ctx.lineTo(this.mouse.x - osize, this.mouse.y);
+        this.graph_ui_ctx.lineTo(this.mouse.x - isize, this.mouse.y + isize);
+        this.graph_ui_ctx.lineTo(this.mouse.x, this.mouse.y + osize);
+        this.graph_ui_ctx.lineTo(this.mouse.x + isize, this.mouse.y + isize);
+        this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.1)';
         this.graph_ui_ctx.fill();
-        this.graph_ui_ctx.lineWidth = 3;
+        this.graph_ui_ctx.lineWidth = 2;
         this.graph_ui_ctx.strokeStyle = '#bb7e24';
         this.graph_ui_ctx.stroke();
-        this.graph_ui_ctx.lineWidth = 2;
+        this.graph_ui_ctx.lineWidth = 1;
         this.graph_ui_ctx.strokeStyle = '#d5c312';
         return this.graph_ui_ctx.stroke();
       }
