@@ -2,57 +2,6 @@ APP = null
 
 TAU = 2 * Math.PI
 
-class Point
-  constructor: (x, y, @color) ->
-    @hover = false
-    @selected = false
-
-    @order = 0
-    @radius = 5
-    @color ?= '#000'
-
-    @position =
-      x: x
-      y: y
-
-    @move x, y
-
-  move: (x, y) ->
-    @x = x
-    @y = y
-
-    @ix = Math.floor(@x)
-    @iy = Math.floor(@y)
-
-  contains: (x, y) ->
-    dx = @x - x
-    dy = @y - y
-    dist = Math.sqrt((dx * dx) + (dy * dy))
-    return dist <= @radius
-
-  update: (t) ->
-    @position.x = @x
-    @position.y = @y
-
-  draw: ->
-    #console.log('draw point', @x, @y, @color)
-    ctx = APP.graph_ctx
-
-    if @hover
-      ctx.beginPath()
-      ctx.fillStyle = '#ff0'
-      ctx.strokeStyle = '#000'
-      ctx.lineWidth = 1
-      ctx.arc(@x, @y, @radius * 3, 0, TAU)
-      ctx.fill()
-      ctx.stroke()
-
-    ctx.beginPath()
-    ctx.fillStyle = @color
-    ctx.arc(@x, @y, @radius, 0, TAU)
-    ctx.fill()
-
-
 class MandelIter
   constructor: (@context) ->
 
@@ -65,17 +14,28 @@ class MandelIter
 
     @graph_wrapper   = @context.getElementById('graph_wrapper')
     @graph_canvas    = @context.getElementById('graph')
-    #@graph_ui_canvas = @context.getElementById('graph_ui')
+    @graph_ui_canvas = @context.getElementById('graph_ui')
 
     @graph_ctx    = @graph_canvas.getContext('2d', alpha: true)
-    #graph_ui_ctx = @graph_ui_canvas.getContext('2d', alpha: true)
+    @graph_ui_ctx = @graph_ui_canvas.getContext('2d', alpha: true)
 
     @graph_width  = @graph_canvas.width
     @graph_height = @graph_canvas.height
 
-    #@context.addEventListener('mousemove', @on_mousemove)
-    #@context.addEventListener('mousedown', @on_mousedown)
-    #@context.addEventListener('mouseup',   @on_mouseup)
+    @graph_ui_width  = @graph_canvas.width
+    @graph_ui_height = @graph_canvas.height
+
+    if (@graph_width != @graph_ui_width) or (@graph_height != @graph_ui_height)
+      @debug('Canvas #graph is not the same size as canvas #graph_ui')
+
+    @mouse_active = false
+    @mouse =
+      x: 0
+      y: 0
+
+    @context.addEventListener('mousemove',  @on_mousemove)
+    @context.addEventListener('mouseenter', @on_mouseenter)
+    @context.addEventListener('mouseout',   @on_mouseout)
 
     @maxiter = 100
 
@@ -86,6 +46,8 @@ class MandelIter
       end:
         r: 1
         i: 1
+
+    @draw_ui_scheduled = false
 
     console.log('init() completed!')
 
@@ -105,30 +67,26 @@ class MandelIter
     @debugbox_hdr.text(timestamp.toISOString())
     @debugbox_msg.text('' + msg)
 
-  get_mouse_coord: (event) ->
-    cc = @graph_canvas.getBoundingClientRect()
-    return
-      x: event.pageX - cc.left
-      y: event.pageY - cc.top
-
   on_mousemove: (event) =>
-    mouse = @get_mouse_coord(event)
-    for order in @points
-      for p in order
-        oldx = p.x
-        oldy = p.y
-        if p.selected
-          p.x = mouse.x
-          p.y = mouse.y
+    [ oldx, oldy ] = @mouse
+    cc = @graph_canvas.getBoundingClientRect()
+    @mouse.x = event.pageX - cc.left
+    @mouse.y = event.pageY - cc.top
+    if (oldx != @mouse.x) or (oldy != @mouse.y)
+      @schedule_ui_draw()
 
-        oldhover = p.hover
-        if p.contains(mouse.x, mouse.y)
-          p.hover = true
-        else
-          p.hover = false
+  on_mouseenter: (event) =>
+    @mouse_active = true
+    @schedule_ui_draw()
 
-        if (p.hover != oldhover) or (p.x != oldx) or (p.y != oldy)
-          @update_and_draw()
+  on_mouseout: (event) =>
+    @mouse_active = false
+    @schedule_ui_draw()
+
+  canvas_to_render_coord: (x, y) ->
+    return
+      r: @renderbox.start.r + (x / @graph_width)  * (@renderbox.end.r - @renderbox.start.r)
+      i: @renderbox.start.i + (y / @graph_height) * (@renderbox.end.i - @renderbox.start.i)
 
   mandelbrot: (c) ->
     n = 0
@@ -144,11 +102,9 @@ class MandelIter
       z =
         r: p.r + c.r
         i: p.i + c.i
-      #console.log(p, z)
       d = Math.pow(z.r, 2) + Math.pow(z.i, 2)
       n += 1
 
-    #console.log('mandel[' + c.r + ', ' + c.i + '] d = ' + d + ', n = ' + n, d <= 2)
     [n, d <= 2]
 
   draw_background: ->
@@ -164,10 +120,7 @@ class MandelIter
 
     for y in [0..@graph_height]
       for x in [0..@graph_width]
-        c =
-          r: @renderbox.start.r + (x / @graph_width)  * (@renderbox.end.r - @renderbox.start.r)
-          i: @renderbox.start.i + (y / @graph_height) * (@renderbox.end.i - @renderbox.start.i)
-
+        c = @canvas_to_render_coord(x, y)
         [n, in_set] = @mandelbrot(c)
         unless in_set
           pos = 4 * (x + (y * @graph_width))
@@ -180,46 +133,65 @@ class MandelIter
 
     @graph_ctx.putImageData(img, 0, 0)
 
-  update: =>
+  mandelbrot_orbit: (c, max_yield = @maxiter) ->
+    n = 0
+    d = 0
+    z =
+      r: 0
+      i: 0
 
-  draw: ->
-    @graph_ctx.clearRect(0, 0, @graph_canvas.width, @graph_canvas.height)
-    @draw_bezier()
-    for order in @points
-      for p in order
-        p.draw()
+    yield z: z, n: n
 
-  update_and_draw: ->
-    @update()
-    @draw()
+    while (d <= 2) and (n < max_yield)
+      p =
+        r: Math.pow(z.r, 2) - Math.pow(z.i, 2)
+        i: 2 * z.r * z.i
+      z =
+        r: p.r + c.r
+        i: p.i + c.i
+      d = Math.pow(z.r, 2) + Math.pow(z.i, 2)
+      n += 1
 
-  update_callback: (timestamp) =>
-    @frame_is_scheduled = false
-    elapsed = timestamp - @prev_anim_timestamp
-    if elapsed > 0
-      @prev_anim_timestamp = @anim_timestamp
-      @update()
-      @draw()
+      yield z: z, n: n
 
-    @schedule_next_frame() if @running
-    return null
- 
-  schedule_next_frame: =>
-    unless @frame_is_scheduled
-      @frame_is_scheduled = true
-      window.requestAnimationFrame(@update_callback)
-    return null
+  draw_ui: ->
+    @draw_ui_scheduled = false
 
-  first_update_callback: (timestamp) =>
-    @anim_timestamp      = timestamp
-    @prev_anim_timestamp = timestamp
-    @frame_is_scheduled = false
-    @schedule_next_frame()
-   
-  schedule_first_frame: =>
-    @frame_is_scheduled = true
-    window.requestAnimationFrame(@first_update_callback)
-    return null
+    @graph_ui_ctx.fillStyle = 'rgba(0,0,0,0.0)'
+    @graph_ui_ctx.fillRect(0, 0, @graph_width, @graph_height)
+
+    if true #@mouse_active
+      pos = @canvas_to_render_coord(@mouse.x, @mouse.y)
+      console.log('draw', @mouse, pos)
+      for step from @mandelbrot_orbit(pos, 10)
+        console.log(step)
+
+      msize = 10
+
+      @graph_ui_ctx.beginPath()
+
+      @graph_ui_ctx.moveTo(@mouse.x + msize, @mouse.y)
+
+      @graph_ui_ctx.arc(@mouse.x + msize, @mouse.y - msize, msize, 0, TAU/4)
+
+      @graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.33)'
+      @graph_ui_ctx.fill()
+
+      @graph_ui_ctx.lineWidth = 3
+      @graph_ui_ctx.strokeStyle = '#bb7e24'
+      @graph_ui_ctx.stroke()
+
+      @graph_ui_ctx.lineWidth = 2
+      @graph_ui_ctx.strokeStyle = '#d5c312'
+      @graph_ui_ctx.stroke()
+
+  draw_ui_callback: =>
+    APP.draw_ui()
+
+  schedule_ui_draw: =>
+    unless @draw_ui_scheduled
+      window.requestAnimationFrame(@draw_ui_callback)
+      @draw_ui_scheduled = true
 
 $(document).ready =>
   APP = new MandelIter(document)

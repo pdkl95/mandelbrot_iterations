@@ -1,78 +1,18 @@
 (function() {
-  var APP, MandelIter, Point, TAU,
+  var APP, MandelIter, TAU,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   APP = null;
 
   TAU = 2 * Math.PI;
 
-  Point = (function() {
-    function Point(x, y, color) {
-      this.color = color;
-      this.hover = false;
-      this.selected = false;
-      this.order = 0;
-      this.radius = 5;
-      if (this.color == null) {
-        this.color = '#000';
-      }
-      this.position = {
-        x: x,
-        y: y
-      };
-      this.move(x, y);
-    }
-
-    Point.prototype.move = function(x, y) {
-      this.x = x;
-      this.y = y;
-      this.ix = Math.floor(this.x);
-      return this.iy = Math.floor(this.y);
-    };
-
-    Point.prototype.contains = function(x, y) {
-      var dist, dx, dy;
-      dx = this.x - x;
-      dy = this.y - y;
-      dist = Math.sqrt((dx * dx) + (dy * dy));
-      return dist <= this.radius;
-    };
-
-    Point.prototype.update = function(t) {
-      this.position.x = this.x;
-      return this.position.y = this.y;
-    };
-
-    Point.prototype.draw = function() {
-      var ctx;
-      ctx = APP.graph_ctx;
-      if (this.hover) {
-        ctx.beginPath();
-        ctx.fillStyle = '#ff0';
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 1;
-        ctx.arc(this.x, this.y, this.radius * 3, 0, TAU);
-        ctx.fill();
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.fillStyle = this.color;
-      ctx.arc(this.x, this.y, this.radius, 0, TAU);
-      return ctx.fill();
-    };
-
-    return Point;
-
-  })();
-
   MandelIter = (function() {
     function MandelIter(context) {
       this.context = context;
-      this.schedule_first_frame = bind(this.schedule_first_frame, this);
-      this.first_update_callback = bind(this.first_update_callback, this);
-      this.schedule_next_frame = bind(this.schedule_next_frame, this);
-      this.update_callback = bind(this.update_callback, this);
-      this.update = bind(this.update, this);
+      this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
+      this.draw_ui_callback = bind(this.draw_ui_callback, this);
+      this.on_mouseout = bind(this.on_mouseout, this);
+      this.on_mouseenter = bind(this.on_mouseenter, this);
       this.on_mousemove = bind(this.on_mousemove, this);
     }
 
@@ -82,11 +22,28 @@
       this.content_el = this.context.getElementById('content');
       this.graph_wrapper = this.context.getElementById('graph_wrapper');
       this.graph_canvas = this.context.getElementById('graph');
+      this.graph_ui_canvas = this.context.getElementById('graph_ui');
       this.graph_ctx = this.graph_canvas.getContext('2d', {
+        alpha: true
+      });
+      this.graph_ui_ctx = this.graph_ui_canvas.getContext('2d', {
         alpha: true
       });
       this.graph_width = this.graph_canvas.width;
       this.graph_height = this.graph_canvas.height;
+      this.graph_ui_width = this.graph_canvas.width;
+      this.graph_ui_height = this.graph_canvas.height;
+      if ((this.graph_width !== this.graph_ui_width) || (this.graph_height !== this.graph_ui_height)) {
+        this.debug('Canvas #graph is not the same size as canvas #graph_ui');
+      }
+      this.mouse_active = false;
+      this.mouse = {
+        x: 0,
+        y: 0
+      };
+      this.context.addEventListener('mousemove', this.on_mousemove);
+      this.context.addEventListener('mouseenter', this.on_mouseenter);
+      this.context.addEventListener('mouseout', this.on_mouseout);
       this.maxiter = 100;
       this.renderbox = {
         start: {
@@ -98,6 +55,7 @@
           i: 1
         }
       };
+      this.draw_ui_scheduled = false;
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -115,49 +73,32 @@
       return this.debugbox_msg.text('' + msg);
     };
 
-    MandelIter.prototype.get_mouse_coord = function(event) {
-      var cc;
+    MandelIter.prototype.on_mousemove = function(event) {
+      var cc, oldx, oldy, ref;
+      ref = this.mouse, oldx = ref[0], oldy = ref[1];
       cc = this.graph_canvas.getBoundingClientRect();
-      return {
-        x: event.pageX - cc.left,
-        y: event.pageY - cc.top
-      };
+      this.mouse.x = event.pageX - cc.left;
+      this.mouse.y = event.pageY - cc.top;
+      if ((oldx !== this.mouse.x) || (oldy !== this.mouse.y)) {
+        return this.schedule_ui_draw();
+      }
     };
 
-    MandelIter.prototype.on_mousemove = function(event) {
-      var i, len, mouse, oldhover, oldx, oldy, order, p, ref, results;
-      mouse = this.get_mouse_coord(event);
-      ref = this.points;
-      results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        order = ref[i];
-        results.push((function() {
-          var j, len1, results1;
-          results1 = [];
-          for (j = 0, len1 = order.length; j < len1; j++) {
-            p = order[j];
-            oldx = p.x;
-            oldy = p.y;
-            if (p.selected) {
-              p.x = mouse.x;
-              p.y = mouse.y;
-            }
-            oldhover = p.hover;
-            if (p.contains(mouse.x, mouse.y)) {
-              p.hover = true;
-            } else {
-              p.hover = false;
-            }
-            if ((p.hover !== oldhover) || (p.x !== oldx) || (p.y !== oldy)) {
-              results1.push(this.update_and_draw());
-            } else {
-              results1.push(void 0);
-            }
-          }
-          return results1;
-        }).call(this));
-      }
-      return results;
+    MandelIter.prototype.on_mouseenter = function(event) {
+      this.mouse_active = true;
+      return this.schedule_ui_draw();
+    };
+
+    MandelIter.prototype.on_mouseout = function(event) {
+      this.mouse_active = false;
+      return this.schedule_ui_draw();
+    };
+
+    MandelIter.prototype.canvas_to_render_coord = function(x, y) {
+      return {
+        r: this.renderbox.start.r + (x / this.graph_width) * (this.renderbox.end.r - this.renderbox.start.r),
+        i: this.renderbox.start.i + (y / this.graph_height) * (this.renderbox.end.i - this.renderbox.start.i)
+      };
     };
 
     MandelIter.prototype.mandelbrot = function(c) {
@@ -193,10 +134,7 @@
       console.log('Iterating over pixels;..');
       for (y = i = 0, ref = this.graph_height; 0 <= ref ? i <= ref : i >= ref; y = 0 <= ref ? ++i : --i) {
         for (x = j = 0, ref1 = this.graph_width; 0 <= ref1 ? j <= ref1 : j >= ref1; x = 0 <= ref1 ? ++j : --j) {
-          c = {
-            r: this.renderbox.start.r + (x / this.graph_width) * (this.renderbox.end.r - this.renderbox.start.r),
-            i: this.renderbox.start.i + (y / this.graph_height) * (this.renderbox.end.i - this.renderbox.start.i)
-          };
+          c = this.canvas_to_render_coord(x, y);
           ref2 = this.mandelbrot(c), n = ref2[0], in_set = ref2[1];
           if (!in_set) {
             pos = 4 * (x + (y * this.graph_width));
@@ -211,68 +149,77 @@
       return this.graph_ctx.putImageData(img, 0, 0);
     };
 
-    MandelIter.prototype.update = function() {};
-
-    MandelIter.prototype.draw = function() {
-      var i, len, order, p, ref, results;
-      this.graph_ctx.clearRect(0, 0, this.graph_canvas.width, this.graph_canvas.height);
-      this.draw_bezier();
-      ref = this.points;
+    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
+      var d, n, p, results, z;
+      if (max_yield == null) {
+        max_yield = this.maxiter;
+      }
+      n = 0;
+      d = 0;
+      z = {
+        r: 0,
+        i: 0
+      };
+      yield ({
+        z: z,
+        n: n
+      });
       results = [];
-      for (i = 0, len = ref.length; i < len; i++) {
-        order = ref[i];
-        results.push((function() {
-          var j, len1, results1;
-          results1 = [];
-          for (j = 0, len1 = order.length; j < len1; j++) {
-            p = order[j];
-            results1.push(p.draw());
-          }
-          return results1;
-        })());
+      while ((d <= 2) && (n < max_yield)) {
+        p = {
+          r: Math.pow(z.r, 2) - Math.pow(z.i, 2),
+          i: 2 * z.r * z.i
+        };
+        z = {
+          r: p.r + c.r,
+          i: p.i + c.i
+        };
+        d = Math.pow(z.r, 2) + Math.pow(z.i, 2);
+        n += 1;
+        results.push((yield {
+          z: z,
+          n: n
+        }));
       }
       return results;
     };
 
-    MandelIter.prototype.update_and_draw = function() {
-      this.update();
-      return this.draw();
-    };
-
-    MandelIter.prototype.update_callback = function(timestamp) {
-      var elapsed;
-      this.frame_is_scheduled = false;
-      elapsed = timestamp - this.prev_anim_timestamp;
-      if (elapsed > 0) {
-        this.prev_anim_timestamp = this.anim_timestamp;
-        this.update();
-        this.draw();
+    MandelIter.prototype.draw_ui = function() {
+      var msize, pos, ref, step;
+      this.draw_ui_scheduled = false;
+      this.graph_ui_ctx.fillStyle = 'rgba(0,0,0,0.0)';
+      this.graph_ui_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
+      if (true) {
+        pos = this.canvas_to_render_coord(this.mouse.x, this.mouse.y);
+        console.log('draw', this.mouse, pos);
+        ref = this.mandelbrot_orbit(pos, 10);
+        for (step of ref) {
+          console.log(step);
+        }
+        msize = 10;
+        this.graph_ui_ctx.beginPath();
+        this.graph_ui_ctx.moveTo(this.mouse.x + msize, this.mouse.y);
+        this.graph_ui_ctx.arc(this.mouse.x + msize, this.mouse.y - msize, msize, 0, TAU / 4);
+        this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.33)';
+        this.graph_ui_ctx.fill();
+        this.graph_ui_ctx.lineWidth = 3;
+        this.graph_ui_ctx.strokeStyle = '#bb7e24';
+        this.graph_ui_ctx.stroke();
+        this.graph_ui_ctx.lineWidth = 2;
+        this.graph_ui_ctx.strokeStyle = '#d5c312';
+        return this.graph_ui_ctx.stroke();
       }
-      if (this.running) {
-        this.schedule_next_frame();
+    };
+
+    MandelIter.prototype.draw_ui_callback = function() {
+      return APP.draw_ui();
+    };
+
+    MandelIter.prototype.schedule_ui_draw = function() {
+      if (!this.draw_ui_scheduled) {
+        window.requestAnimationFrame(this.draw_ui_callback);
+        return this.draw_ui_scheduled = true;
       }
-      return null;
-    };
-
-    MandelIter.prototype.schedule_next_frame = function() {
-      if (!this.frame_is_scheduled) {
-        this.frame_is_scheduled = true;
-        window.requestAnimationFrame(this.update_callback);
-      }
-      return null;
-    };
-
-    MandelIter.prototype.first_update_callback = function(timestamp) {
-      this.anim_timestamp = timestamp;
-      this.prev_anim_timestamp = timestamp;
-      this.frame_is_scheduled = false;
-      return this.schedule_next_frame();
-    };
-
-    MandelIter.prototype.schedule_first_frame = function() {
-      this.frame_is_scheduled = true;
-      window.requestAnimationFrame(this.first_update_callback);
-      return null;
     };
 
     return MandelIter;
