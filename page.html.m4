@@ -30,6 +30,16 @@ undivert(`style.css')
       </div>
 
       <div class="ui panel">
+        <div class="zoombox buttonbox">
+          <button id="button_reset" class="tt ttright" data-title="Reset back to original non-zoomed view.">Reset</button>
+          <select name="zoom_amount" id="zoom_amount">
+            <option value="0.8">80%</option>
+            <option value="0.6" selected="selected">60%</option>
+            <option value="0.4">40%</option>
+            <option value="0.2">20%</option>
+          </select>
+          <button id="button_zoom" class="tt ttleft" data-title="Select a point to soom into.">Zoom</button>"
+        </div>
       </div>
     </div>
 

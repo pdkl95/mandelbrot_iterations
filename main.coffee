@@ -25,8 +25,18 @@ class MandelIter
     @graph_ui_width  = @graph_canvas.width
     @graph_ui_height = @graph_canvas.height
 
+    @graph_aspect = @graph_width / @graph_height
+
     if (@graph_width != @graph_ui_width) or (@graph_height != @graph_ui_height)
       @debug('Canvas #graph is not the same size as canvas #graph_ui')
+
+    @button_reset = @context.getElementById('button_reset')
+    @button_zoom  = @context.getElementById('button_zoom')
+    @zoom_amount  = @context.getElementById('zoom_amount')
+
+    @button_reset.addEventListener('click', @on_button_reset_click)
+    @button_zoom.addEventListener( 'click', @on_button_zoom_click)
+    @zoom_amount.addEventListener('change', @on_zoom_amount_change)
 
     @mouse_active = false
     @mouse =
@@ -36,17 +46,10 @@ class MandelIter
     @graph_wrapper.addEventListener('mousemove',  @on_mousemove)
     @graph_wrapper.addEventListener('mouseenter', @on_mouseenter)
     @graph_wrapper.addEventListener('mouseout',   @on_mouseout)
+    @graph_wrapper.addEventListener('click',      @on_graph_click)
 
     @maxiter = 100
-
-    @renderbox =
-      start:
-        r: -2
-        i: -1
-      end:
-        r: 1
-        i: 1
-
+    @reset_renderbox()
     @draw_ui_scheduled = false
 
     console.log('init() completed!')
@@ -67,6 +70,52 @@ class MandelIter
     @debugbox_hdr.text(timestamp.toISOString())
     @debugbox_msg.text('' + msg)
 
+  reset_renderbox: ->
+    @renderbox =
+      start:
+        r: -2
+        i: -1
+      end:
+        r: 1
+        i: 1
+
+  on_button_reset_click: (event) =>
+    @reset_renderbox()
+    @zoom_mode = false
+    @draw_background()
+
+  on_button_zoom_click: (event) =>
+    if @zoom_mode
+      @zoom_mode = false
+    else
+      @zoom_mode = true
+
+  on_zoom_amount_change: (event) =>
+    if @zoom_mode
+      @schedule_ui_draw()
+
+  get_zoom_window: ->
+    zoom = @zoom_amount.options[@zoom_amount.selectedIndex].value
+    w =
+      w: @graph_width  * zoom
+      h: @graph_height * zoom
+
+    w.x = if @mouse.x < w.w then 0 else @mouse.x - w.w
+    w.y = if @mouse.y < w.h then 0 else @mouse.y - w.h
+
+    return w
+
+  on_graph_click: (event) =>
+    if @zoom_mode
+      console.log('zoom click')
+      w = @get_zoom_window()
+      newstart = @canvas_to_render_coord(w.x, w.y)
+      newend   = @canvas_to_render_coord(w.x + w.w, w.y + w.h)
+      @renderbox.start = newstart
+      @renderbox.end   = newend
+      @zoom_mode = false
+      @draw_background()
+
   on_mousemove: (event) =>
     [ oldx, oldy ] = @mouse
     cc = @graph_canvas.getBoundingClientRect()
@@ -84,7 +133,7 @@ class MandelIter
     @mouse_active = false
     @schedule_ui_draw()
 
-  canvas_to_render_coord: (x, y) ->
+  canvas_to_render_coord: (x, y) =>
     return
       r: @renderbox.start.r + (x / @graph_width)  * (@renderbox.end.r - @renderbox.start.r)
       i: @renderbox.start.i + (y / @graph_height) * (@renderbox.end.i - @renderbox.start.i)
@@ -160,12 +209,7 @@ class MandelIter
 
       yield z: z, n: n
 
-  draw_ui: ->
-    @draw_ui_scheduled = false
-
-    @graph_ui_ctx.clearRect(0, 0, @graph_width, @graph_height)
-
-    if @mouse_active
+  draw_orbit: ->
       pos = @canvas_to_render_coord(@mouse.x, @mouse.y)
 
       @graph_ui_ctx.beginPath()
@@ -208,6 +252,31 @@ class MandelIter
       @graph_ui_ctx.lineWidth = 1
       @graph_ui_ctx.strokeStyle = '#d5c312'
       @graph_ui_ctx.stroke()
+
+  draw_zoom: ->
+    @graph_ui_ctx.save()
+
+    w = @get_zoom_window()
+    region = new Path2D()
+    region.rect(0, 0, @graph_width, @graph_height)
+    region.rect(w.x, w.y, w.w, w.h)
+    @graph_ui_ctx.clip(region, "evenodd")
+
+    @graph_ui_ctx.fillStyle = 'rgba(255,232,232,0.333)'
+    @graph_ui_ctx.fillRect(0, 0, @graph_width, @graph_height)
+
+    @graph_ui_ctx.restore()
+
+  draw_ui: ->
+    @draw_ui_scheduled = false
+
+    @graph_ui_ctx.clearRect(0, 0, @graph_width, @graph_height)
+
+    if @mouse_active
+      if @zoom_mode
+        @draw_zoom()
+      else
+        @draw_orbit()
 
   draw_ui_callback: =>
     APP.draw_ui()

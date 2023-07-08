@@ -11,9 +11,14 @@
       this.context = context;
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
       this.draw_ui_callback = bind(this.draw_ui_callback, this);
+      this.canvas_to_render_coord = bind(this.canvas_to_render_coord, this);
       this.on_mouseout = bind(this.on_mouseout, this);
       this.on_mouseenter = bind(this.on_mouseenter, this);
       this.on_mousemove = bind(this.on_mousemove, this);
+      this.on_graph_click = bind(this.on_graph_click, this);
+      this.on_zoom_amount_change = bind(this.on_zoom_amount_change, this);
+      this.on_button_zoom_click = bind(this.on_button_zoom_click, this);
+      this.on_button_reset_click = bind(this.on_button_reset_click, this);
     }
 
     MandelIter.prototype.init = function() {
@@ -33,9 +38,16 @@
       this.graph_height = this.graph_canvas.height;
       this.graph_ui_width = this.graph_canvas.width;
       this.graph_ui_height = this.graph_canvas.height;
+      this.graph_aspect = this.graph_width / this.graph_height;
       if ((this.graph_width !== this.graph_ui_width) || (this.graph_height !== this.graph_ui_height)) {
         this.debug('Canvas #graph is not the same size as canvas #graph_ui');
       }
+      this.button_reset = this.context.getElementById('button_reset');
+      this.button_zoom = this.context.getElementById('button_zoom');
+      this.zoom_amount = this.context.getElementById('zoom_amount');
+      this.button_reset.addEventListener('click', this.on_button_reset_click);
+      this.button_zoom.addEventListener('click', this.on_button_zoom_click);
+      this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
       this.mouse_active = false;
       this.mouse = {
         x: 0,
@@ -44,17 +56,9 @@
       this.graph_wrapper.addEventListener('mousemove', this.on_mousemove);
       this.graph_wrapper.addEventListener('mouseenter', this.on_mouseenter);
       this.graph_wrapper.addEventListener('mouseout', this.on_mouseout);
+      this.graph_wrapper.addEventListener('click', this.on_graph_click);
       this.maxiter = 100;
-      this.renderbox = {
-        start: {
-          r: -2,
-          i: -1
-        },
-        end: {
-          r: 1,
-          i: 1
-        }
-      };
+      this.reset_renderbox();
       this.draw_ui_scheduled = false;
       console.log('init() completed!');
       return this.draw_background();
@@ -71,6 +75,65 @@
       timestamp = new Date();
       this.debugbox_hdr.text(timestamp.toISOString());
       return this.debugbox_msg.text('' + msg);
+    };
+
+    MandelIter.prototype.reset_renderbox = function() {
+      return this.renderbox = {
+        start: {
+          r: -2,
+          i: -1
+        },
+        end: {
+          r: 1,
+          i: 1
+        }
+      };
+    };
+
+    MandelIter.prototype.on_button_reset_click = function(event) {
+      this.reset_renderbox();
+      this.zoom_mode = false;
+      return this.draw_background();
+    };
+
+    MandelIter.prototype.on_button_zoom_click = function(event) {
+      if (this.zoom_mode) {
+        return this.zoom_mode = false;
+      } else {
+        return this.zoom_mode = true;
+      }
+    };
+
+    MandelIter.prototype.on_zoom_amount_change = function(event) {
+      if (this.zoom_mode) {
+        return this.schedule_ui_draw();
+      }
+    };
+
+    MandelIter.prototype.get_zoom_window = function() {
+      var w, zoom;
+      zoom = this.zoom_amount.options[this.zoom_amount.selectedIndex].value;
+      w = {
+        w: this.graph_width * zoom,
+        h: this.graph_height * zoom
+      };
+      w.x = this.mouse.x < w.w ? 0 : this.mouse.x - w.w;
+      w.y = this.mouse.y < w.h ? 0 : this.mouse.y - w.h;
+      return w;
+    };
+
+    MandelIter.prototype.on_graph_click = function(event) {
+      var newend, newstart, w;
+      if (this.zoom_mode) {
+        console.log('zoom click');
+        w = this.get_zoom_window();
+        newstart = this.canvas_to_render_coord(w.x, w.y);
+        newend = this.canvas_to_render_coord(w.x + w.w, w.y + w.h);
+        this.renderbox.start = newstart;
+        this.renderbox.end = newend;
+        this.zoom_mode = false;
+        return this.draw_background();
+      }
     };
 
     MandelIter.prototype.on_mousemove = function(event) {
@@ -192,46 +255,67 @@
       return results;
     };
 
-    MandelIter.prototype.draw_ui = function() {
+    MandelIter.prototype.draw_orbit = function() {
       var isize, osize, p, pos, ref, step;
+      pos = this.canvas_to_render_coord(this.mouse.x, this.mouse.y);
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.lineWidth = 2;
+      this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
+      this.graph_ui_ctx.moveTo(this.mouse.x, this.mouse.y);
+      ref = this.mandelbrot_orbit(pos, 50);
+      for (step of ref) {
+        if (step.n > 0) {
+          p = this.render_coord_to_canvas(step.z);
+          this.graph_ui_ctx.lineTo(p.x, p.y);
+          this.graph_ui_ctx.stroke();
+          this.graph_ui_ctx.beginPath();
+          this.graph_ui_ctx.moveTo(p.x, p.y);
+        }
+      }
+      isize = 3;
+      osize = isize * 3;
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.moveTo(this.mouse.x + isize, this.mouse.y + isize);
+      this.graph_ui_ctx.lineTo(this.mouse.x + osize, this.mouse.y);
+      this.graph_ui_ctx.lineTo(this.mouse.x + isize, this.mouse.y - isize);
+      this.graph_ui_ctx.lineTo(this.mouse.x, this.mouse.y - osize);
+      this.graph_ui_ctx.lineTo(this.mouse.x - isize, this.mouse.y - isize);
+      this.graph_ui_ctx.lineTo(this.mouse.x - osize, this.mouse.y);
+      this.graph_ui_ctx.lineTo(this.mouse.x - isize, this.mouse.y + isize);
+      this.graph_ui_ctx.lineTo(this.mouse.x, this.mouse.y + osize);
+      this.graph_ui_ctx.lineTo(this.mouse.x + isize, this.mouse.y + isize);
+      this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.1)';
+      this.graph_ui_ctx.fill();
+      this.graph_ui_ctx.lineWidth = 2;
+      this.graph_ui_ctx.strokeStyle = '#bb7e24';
+      this.graph_ui_ctx.stroke();
+      this.graph_ui_ctx.lineWidth = 1;
+      this.graph_ui_ctx.strokeStyle = '#d5c312';
+      return this.graph_ui_ctx.stroke();
+    };
+
+    MandelIter.prototype.draw_zoom = function() {
+      var region, w;
+      this.graph_ui_ctx.save();
+      w = this.get_zoom_window();
+      region = new Path2D();
+      region.rect(0, 0, this.graph_width, this.graph_height);
+      region.rect(w.x, w.y, w.w, w.h);
+      this.graph_ui_ctx.clip(region, "evenodd");
+      this.graph_ui_ctx.fillStyle = 'rgba(255,232,232,0.333)';
+      this.graph_ui_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
+      return this.graph_ui_ctx.restore();
+    };
+
+    MandelIter.prototype.draw_ui = function() {
       this.draw_ui_scheduled = false;
       this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
       if (this.mouse_active) {
-        pos = this.canvas_to_render_coord(this.mouse.x, this.mouse.y);
-        this.graph_ui_ctx.beginPath();
-        this.graph_ui_ctx.lineWidth = 2;
-        this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
-        this.graph_ui_ctx.moveTo(this.mouse.x, this.mouse.y);
-        ref = this.mandelbrot_orbit(pos, 50);
-        for (step of ref) {
-          if (step.n > 0) {
-            p = this.render_coord_to_canvas(step.z);
-            this.graph_ui_ctx.lineTo(p.x, p.y);
-            this.graph_ui_ctx.stroke();
-            this.graph_ui_ctx.beginPath();
-            this.graph_ui_ctx.moveTo(p.x, p.y);
-          }
+        if (this.zoom_mode) {
+          return this.draw_zoom();
+        } else {
+          return this.draw_orbit();
         }
-        isize = 3;
-        osize = isize * 3;
-        this.graph_ui_ctx.beginPath();
-        this.graph_ui_ctx.moveTo(this.mouse.x + isize, this.mouse.y + isize);
-        this.graph_ui_ctx.lineTo(this.mouse.x + osize, this.mouse.y);
-        this.graph_ui_ctx.lineTo(this.mouse.x + isize, this.mouse.y - isize);
-        this.graph_ui_ctx.lineTo(this.mouse.x, this.mouse.y - osize);
-        this.graph_ui_ctx.lineTo(this.mouse.x - isize, this.mouse.y - isize);
-        this.graph_ui_ctx.lineTo(this.mouse.x - osize, this.mouse.y);
-        this.graph_ui_ctx.lineTo(this.mouse.x - isize, this.mouse.y + isize);
-        this.graph_ui_ctx.lineTo(this.mouse.x, this.mouse.y + osize);
-        this.graph_ui_ctx.lineTo(this.mouse.x + isize, this.mouse.y + isize);
-        this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.1)';
-        this.graph_ui_ctx.fill();
-        this.graph_ui_ctx.lineWidth = 2;
-        this.graph_ui_ctx.strokeStyle = '#bb7e24';
-        this.graph_ui_ctx.stroke();
-        this.graph_ui_ctx.lineWidth = 1;
-        this.graph_ui_ctx.strokeStyle = '#d5c312';
-        return this.graph_ui_ctx.stroke();
       }
     };
 
