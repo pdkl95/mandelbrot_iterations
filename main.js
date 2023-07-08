@@ -57,6 +57,7 @@
       this.graph_wrapper.addEventListener('mouseenter', this.on_mouseenter);
       this.graph_wrapper.addEventListener('mouseout', this.on_mouseout);
       this.graph_wrapper.addEventListener('click', this.on_graph_click);
+      this.antialias = true;
       this.maxiter = 100;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
@@ -195,28 +196,40 @@
       return [n, d <= 2];
     };
 
+    MandelIter.prototype.mandel_color_value = function(x, y) {
+      var c, in_set, n, ref;
+      c = this.canvas_to_render_coord(x, y);
+      ref = this.mandelbrot(c), n = ref[0], in_set = ref[1];
+      if (in_set) {
+        return 0;
+      } else {
+        return n;
+      }
+    };
+
     MandelIter.prototype.draw_background = function() {
-      var c, data, i, img, in_set, j, n, pos, ref, ref1, ref2, val, x, y;
+      var data, i, img, j, pos, ref, ref1, val, x, y;
       this.graph_ctx.fillStyle = 'rgb(0,0,0)';
       this.graph_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
       console.log('createImageData()');
       img = this.graph_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
       data = img.data;
-      console.log('Iterating over pixels;..');
       for (y = i = 0, ref = this.graph_height; 0 <= ref ? i <= ref : i >= ref; y = 0 <= ref ? ++i : --i) {
         for (x = j = 0, ref1 = this.graph_width; 0 <= ref1 ? j <= ref1 : j >= ref1; x = 0 <= ref1 ? ++j : --j) {
-          c = this.canvas_to_render_coord(x, y);
-          ref2 = this.mandelbrot(c), n = ref2[0], in_set = ref2[1];
-          if (!in_set) {
-            pos = 4 * (x + (y * this.graph_width));
-            val = Math.pow(n / this.maxiter, 0.5) * 255;
-            data[pos] = val;
-            data[pos + 1] = val;
-            data[pos + 2] = val;
+          val = this.mandel_color_value(x, y);
+          if (this.antialias) {
+            val += this.mandel_color_value(x + 0.5, y);
+            val += this.mandel_color_value(x, y + 0.5);
+            val += this.mandel_color_value(x + 0.5, y + 0.5);
+            val /= 4;
           }
+          pos = 4 * (x + (y * this.graph_width));
+          val = Math.pow(val / this.maxiter, 0.5) * 255;
+          data[pos] = val;
+          data[pos + 1] = val;
+          data[pos + 2] = val;
         }
       }
-      console.log('putImageData()');
       return this.graph_ctx.putImageData(img, 0, 0);
     };
 

@@ -48,6 +48,7 @@ class MandelIter
     @graph_wrapper.addEventListener('mouseout',   @on_mouseout)
     @graph_wrapper.addEventListener('click',      @on_graph_click)
 
+    @antialias = true
     @maxiter = 100
     @reset_renderbox()
     @draw_ui_scheduled = false
@@ -162,6 +163,14 @@ class MandelIter
 
     [n, d <= 2]
 
+  mandel_color_value: (x, y) ->
+    c = @canvas_to_render_coord(x, y)
+    [n, in_set] = @mandelbrot(c)
+    if in_set
+      0
+    else
+      n
+
   draw_background: ->
     @graph_ctx.fillStyle = 'rgb(0,0,0)'
     @graph_ctx.fillRect(0, 0, @graph_width, @graph_height)
@@ -171,20 +180,20 @@ class MandelIter
     img = @graph_ctx.getImageData(0, 0, @graph_width, @graph_height)
     data = img.data
 
-    console.log('Iterating over pixels;..')
-
     for y in [0..@graph_height]
       for x in [0..@graph_width]
-        c = @canvas_to_render_coord(x, y)
-        [n, in_set] = @mandelbrot(c)
-        unless in_set
-          pos = 4 * (x + (y * @graph_width))
-          val = Math.pow((n / @maxiter), 0.5) * 255
-          data[pos    ] = val
-          data[pos + 1] = val  #Math.floor(val - (n/1))
-          data[pos + 2] = val  #Math.floor(val - (n/2))
+        val = @mandel_color_value(x, y)
+        if @antialias
+          val += @mandel_color_value(x + 0.5, y      )
+          val += @mandel_color_value(x      , y + 0.5)
+          val += @mandel_color_value(x + 0.5, y + 0.5)
+          val /= 4
 
-    console.log('putImageData()')
+        pos = 4 * (x + (y * @graph_width))
+        val = Math.pow((val / @maxiter), 0.5) * 255
+        data[pos    ] = val
+        data[pos + 1] = val
+        data[pos + 2] = val
 
     @graph_ctx.putImageData(img, 0, 0)
 
