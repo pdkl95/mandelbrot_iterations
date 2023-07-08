@@ -169,15 +169,18 @@ class MandelIter
       pos = @canvas_to_render_coord(@mouse.x, @mouse.y)
 
       @graph_ui_ctx.beginPath()
+      @graph_ui_ctx.lineWidth = 2
+      @graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)'
+
       @graph_ui_ctx.moveTo(@mouse.x, @mouse.y)
 
-      for step from @mandelbrot_orbit(pos, 30)
-        p = @render_coord_to_canvas(step.z)
-        @graph_ui_ctx.lineTo(p.x, p.y)
-
-      @graph_ui_ctx.lineWidth = 1
-      @graph_ui_ctx.strokeStyle = '#fffe9b'
-      @graph_ui_ctx.stroke()
+      for step from @mandelbrot_orbit(pos, 50)
+        if step.n > 0
+          p = @render_coord_to_canvas(step.z)
+          @graph_ui_ctx.lineTo(p.x, p.y)
+          @graph_ui_ctx.stroke()
+          @graph_ui_ctx.beginPath()
+          @graph_ui_ctx.moveTo(p.x, p.y)
 
       isize = 3
       osize = isize * 3
@@ -214,7 +217,6 @@ class MandelIter
       window.requestAnimationFrame(@draw_ui_callback)
       @draw_ui_scheduled = true
 
-$(document).ready =>
+document.addEventListener 'DOMContentLoaded', =>
   APP = new MandelIter(document)
   APP.init()
-  #APP.draw()

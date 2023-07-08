@@ -199,15 +199,19 @@
       if (this.mouse_active) {
         pos = this.canvas_to_render_coord(this.mouse.x, this.mouse.y);
         this.graph_ui_ctx.beginPath();
+        this.graph_ui_ctx.lineWidth = 2;
+        this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
         this.graph_ui_ctx.moveTo(this.mouse.x, this.mouse.y);
-        ref = this.mandelbrot_orbit(pos, 30);
+        ref = this.mandelbrot_orbit(pos, 50);
         for (step of ref) {
-          p = this.render_coord_to_canvas(step.z);
-          this.graph_ui_ctx.lineTo(p.x, p.y);
+          if (step.n > 0) {
+            p = this.render_coord_to_canvas(step.z);
+            this.graph_ui_ctx.lineTo(p.x, p.y);
+            this.graph_ui_ctx.stroke();
+            this.graph_ui_ctx.beginPath();
+            this.graph_ui_ctx.moveTo(p.x, p.y);
+          }
         }
-        this.graph_ui_ctx.lineWidth = 1;
-        this.graph_ui_ctx.strokeStyle = '#fffe9b';
-        this.graph_ui_ctx.stroke();
         isize = 3;
         osize = isize * 3;
         this.graph_ui_ctx.beginPath();
@@ -246,7 +250,7 @@
 
   })();
 
-  $(document).ready((function(_this) {
+  document.addEventListener('DOMContentLoaded', (function(_this) {
     return function() {
       APP = new MandelIter(document);
       return APP.init();
