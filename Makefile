@@ -10,15 +10,24 @@ COFFEE ?= coffee
 COFFEE_OPTIONS ?= --no-header --compile
 
 RM ?= rm -f
+M4 ?= m4
 
 #
 # build deps
-#
+
+MAIN_TARGET = $(builddir)/mandel_iter.html
+MAIN_TARGET_SRC = $(srcdir)/page.html.m4
+MAIN_TARGET_DEPS = $(MAIN_TARGET_SRC) \
+        $(builddir)/main.js \
+        $(srcdir)/basic.css \
+        $(srcdir)/style.css
 
 COFFEE_SRC = $(wildcard $(srcdir)/*.coffee)
 JS_TARGETS = $(patsubst $(srcdir)/%.coffee,$(builddir)/%.js,$(COFFEE_SRC))
 
-TARGETS = $(JS_TARGETS)
+TARGETS = \
+	$(MAIN_TARGET) \
+	$(JS_TARGETS)
 
 #
 # build instructions
@@ -28,6 +37,9 @@ build: $(TARGETS)
 
 $(builddir)/%.js: $(srcdir)/%.coffee
 	$(COFFEE) $(COFFEE_OPTIONS) $< > $@
+
+$(MAIN_TARGET): $(MAIN_TARGET_DEPS)
+	$(M4) $(M4OPTS) $(MAIN_TARGET_SRC) >$@
 
 clean:
 	$(RM) $(TARGETS)
