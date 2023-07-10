@@ -19,16 +19,10 @@ class MandelIter
     @graph_ctx    = @graph_canvas.getContext('2d', alpha: false)
     @graph_ui_ctx = @graph_ui_canvas.getContext('2d', alpha: true)
 
-    @graph_width  = @graph_canvas.width
-    @graph_height = @graph_canvas.height
+    @resize_canvas(900, 600)
+    @fit_canvas_to_width()
 
-    @graph_ui_width  = @graph_canvas.width
-    @graph_ui_height = @graph_canvas.height
-
-    @graph_aspect = @graph_width / @graph_height
-
-    if (@graph_width != @graph_ui_width) or (@graph_height != @graph_ui_height)
-      @debug('Canvas #graph is not the same size as canvas #graph_ui')
+    #window.addEventListener('resize', @on_content_wrapper_resize)
 
     @button_reset = @context.getElementById('button_reset')
     @button_zoom  = @context.getElementById('button_zoom')
@@ -51,6 +45,7 @@ class MandelIter
     @graph_wrapper.addEventListener('mouseout',   @on_mouseout)
     @graph_wrapper.addEventListener('click',      @on_graph_click)
 
+    @defer_resize = false
     @pause_mode = false
     @zoon_mode = false
     @antialias = true
@@ -75,6 +70,52 @@ class MandelIter
     timestamp = new Date()
     @debugbox_hdr.text(timestamp.toISOString())
     @debugbox_msg.text('' + msg)
+
+  resize_canvas: (w, h) ->
+    console.log('resize', w, h)
+    @graph_canvas.width  = w
+    @graph_canvas.height = h
+    @graph_width  = @graph_canvas.width
+    @graph_height = @graph_canvas.height
+
+    @graph_ui_canvas.width  = @graph_canvas.width
+    @graph_ui_canvas.height = @graph_canvas.height
+    @graph_ui_width  = @graph_canvas.width
+    @graph_ui_height = @graph_canvas.height
+
+    @graph_aspect = @graph_width / @graph_height
+
+    wpx = "#{w}px"
+    hpx = "#{h}px"
+    @graph_wrapper.style.width  = wpx
+    @graph_wrapper.style.height = hpx
+    @graph_ui_canvas.style.width  = wpx
+    @graph_ui_canvas.style.height = hpx
+    @graph_canvas.style.width  = wpx
+    @graph_canvas.style.height = hpx
+
+    if (@graph_width != @graph_ui_width) or (@graph_height != @graph_ui_height)
+      @debug('Canvas #graph is not the same size as canvas #graph_ui')
+
+  fit_canvas_to_width: ->
+    w = @content_el.clientWidth
+    w -= 9
+    h = Math.floor(w / @graph_aspect)
+    @resize_canvas(w, h)
+
+  deferred_fit_canvas_to_width: =>
+    console.log('deferred')
+    @fit_canvas_to_width()
+    @draw_background()
+    @defer_resize = false
+
+  on_content_wrapper_resize: (event) =>
+    if @defer_resize
+      console.log("already deferred")
+    else
+      console.log('setting defferred fit timeout')
+      @defer_resise = true
+      setTimeout(@deferred_fit_canvas_to_width, 5000)
 
   reset_renderbox: ->
     @renderbox =

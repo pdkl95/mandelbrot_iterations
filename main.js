@@ -19,6 +19,8 @@
       this.on_zoom_amount_change = bind(this.on_zoom_amount_change, this);
       this.on_button_zoom_click = bind(this.on_button_zoom_click, this);
       this.on_button_reset_click = bind(this.on_button_reset_click, this);
+      this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
+      this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
     }
 
     MandelIter.prototype.init = function() {
@@ -34,14 +36,8 @@
       this.graph_ui_ctx = this.graph_ui_canvas.getContext('2d', {
         alpha: true
       });
-      this.graph_width = this.graph_canvas.width;
-      this.graph_height = this.graph_canvas.height;
-      this.graph_ui_width = this.graph_canvas.width;
-      this.graph_ui_height = this.graph_canvas.height;
-      this.graph_aspect = this.graph_width / this.graph_height;
-      if ((this.graph_width !== this.graph_ui_width) || (this.graph_height !== this.graph_ui_height)) {
-        this.debug('Canvas #graph is not the same size as canvas #graph_ui');
-      }
+      this.resize_canvas(900, 600);
+      this.fit_canvas_to_width();
       this.button_reset = this.context.getElementById('button_reset');
       this.button_zoom = this.context.getElementById('button_zoom');
       this.zoom_amount = this.context.getElementById('zoom_amount');
@@ -61,6 +57,7 @@
       this.graph_wrapper.addEventListener('mouseenter', this.on_mouseenter);
       this.graph_wrapper.addEventListener('mouseout', this.on_mouseout);
       this.graph_wrapper.addEventListener('click', this.on_graph_click);
+      this.defer_resize = false;
       this.pause_mode = false;
       this.zoon_mode = false;
       this.antialias = true;
@@ -82,6 +79,56 @@
       timestamp = new Date();
       this.debugbox_hdr.text(timestamp.toISOString());
       return this.debugbox_msg.text('' + msg);
+    };
+
+    MandelIter.prototype.resize_canvas = function(w, h) {
+      var hpx, wpx;
+      console.log('resize', w, h);
+      this.graph_canvas.width = w;
+      this.graph_canvas.height = h;
+      this.graph_width = this.graph_canvas.width;
+      this.graph_height = this.graph_canvas.height;
+      this.graph_ui_canvas.width = this.graph_canvas.width;
+      this.graph_ui_canvas.height = this.graph_canvas.height;
+      this.graph_ui_width = this.graph_canvas.width;
+      this.graph_ui_height = this.graph_canvas.height;
+      this.graph_aspect = this.graph_width / this.graph_height;
+      wpx = w + "px";
+      hpx = h + "px";
+      this.graph_wrapper.style.width = wpx;
+      this.graph_wrapper.style.height = hpx;
+      this.graph_ui_canvas.style.width = wpx;
+      this.graph_ui_canvas.style.height = hpx;
+      this.graph_canvas.style.width = wpx;
+      this.graph_canvas.style.height = hpx;
+      if ((this.graph_width !== this.graph_ui_width) || (this.graph_height !== this.graph_ui_height)) {
+        return this.debug('Canvas #graph is not the same size as canvas #graph_ui');
+      }
+    };
+
+    MandelIter.prototype.fit_canvas_to_width = function() {
+      var h, w;
+      w = this.content_el.clientWidth;
+      w -= 9;
+      h = Math.floor(w / this.graph_aspect);
+      return this.resize_canvas(w, h);
+    };
+
+    MandelIter.prototype.deferred_fit_canvas_to_width = function() {
+      console.log('deferred');
+      this.fit_canvas_to_width();
+      this.draw_background();
+      return this.defer_resize = false;
+    };
+
+    MandelIter.prototype.on_content_wrapper_resize = function(event) {
+      if (this.defer_resize) {
+        return console.log("already deferred");
+      } else {
+        console.log('setting defferred fit timeout');
+        this.defer_resise = true;
+        return setTimeout(this.deferred_fit_canvas_to_width, 5000);
+      }
     };
 
     MandelIter.prototype.reset_renderbox = function() {
