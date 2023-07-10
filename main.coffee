@@ -42,12 +42,17 @@ class MandelIter
     @mouse =
       x: 0
       y: 0
+    @orbit_mouse =
+      x: 0
+      y: 0
 
     @graph_wrapper.addEventListener('mousemove',  @on_mousemove)
     @graph_wrapper.addEventListener('mouseenter', @on_mouseenter)
     @graph_wrapper.addEventListener('mouseout',   @on_mouseout)
     @graph_wrapper.addEventListener('click',      @on_graph_click)
 
+    @pause_mode = false
+    @zoon_mode = false
     @antialias = true
     @maxiter = 100
     @reset_renderbox()
@@ -80,16 +85,37 @@ class MandelIter
         r: 1
         i: 1
 
+  pause_mode_on: ->
+    @pause_mode = true
+
+  pause_mode_off: ->
+    @pause_mode = false
+
+  pause_mode_toggle: ->
+    if @pause_mode
+      @pause_mode_off()
+    else
+      @pause_mode_on()
+
+  zoom_mode_on: ->
+    @zoom_mode = true
+
+  zoom_mode_off: ->
+    @zoom_mode = false
+
+  zoom_mode_toggle: ->
+    if @zoom_mode
+      @zoom_mode_off()
+    else
+      @zoom_mode_on()
+
   on_button_reset_click: (event) =>
     @reset_renderbox()
-    @zoom_mode = false
+    @zoom_mode_off()
     @draw_background()
 
   on_button_zoom_click: (event) =>
-    if @zoom_mode
-      @zoom_mode = false
-    else
-      @zoom_mode = true
+    @zoom_mode_toggle()
 
   on_zoom_amount_change: (event) =>
     if @zoom_mode
@@ -116,6 +142,9 @@ class MandelIter
       @renderbox.end   = newend
       @zoom_mode = false
       @draw_background()
+    else
+      @pause_mode_toggle()
+      console.log('pause mode:', @pause_mode)
 
   on_mousemove: (event) =>
     [ oldx, oldy ] = @mouse
@@ -123,6 +152,9 @@ class MandelIter
     @mouse.x = event.pageX - cc.left
     @mouse.y = event.pageY - cc.top
     if (oldx != @mouse.x) or (oldy != @mouse.y)
+      unless @pause_mode
+        @orbit_mouse.x = @mouse.x
+        @orbit_mouse.y = @mouse.y
       @mouse_active = true
       @schedule_ui_draw()
 
@@ -219,48 +251,50 @@ class MandelIter
       yield z: z, n: n
 
   draw_orbit: ->
-      pos = @canvas_to_render_coord(@mouse.x, @mouse.y)
+    mx = @orbit_mouse.x
+    my = @orbit_mouse.y
+    pos = @canvas_to_render_coord(mx, my)
 
-      @graph_ui_ctx.beginPath()
-      @graph_ui_ctx.lineWidth = 2
-      @graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)'
+    @graph_ui_ctx.beginPath()
+    @graph_ui_ctx.lineWidth = 2
+    @graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)'
 
-      @graph_ui_ctx.moveTo(@mouse.x, @mouse.y)
+    @graph_ui_ctx.moveTo(mx, my)
 
-      for step from @mandelbrot_orbit(pos, 50)
-        if step.n > 0
-          p = @render_coord_to_canvas(step.z)
-          @graph_ui_ctx.lineTo(p.x, p.y)
-          @graph_ui_ctx.stroke()
-          @graph_ui_ctx.beginPath()
-          @graph_ui_ctx.moveTo(p.x, p.y)
+    for step from @mandelbrot_orbit(pos, 50)
+      if step.n > 0
+        p = @render_coord_to_canvas(step.z)
+        @graph_ui_ctx.lineTo(p.x, p.y)
+        @graph_ui_ctx.stroke()
+        @graph_ui_ctx.beginPath()
+        @graph_ui_ctx.moveTo(p.x, p.y)
 
-      isize = 3
-      osize = isize * 3
+    isize = 3
+    osize = isize * 3
 
-      @graph_ui_ctx.beginPath()
+    @graph_ui_ctx.beginPath()
 
-      @graph_ui_ctx.moveTo(@mouse.x + isize, @mouse.y + isize)  # BR
-      @graph_ui_ctx.lineTo(@mouse.x + osize, @mouse.y)          #    R
-      @graph_ui_ctx.lineTo(@mouse.x + isize, @mouse.y - isize)  # TR
-      @graph_ui_ctx.lineTo(@mouse.x,         @mouse.y - osize)  #    T
-      @graph_ui_ctx.lineTo(@mouse.x - isize, @mouse.y - isize)  # TL
-      @graph_ui_ctx.lineTo(@mouse.x - osize, @mouse.y        )  #    L
-      @graph_ui_ctx.lineTo(@mouse.x - isize, @mouse.y + isize)  # BL
-      @graph_ui_ctx.lineTo(@mouse.x,         @mouse.y + osize)  #    B
-      @graph_ui_ctx.lineTo(@mouse.x + isize, @mouse.y + isize)  # BR
+    @graph_ui_ctx.moveTo(mx + isize, my + isize)  # BR
+    @graph_ui_ctx.lineTo(mx + osize, my)          #    R
+    @graph_ui_ctx.lineTo(mx + isize, my - isize)  # TR
+    @graph_ui_ctx.lineTo(mx,         my - osize)  #    T
+    @graph_ui_ctx.lineTo(mx - isize, my - isize)  # TL
+    @graph_ui_ctx.lineTo(mx - osize, my        )  #    L
+    @graph_ui_ctx.lineTo(mx - isize, my + isize)  # BL
+    @graph_ui_ctx.lineTo(mx,         my + osize)  #    B
+    @graph_ui_ctx.lineTo(mx + isize, my + isize)  # BR
 
 
-      @graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.1)'
-      @graph_ui_ctx.fill()
+    @graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.1)'
+    @graph_ui_ctx.fill()
 
-      @graph_ui_ctx.lineWidth = 2
-      @graph_ui_ctx.strokeStyle = '#bb7e24'
-      @graph_ui_ctx.stroke()
+    @graph_ui_ctx.lineWidth = 2
+    @graph_ui_ctx.strokeStyle = '#bb7e24'
+    @graph_ui_ctx.stroke()
 
-      @graph_ui_ctx.lineWidth = 1
-      @graph_ui_ctx.strokeStyle = '#d5c312'
-      @graph_ui_ctx.stroke()
+    @graph_ui_ctx.lineWidth = 1
+    @graph_ui_ctx.strokeStyle = '#d5c312'
+    @graph_ui_ctx.stroke()
 
   draw_zoom: ->
     @graph_ui_ctx.save()
