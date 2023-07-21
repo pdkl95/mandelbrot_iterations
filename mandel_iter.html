@@ -221,9 +221,6 @@ h1 {
   padding: 4px;
 }
 
-#content > .graph.panel {
-}
-
 .graph_canvas {
   position: absolute;
   top: 0;
@@ -346,10 +343,34 @@ footer {
   top: -1px;
 }
 
-/* .buttonbox input[type="checkbox"] { */
-/*   position: relative; */
-/*   top: 2px; */
-/* } */
+.buttonbox input[type="checkbox"] {
+  position: relative;
+  top: 2px;
+}
+
+.optionbox.obleft {
+  float: left;
+}
+
+.optionbox.obright {
+  float: right;
+}
+
+.optionbox > h3 {
+  float: left;
+  margin-left: 0.2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  border: 1px outset #bbb;
+  border-radius: 3px;
+  padding: 2px 5px;
+  background-color: #ccc
+}
+
+.optionbox > table {
+  clear: left;
+  margin-left: 0.5rem;
+}
 
 .ui.panel > hr ~ h3 {
   margin-top: 0.5rem;
@@ -382,6 +403,67 @@ td.blank {
   background-color: #F9FBB6;
 }
 
+.tt {
+  position: relative;
+}
+
+.tt::before {
+   content: attr(data-title);
+   display: none;
+   position: absolute;
+   width: 240px;
+   z-index: 2;
+
+   padding: 3px 5px;
+   text-align: left;
+   background-color: #f4f4f4;
+   border: 2px solid #222;
+   border-radius: 6px;
+}
+
+.tt.ttleft::before {
+   top: 165%;
+   right: 0;
+}
+
+.tt.ttright::before {
+   top: 165%;
+   left: 0;
+}
+
+.tt.ttleft::after {
+  content: " ";
+  display: none;
+  position: absolute;
+  z-index: 1;
+  bottom: -12px;
+  left: 50%;
+  margin-top: -8px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent transparent #222 transparent;
+}
+
+.tt.ttright::after {
+  content: " ";
+  display: none;
+  position: absolute;
+  z-index: 1;
+  bottom: -12px;
+  left: 50%;
+  margin-top: -8px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent transparent #222 transparent;
+}
+
+.show_tt .tt:hover::before,
+.show_tt .tt.ttleft:hover::after,
+.show_tt .tt.ttright:hover::after {
+  display: block;
+}
+
+
     </style>
   </head>
   <body>
@@ -405,6 +487,7 @@ td.blank {
 
       <div class="ui panel">
         <div class="zoombox buttonbox">
+          <spasn class="title tt ttleft">Zoom</span>
           <button id="button_reset" class="tt ttright" data-title="Reset back to original non-zoomed view.">Reset</button>
           <select name="zoom_amount" id="zoom_amount">
             <option value="0.8">80%</option>
@@ -412,12 +495,40 @@ td.blank {
             <option value="0.4">40%</option>
             <option value="0.2">20%</option>
           </select>
-          <button id="button_zoom" class="tt ttleft" data-title="Select a point to soom into.">Zoom</button>"
+          <button id="button_zoom" class="tt ttleft" data-title="Select a point to soom into.">Zoom</button>
         </div>
+
+        <div class="uioptbox buttonbox bbright">
+          <span class="title tt ttleft">UI Options</span>
+          <label for="show_tooltips" class="tt ttleft" data-title="Enable/Disable tooltips similar to what you are reading right now.">
+            Show Tooltips
+            <input id="show_tooltips" type="checkbox" checked="checked">
+          </label>
+        </div>
+
+        <hr class="clear_both"></hr>
+
+        <div class="optionbox obleft">
+          <h3>Main Cardioid</h3>
+          <table>
+            <tr>
+              <th>Highlight?</th>
+              <td>
+                <input id="highlight_cardioid" type="checkbox">
+              </td>
+            </tr>
+            <tr>
+              <th>Trace Cardioid Orbits</th>
+              <td>
+                <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="clear_both"></div>
       </div>
     </div>
-
-    <div class="clear_both"></div>
 
     <footer></footer>
 
@@ -443,14 +554,20 @@ td.blank {
       this.on_zoom_amount_change = bind(this.on_zoom_amount_change, this);
       this.on_button_zoom_click = bind(this.on_button_zoom_click, this);
       this.on_button_reset_click = bind(this.on_button_reset_click, this);
+      this.on_button_trace_cardioid_click = bind(this.on_button_trace_cardioid_click, this);
+      this.on_highlight_cardioid_change = bind(this.on_highlight_cardioid_change, this);
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
       this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
+      this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
     }
 
     MandelIter.prototype.init = function() {
       console.log('Starting init()...');
       this.running = false;
       this.content_el = this.context.getElementById('content');
+      this.show_tooltips = this.context.getElementById('show_tooltips');
+      this.show_tooltips.addEventListener('change', this.on_show_tooltips_change);
+      this.show_tooltips.checked = true;
       this.graph_wrapper = this.context.getElementById('graph_wrapper');
       this.graph_canvas = this.context.getElementById('graph');
       this.graph_ui_canvas = this.context.getElementById('graph_ui');
@@ -468,6 +585,14 @@ td.blank {
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
+      this.highlight_cardioid_enabled = false;
+      this.highlight_cardioid = this.context.getElementById('highlight_cardioid');
+      this.highlight_cardioid.addEventListener('change', this.on_highlight_cardioid_change);
+      this.highlight_cardioid.checked = false;
+      this.trace_cardioid_enabled = false;
+      this.button_trace_cardioid = this.context.getElementById('button_trace_cardioid');
+      this.button_trace_cardioid.addEventListener('click', this.on_button_trace_cardioid_click);
+      this.trace_cardioid_off();
       this.mouse_active = false;
       this.mouse = {
         x: 0,
@@ -488,6 +613,9 @@ td.blank {
       this.maxiter = 100;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
+      this.trace_angle = 0;
+      this.trace_steps = 60 * 64;
+      this.trace_angle_step = TAU / this.trace_steps;
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -503,6 +631,14 @@ td.blank {
       timestamp = new Date();
       this.debugbox_hdr.text(timestamp.toISOString());
       return this.debugbox_msg.text('' + msg);
+    };
+
+    MandelIter.prototype.on_show_tooltips_change = function(event) {
+      if (this.show_tooltips.checked) {
+        return this.content_el.classList.add('show_tt');
+      } else {
+        return this.content_el.classList.remove('show_tt');
+      }
     };
 
     MandelIter.prototype.resize_canvas = function(w, h) {
@@ -600,13 +736,51 @@ td.blank {
       }
     };
 
+    MandelIter.prototype.on_highlight_cardioid_change = function(event) {
+      if (this.highlight_cardioid.checked) {
+        return this.highlight_cardioid_enabled = true;
+      } else {
+        return this.highlight_cardioid_enabled = false;
+      }
+    };
+
+    MandelIter.prototype.trace_cardioid_on = function() {
+      this.button_trace_cardioid.textContent = 'Stop';
+      this.button_trace_cardioid.classList.remove('inactive');
+      this.button_trace_cardioid.classList.add('enabled');
+      return this.trace_cardioid_enabled = true;
+    };
+
+    MandelIter.prototype.trace_cardioid_off = function() {
+      this.button_trace_cardioid.textContent = 'Start';
+      this.button_trace_cardioid.classList.remove('enabled');
+      this.button_trace_cardioid.classList.add('inactive');
+      return this.trace_cardioid_enabled = false;
+    };
+
+    MandelIter.prototype.trace_cardioid_toggle = function() {
+      if (this.trace_cardioid_enabled) {
+        return this.trace_cardioid_off();
+      } else {
+        return this.trace_cardioid_on();
+      }
+    };
+
+    MandelIter.prototype.on_button_trace_cardioid_click = function(event) {
+      return this.trace_cardioid_toggle();
+    };
+
     MandelIter.prototype.on_button_reset_click = function(event) {
       this.reset_renderbox();
       this.zoom_mode_off();
+      this.trace_cardioid_off();
       return this.draw_background();
     };
 
     MandelIter.prototype.on_button_zoom_click = function(event) {
+      if (!this.zoom_mode) {
+        this.trace_cardioid_off();
+      }
       return this.zoom_mode_toggle();
     };
 
@@ -780,16 +954,16 @@ td.blank {
       return results;
     };
 
-    MandelIter.prototype.draw_orbit = function() {
+    MandelIter.prototype.draw_orbit = function(c) {
       var isize, mx, my, osize, p, pos, ref, step;
-      mx = this.orbit_mouse.x;
-      my = this.orbit_mouse.y;
+      mx = c.x;
+      my = c.y;
       pos = this.canvas_to_render_coord(mx, my);
       this.graph_ui_ctx.beginPath();
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
       this.graph_ui_ctx.moveTo(mx, my);
-      ref = this.mandelbrot_orbit(pos, 50);
+      ref = this.mandelbrot_orbit(pos, 200);
       for (step of ref) {
         if (step.n > 0) {
           p = this.render_coord_to_canvas(step.z);
@@ -821,6 +995,44 @@ td.blank {
       return this.graph_ui_ctx.stroke();
     };
 
+    MandelIter.prototype.cardioid = function(theta) {
+      var a, ct, mcos, shrink;
+      theta = theta % TAU;
+      shrink = 0.015;
+      ct = Math.cos(theta);
+      mcos = 1 - ct;
+      mcos = mcos * (1 - shrink);
+      a = {
+        r: ct,
+        i: Math.sin(theta)
+      };
+      a.r = ((a.r * 0.5) * mcos) + 0.25 - (shrink * 0.5);
+      a.i = (a.i * 0.5) * mcos;
+      return this.render_coord_to_canvas(a);
+    };
+
+    MandelIter.prototype.draw_cardioid = function() {
+      var first, p, step_size, steps, theta;
+      this.graph_ui_ctx.save();
+      steps = 100;
+      step_size = TAU / steps;
+      theta = 0;
+      p = this.cardioid(theta);
+      first = p;
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.moveTo(p.x, p.y);
+      while (theta < TAU) {
+        theta = theta + step_size;
+        p = this.cardioid(theta);
+        this.graph_ui_ctx.lineTo(p.x, p.y);
+      }
+      this.graph_ui_ctx.lineTo(first.x, first.y);
+      this.graph_ui_ctx.lineWidth = 2;
+      this.graph_ui_ctx.strokeStyle = '#61E0F6';
+      this.graph_ui_ctx.stroke();
+      return this.graph_ui_ctx.restore();
+    };
+
     MandelIter.prototype.draw_zoom = function() {
       var region, w;
       this.graph_ui_ctx.save();
@@ -831,23 +1043,43 @@ td.blank {
       this.graph_ui_ctx.clip(region, "evenodd");
       this.graph_ui_ctx.fillStyle = 'rgba(255,232,232,0.333)';
       this.graph_ui_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
-      return this.graph_ui_ctx.restore();
+      this.graph_ui_ctx.restore();
+      this.orbit_mouse = this.cardioid(this.trace_angle);
+      this.draw_orbit();
+      this.trace_angle = this.trace_angle + this.trace_angle_step;
+      if (this.trace_angle >= TAU) {
+        return this.trace_angle = this.trace_angle - TAU;
+      }
+    };
+
+    MandelIter.prototype.draw_cardioid_trace_animation = function() {
+      this.draw_orbit(this.cardioid(this.trace_angle));
+      this.trace_angle = this.trace_angle + this.trace_angle_step;
+      if (this.trace_angle >= TAU) {
+        return this.trace_angle = this.trace_angle - TAU;
+      }
     };
 
     MandelIter.prototype.draw_ui = function() {
       this.draw_ui_scheduled = false;
       this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
-      if (this.mouse_active) {
+      if (this.highlight_cardioid_enabled) {
+        this.draw_cardioid();
+      }
+      if (this.trace_cardioid_enabled) {
+        return this.draw_cardioid_trace_animation();
+      } else if (this.mouse_active) {
         if (this.zoom_mode) {
           return this.draw_zoom();
         } else {
-          return this.draw_orbit();
+          return this.draw_orbit(this.orbit_mouse);
         }
       }
     };
 
     MandelIter.prototype.draw_ui_callback = function() {
-      return APP.draw_ui();
+      APP.draw_ui();
+      return this.schedule_ui_draw();
     };
 
     MandelIter.prototype.schedule_ui_draw = function() {
@@ -864,7 +1096,8 @@ td.blank {
   document.addEventListener('DOMContentLoaded', (function(_this) {
     return function() {
       APP = new MandelIter(document);
-      return APP.init();
+      APP.init();
+      return APP.schedule_ui_draw();
     };
   })(this));
 

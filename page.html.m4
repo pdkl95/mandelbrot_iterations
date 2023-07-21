@@ -31,6 +31,7 @@ undivert(`style.css')
 
       <div class="ui panel">
         <div class="zoombox buttonbox">
+          <spasn class="title tt ttleft">Zoom</span>
           <button id="button_reset" class="tt ttright" data-title="Reset back to original non-zoomed view.">Reset</button>
           <select name="zoom_amount" id="zoom_amount">
             <option value="0.8">80%</option>
@@ -38,12 +39,40 @@ undivert(`style.css')
             <option value="0.4">40%</option>
             <option value="0.2">20%</option>
           </select>
-          <button id="button_zoom" class="tt ttleft" data-title="Select a point to soom into.">Zoom</button>"
+          <button id="button_zoom" class="tt ttleft" data-title="Select a point to soom into.">Zoom</button>
         </div>
+
+        <div class="uioptbox buttonbox bbright">
+          <span class="title tt ttleft">UI Options</span>
+          <label for="show_tooltips" class="tt ttleft" data-title="Enable/Disable tooltips similar to what you are reading right now.">
+            Show Tooltips
+            <input id="show_tooltips" type="checkbox" checked="checked">
+          </label>
+        </div>
+
+        <hr class="clear_both"></hr>
+
+        <div class="optionbox obleft">
+          <h3>Main Cardioid</h3>
+          <table>
+            <tr>
+              <th>Highlight?</th>
+              <td>
+                <input id="highlight_cardioid" type="checkbox">
+              </td>
+            </tr>
+            <tr>
+              <th>Trace Cardioid Orbits</th>
+              <td>
+                <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="clear_both"></div>
       </div>
     </div>
-
-    <div class="clear_both"></div>
 
     <footer></footer>
 

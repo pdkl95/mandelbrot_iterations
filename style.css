@@ -38,9 +38,6 @@ h1 {
   padding: 4px;
 }
 
-#content > .graph.panel {
-}
-
 .graph_canvas {
   position: absolute;
   top: 0;
@@ -163,10 +160,34 @@ footer {
   top: -1px;
 }
 
-/* .buttonbox input[type="checkbox"] { */
-/*   position: relative; */
-/*   top: 2px; */
-/* } */
+.buttonbox input[type="checkbox"] {
+  position: relative;
+  top: 2px;
+}
+
+.optionbox.obleft {
+  float: left;
+}
+
+.optionbox.obright {
+  float: right;
+}
+
+.optionbox > h3 {
+  float: left;
+  margin-left: 0.2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  border: 1px outset #bbb;
+  border-radius: 3px;
+  padding: 2px 5px;
+  background-color: #ccc
+}
+
+.optionbox > table {
+  clear: left;
+  margin-left: 0.5rem;
+}
 
 .ui.panel > hr ~ h3 {
   margin-top: 0.5rem;
@@ -198,3 +219,64 @@ td.blank {
 .highlight > td {
   background-color: #F9FBB6;
 }
+
+.tt {
+  position: relative;
+}
+
+.tt::before {
+   content: attr(data-title);
+   display: none;
+   position: absolute;
+   width: 240px;
+   z-index: 2;
+
+   padding: 3px 5px;
+   text-align: left;
+   background-color: #f4f4f4;
+   border: 2px solid #222;
+   border-radius: 6px;
+}
+
+.tt.ttleft::before {
+   top: 165%;
+   right: 0;
+}
+
+.tt.ttright::before {
+   top: 165%;
+   left: 0;
+}
+
+.tt.ttleft::after {
+  content: " ";
+  display: none;
+  position: absolute;
+  z-index: 1;
+  bottom: -12px;
+  left: 50%;
+  margin-top: -8px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent transparent #222 transparent;
+}
+
+.tt.ttright::after {
+  content: " ";
+  display: none;
+  position: absolute;
+  z-index: 1;
+  bottom: -12px;
+  left: 50%;
+  margin-top: -8px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent transparent #222 transparent;
+}
+
+.show_tt .tt:hover::before,
+.show_tt .tt.ttleft:hover::after,
+.show_tt .tt.ttright:hover::after {
+  display: block;
+}
+
