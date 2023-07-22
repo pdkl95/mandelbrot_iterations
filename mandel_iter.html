@@ -487,7 +487,7 @@ td.blank {
 
       <div class="ui panel">
         <div class="zoombox buttonbox">
-          <spasn class="title tt ttleft">Zoom</span>
+          <spasn class="title">Zoom</span>
           <button id="button_reset" class="tt ttright" data-title="Reset back to original non-zoomed view.">Reset</button>
           <select name="zoom_amount" id="zoom_amount">
             <option value="0.8">80%</option>
@@ -496,6 +496,11 @@ td.blank {
             <option value="0.2">20%</option>
           </select>
           <button id="button_zoom" class="tt ttleft" data-title="Select a point to soom into.">Zoom</button>
+        </div>
+
+        <div class="tracebox buttonbox">
+          <span class="title">Trace Animation</span>
+          <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
         </div>
 
         <div class="uioptbox buttonbox bbright">
@@ -509,20 +514,21 @@ td.blank {
         <hr class="clear_both"></hr>
 
         <div class="optionbox obleft">
-          <h3>Main Cardioid</h3>
+          <h3>Optional Features</h3>
           <table>
             <tr>
-              <th>Highlight?</th>
-              <td>
-                <input id="highlight_cardioid" type="checkbox">
+              <th>Highlight Trace Path</th>
+              <td id="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of thej main cardioid.">
+                <input id="highlight_trace_path" type="checkbox">
               </td>
             </tr>
             <tr>
-              <th>Trace Cardioid Orbits</th>
+              <th clasa="tt ttright" data-title="Show the construction of the internal angle of the cardioid. The period-n bulbs surrounding the Msndelbrot Set's ain cardioid attach at their fractional values that match their internal angle. TRe integer bulbes attach to the main cardioid at the inversse of their internal angle. E.g. the period-3 bulbs attaches at internal angles 1/3 TAU and 2/3 TAU.">Show Internal Ang;e</th>
               <td>
-                <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
+                <input id="highlight_internal_angle" type="checkbox">
               </td>
             </tr>
+            <tr>
           </table>
         </div>
 
@@ -555,7 +561,8 @@ td.blank {
       this.on_button_zoom_click = bind(this.on_button_zoom_click, this);
       this.on_button_reset_click = bind(this.on_button_reset_click, this);
       this.on_button_trace_cardioid_click = bind(this.on_button_trace_cardioid_click, this);
-      this.on_highlight_cardioid_change = bind(this.on_highlight_cardioid_change, this);
+      this.on_highlight_internal_angle_change = bind(this.on_highlight_internal_angle_change, this);
+      this.on_highlight_trace_path_change = bind(this.on_highlight_trace_path_change, this);
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
       this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
@@ -585,10 +592,14 @@ td.blank {
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
-      this.highlight_cardioid_enabled = false;
-      this.highlight_cardioid = this.context.getElementById('highlight_cardioid');
-      this.highlight_cardioid.addEventListener('change', this.on_highlight_cardioid_change);
-      this.highlight_cardioid.checked = false;
+      this.highlight_trace_path_enabled = false;
+      this.highlight_trace_path = this.context.getElementById('highlight_trace_path');
+      this.highlight_trace_path.addEventListener('change', this.on_highlight_trace_path_change);
+      this.highlight_trace_path.checked = false;
+      this.highlight_internal_angle_enabled = false;
+      this.highlight_internal_angle = this.context.getElementById('highlight_internal_angle');
+      this.highlight_internal_angle.addEventListener('change', this.on_highlight_internal_angle_change);
+      this.highlight_internal_angle.checked = false;
       this.trace_cardioid_enabled = false;
       this.button_trace_cardioid = this.context.getElementById('button_trace_cardioid');
       this.button_trace_cardioid.addEventListener('click', this.on_button_trace_cardioid_click);
@@ -736,11 +747,19 @@ td.blank {
       }
     };
 
-    MandelIter.prototype.on_highlight_cardioid_change = function(event) {
-      if (this.highlight_cardioid.checked) {
-        return this.highlight_cardioid_enabled = true;
+    MandelIter.prototype.on_highlight_trace_path_change = function(event) {
+      if (this.highlight_trace_path.checked) {
+        return this.highlight_trace_path_enabled = true;
       } else {
-        return this.highlight_cardioid_enabled = false;
+        return this.highlight_trace_path_enabled = false;
+      }
+    };
+
+    MandelIter.prototype.on_highlight_internal_angle_change = function(event) {
+      if (this.highlight_internal_angle.checked) {
+        return this.highlight_internal_angle_enabled = true;
+      } else {
+        return this.highlight_internal_angle_enabled = false;
       }
     };
 
@@ -805,7 +824,6 @@ td.blank {
     MandelIter.prototype.on_graph_click = function(event) {
       var newend, newstart, w;
       if (this.zoom_mode) {
-        console.log('zoom click');
         w = this.get_zoom_window();
         newstart = this.canvas_to_render_coord(w.x, w.y);
         newend = this.canvas_to_render_coord(w.x + w.w, w.y + w.h);
@@ -814,8 +832,7 @@ td.blank {
         this.zoom_mode = false;
         return this.draw_background();
       } else {
-        this.pause_mode_toggle();
-        return console.log('pause mode:', this.pause_mode);
+        return this.pause_mode_toggle();
       }
     };
 
@@ -843,6 +860,17 @@ td.blank {
     MandelIter.prototype.on_mouseout = function(event) {
       this.mouse_active = false;
       return this.schedule_ui_draw();
+    };
+
+    MandelIter.prototype.rectangular_to_polar_angle = function(r, i) {
+      return Math.atan(i / r);
+    };
+
+    MandelIter.prototype.polar_to_rectangular = function(radius, angle) {
+      return {
+        r: radius * Math.cos(angle),
+        i: radius * Math.sin(angle)
+      };
     };
 
     MandelIter.prototype.canvas_to_render_coord = function(x, y) {
@@ -894,14 +922,13 @@ td.blank {
     };
 
     MandelIter.prototype.draw_background = function() {
-      var data, i, img, j, pos, ref, ref1, val, x, y;
+      var data, img, j, k, pos, ref, ref1, val, x, y;
       this.graph_ctx.fillStyle = 'rgb(0,0,0)';
       this.graph_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
-      console.log('createImageData()');
       img = this.graph_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
       data = img.data;
-      for (y = i = 0, ref = this.graph_height; 0 <= ref ? i <= ref : i >= ref; y = 0 <= ref ? ++i : --i) {
-        for (x = j = 0, ref1 = this.graph_width; 0 <= ref1 ? j <= ref1 : j >= ref1; x = 0 <= ref1 ? ++j : --j) {
+      for (y = j = 0, ref = this.graph_height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
+        for (x = k = 0, ref1 = this.graph_width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
           val = this.mandel_color_value(x, y);
           if (this.antialias) {
             val += this.mandel_color_value(x + 0.5, y);
@@ -990,7 +1017,7 @@ td.blank {
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = '#bb7e24';
       this.graph_ui_ctx.stroke();
-      this.graph_ui_ctx.lineWidth = 1;
+      this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = '#d5c312';
       return this.graph_ui_ctx.stroke();
     };
@@ -1011,7 +1038,7 @@ td.blank {
       return this.render_coord_to_canvas(a);
     };
 
-    MandelIter.prototype.draw_cardioid = function() {
+    MandelIter.prototype.draw_cardioid_trace_path = function() {
       var first, p, step_size, steps, theta;
       this.graph_ui_ctx.save();
       steps = 100;
@@ -1033,6 +1060,52 @@ td.blank {
       return this.graph_ui_ctx.restore();
     };
 
+    MandelIter.prototype.draw_cardioid_internal_angle = function() {
+      var angle, circle, inner, outer, radius;
+      angle = null;
+      if (this.trace_cardioid_enabled) {
+        angle = this.trace_angle;
+      } else if (this.mouse_active) {
+        if (this.zoom_mode) {
+
+        } else {
+          angle = this.rectangular_to_polar_angle(this.orbit_mouse.r, this.orbit_mouse.i);
+        }
+      } else {
+
+      }
+      if (angle == null) {
+        return null;
+      }
+      circle = this.polar_to_rectangular(0.5, angle);
+      radius = ((0.25 - this.renderbox.start.r) / (this.renderbox.end.r - this.renderbox.start.r)) * this.graph_width;
+      console.log('angle', angle, 'radis', radius);
+      this.graph_ui_ctx.save();
+      this.graph_ui_ctx.lineWidth = 2;
+      inner = this.render_coord_to_canvas({
+        r: 0,
+        i: 0
+      });
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.arc(inner.x, inner.y, 0.25, radius, 0, TAU, false);
+      this.graph_ui_ctx.strokeStyle = '#00FF47';
+      this.graph_ui_ctx.stroke();
+      outer = this.render_coord_to_canvas(circle);
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.arc(outer.x, outer.y, 0.25, radius, 0, TAU, false);
+      this.graph_ui_ctx.strokeStyle = '#21CC50';
+      this.graph_ui_ctx.stroke();
+      return this.graph_ui_ctx.restore();
+    };
+
+    MandelIter.prototype.draw_cardioid_trace_animation = function() {
+      this.draw_orbit(this.cardioid(this.trace_angle));
+      this.trace_angle = this.trace_angle + this.trace_angle_step;
+      if (this.trace_angle >= TAU) {
+        return this.trace_angle = this.trace_angle - TAU;
+      }
+    };
+
     MandelIter.prototype.draw_zoom = function() {
       var region, w;
       this.graph_ui_ctx.save();
@@ -1045,26 +1118,17 @@ td.blank {
       this.graph_ui_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
       this.graph_ui_ctx.restore();
       this.orbit_mouse = this.cardioid(this.trace_angle);
-      this.draw_orbit();
-      this.trace_angle = this.trace_angle + this.trace_angle_step;
-      if (this.trace_angle >= TAU) {
-        return this.trace_angle = this.trace_angle - TAU;
-      }
-    };
-
-    MandelIter.prototype.draw_cardioid_trace_animation = function() {
-      this.draw_orbit(this.cardioid(this.trace_angle));
-      this.trace_angle = this.trace_angle + this.trace_angle_step;
-      if (this.trace_angle >= TAU) {
-        return this.trace_angle = this.trace_angle - TAU;
-      }
+      return this.draw_orbit();
     };
 
     MandelIter.prototype.draw_ui = function() {
       this.draw_ui_scheduled = false;
       this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
-      if (this.highlight_cardioid_enabled) {
-        this.draw_cardioid();
+      if (this.highlight_trace_path_enabled) {
+        this.draw_cardioid_trace_path();
+      }
+      if (this.highlight_internal_angle_enabled) {
+        this.draw_cardioid_internal_angle();
       }
       if (this.trace_cardioid_enabled) {
         return this.draw_cardioid_trace_animation();
