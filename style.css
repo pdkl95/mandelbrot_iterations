@@ -73,6 +73,13 @@ h1 {
   text-align: right;
 }
 
+.numfloat {
+  background-color: #fff;
+  padding: 2px 7px;
+  font-family: monospace;
+  min-width: 11em;
+}
+
 .panel {
   background-color: #ebebeb;
   box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22), 0 0 20px -4px rgba(255, 255, 255, 0.45) inset;

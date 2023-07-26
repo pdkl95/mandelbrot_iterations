@@ -28,8 +28,20 @@
     }
 
     MandelIter.prototype.init = function() {
+      var fmtfloatopts;
       console.log('Starting init()...');
       this.running = false;
+      fmtfloatopts = {
+        notation: 'standard',
+        style: 'decimal',
+        useGrouping: false,
+        minimumIntegerDigits: 1,
+        maximumFractionDigits: 3,
+        signDisplay: 'always'
+      };
+      this.fmtfloat = new Intl.NumberFormat(void 0, fmtfloatopts);
+      fmtfloatopts['signDisplay'] = 'never';
+      this.fmtfloatnosign = new Intl.NumberFormat(void 0, fmtfloatopts);
       this.content_el = this.context.getElementById('content');
       this.show_tooltips = this.context.getElementById('show_tooltips');
       this.show_tooltips.addEventListener('change', this.on_show_tooltips_change);
@@ -45,6 +57,9 @@
       });
       this.resize_canvas(900, 600);
       this.fit_canvas_to_width();
+      this.loc_c = this.context.getElementById('loc_c');
+      this.loc_radius = this.context.getElementById('loc_radius');
+      this.loc_theta = this.context.getElementById('loc_theta');
       this.button_reset = this.context.getElementById('button_reset');
       this.button_zoom = this.context.getElementById('button_zoom');
       this.zoom_amount = this.context.getElementById('zoom_amount');
@@ -55,10 +70,10 @@
       this.highlight_trace_path = this.context.getElementById('highlight_trace_path');
       this.highlight_trace_path.addEventListener('change', this.on_highlight_trace_path_change);
       this.highlight_trace_path.checked = false;
-      this.highlight_internal_angle_enabled = false;
+      this.highlight_internal_angle_enabled = true;
       this.highlight_internal_angle = this.context.getElementById('highlight_internal_angle');
       this.highlight_internal_angle.addEventListener('change', this.on_highlight_internal_angle_change);
-      this.highlight_internal_angle.checked = false;
+      this.highlight_internal_angle.checked = true;
       this.trace_cardioid_enabled = false;
       this.button_trace_cardioid = this.context.getElementById('button_trace_cardioid');
       this.button_trace_cardioid.addEventListener('click', this.on_button_trace_cardioid_click);
@@ -101,6 +116,37 @@
       timestamp = new Date();
       this.debugbox_hdr.text(timestamp.toISOString());
       return this.debugbox_msg.text('' + msg);
+    };
+
+    MandelIter.prototype.complex_to_string = function(z) {
+      var istr, rstr;
+      rstr = this.fmtfloat.format(z.r);
+      istr = this.fmtfloatnosign.format(z.i);
+      if (z.i === 0) {
+        return rstr;
+      } else if (z.r === 0) {
+        if (z.i === 1) {
+          return 'i';
+        } else if (z.i === -1) {
+          return '-i';
+        } else {
+          return 'i';
+        }
+      } else {
+        if (z.i < 0) {
+          if (z.i === -1) {
+            return rstr + ' - i';
+          } else {
+            return rstr + ' - ' + istr + 'i';
+          }
+        } else {
+          if (z.i === 1) {
+            return rstr + ' + i';
+          } else {
+            return rstr + ' + ' + istr + 'i';
+          }
+        }
+      }
     };
 
     MandelIter.prototype.on_show_tooltips_change = function(event) {
@@ -322,7 +368,7 @@
     };
 
     MandelIter.prototype.rectangular_to_polar_angle = function(r, i) {
-      return Math.atan(i / r);
+      return Math.atan2(i, r);
     };
 
     MandelIter.prototype.polar_to_rectangular = function(radius, angle) {
@@ -445,6 +491,8 @@
       mx = c.x;
       my = c.y;
       pos = this.canvas_to_render_coord(mx, my);
+      this.loc_c.innerText = this.complex_to_string(pos);
+      this.graph_ui_ctx.save();
       this.graph_ui_ctx.beginPath();
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
@@ -478,7 +526,8 @@
       this.graph_ui_ctx.stroke();
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = '#d5c312';
-      return this.graph_ui_ctx.stroke();
+      this.graph_ui_ctx.stroke();
+      return this.graph_ui_ctx.restore();
     };
 
     MandelIter.prototype.cardioid = function(theta) {
@@ -505,6 +554,7 @@
       theta = 0;
       p = this.cardioid(theta);
       first = p;
+      this.graph_ui_ctx.save();
       this.graph_ui_ctx.beginPath();
       this.graph_ui_ctx.moveTo(p.x, p.y);
       while (theta < TAU) {
@@ -520,7 +570,7 @@
     };
 
     MandelIter.prototype.draw_cardioid_internal_angle = function() {
-      var angle, circle, inner, outer, radius;
+      var angle, circle, deltai, deltar, m, origin, outer, radius, zorigin;
       angle = null;
       if (this.trace_cardioid_enabled) {
         angle = this.trace_angle;
@@ -528,7 +578,8 @@
         if (this.zoom_mode) {
 
         } else {
-          angle = this.rectangular_to_polar_angle(this.orbit_mouse.r, this.orbit_mouse.i);
+          m = this.canvas_to_render_coord(this.orbit_mouse.x, this.orbit_mouse.y);
+          angle = this.rectangular_to_polar_angle(m.r, m.i);
         }
       } else {
 
@@ -536,24 +587,38 @@
       if (angle == null) {
         return null;
       }
-      circle = this.polar_to_rectangular(0.5, angle);
-      radius = ((0.25 - this.renderbox.start.r) / (this.renderbox.end.r - this.renderbox.start.r)) * this.graph_width;
-      console.log('angle', angle, 'radis', radius);
-      this.graph_ui_ctx.save();
-      this.graph_ui_ctx.lineWidth = 2;
-      inner = this.render_coord_to_canvas({
+      zorigin = {
         r: 0,
         i: 0
-      });
-      this.graph_ui_ctx.beginPath();
-      this.graph_ui_ctx.arc(inner.x, inner.y, 0.25, radius, 0, TAU, false);
-      this.graph_ui_ctx.strokeStyle = '#00FF47';
-      this.graph_ui_ctx.stroke();
+      };
+      origin = this.render_coord_to_canvas(zorigin);
+      circle = this.polar_to_rectangular(0.5, angle);
+      radius = ((0.25 - this.renderbox.start.r) / (this.renderbox.end.r - this.renderbox.start.r)) * this.graph_width;
+      deltar = circle.r - zorigin.r;
+      deltai = circle.i - zorigin.i;
+      this.graph_ui_ctx.save();
+      this.graph_ui_ctx.lineWidth = 2;
+      radius = 20;
+      this.loc_radius.innerText = this.fmtfloat.format(radius);
+      this.loc_theta.innerText = this.fmtfloat.format(angle);
       outer = this.render_coord_to_canvas(circle);
       this.graph_ui_ctx.beginPath();
-      this.graph_ui_ctx.arc(outer.x, outer.y, 0.25, radius, 0, TAU, false);
+      this.graph_ui_ctx.moveTo(origin.x, origin.y);
+      this.graph_ui_ctx.lineTo(outer.x, outer.y);
+      this.graph_ui_ctx.strokeStyle = '#F67325';
+      this.graph_ui_ctx.stroke();
+      this.graph_ui_ctx.fillStyle = 'rgba(0,222,222,0.8)';
+      this.graph_ui_ctx.fill();
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.arc(origin.x, origin.y, radius, 0, TAU, false);
+      this.graph_ui_ctx.strokeStyle = '#00FF47';
+      this.graph_ui_ctx.stroke();
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.arc(outer.x, outer.y, radius, 0, TAU, false);
       this.graph_ui_ctx.strokeStyle = '#21CC50';
       this.graph_ui_ctx.stroke();
+      this.graph_ui_ctx.fillStyle = 'rgba(0,255,0,0.8)';
+      this.graph_ui_ctx.fill();
       return this.graph_ui_ctx.restore();
     };
 

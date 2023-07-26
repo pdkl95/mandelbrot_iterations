@@ -10,6 +10,18 @@ class MandelIter
 
     @running = false
 
+    fmtfloatopts =
+      notation:    'standard'
+      style:       'decimal'
+      useGrouping: false
+      minimumIntegerDigits: 1
+      maximumFractionDigits: 3
+      signDisplay: 'always'
+
+    @fmtfloat = new Intl.NumberFormat undefined, fmtfloatopts
+    fmtfloatopts['signDisplay'] = 'never'
+    @fmtfloatnosign = new Intl.NumberFormat undefined, fmtfloatopts
+
     @content_el       = @context.getElementById('content')
 
     @show_tooltips   = @context.getElementById('show_tooltips')
@@ -28,6 +40,10 @@ class MandelIter
 
     #window.addEventListener('resize', @on_content_wrapper_resize)
 
+    @loc_c      = @context.getElementById('loc_c')
+    @loc_radius = @context.getElementById('loc_radius')
+    @loc_theta  = @context.getElementById('loc_theta')
+
     @button_reset = @context.getElementById('button_reset')
     @button_zoom  = @context.getElementById('button_zoom')
     @zoom_amount  = @context.getElementById('zoom_amount')
@@ -41,10 +57,10 @@ class MandelIter
     @highlight_trace_path.addEventListener('change', @on_highlight_trace_path_change)
     @highlight_trace_path.checked = false
 
-    @highlight_internal_angle_enabled = false
+    @highlight_internal_angle_enabled = true
     @highlight_internal_angle   = @context.getElementById('highlight_internal_angle')
     @highlight_internal_angle.addEventListener('change', @on_highlight_internal_angle_change)
-    @highlight_internal_angle.checked = false
+    @highlight_internal_angle.checked = true
 
     @trace_cardioid_enabled = false
     @button_trace_cardioid = @context.getElementById('button_trace_cardioid')
@@ -90,6 +106,34 @@ class MandelIter
     timestamp = new Date()
     @debugbox_hdr.text(timestamp.toISOString())
     @debugbox_msg.text('' + msg)
+
+  complex_to_string: (z) ->
+    rstr = @fmtfloat.format(z.r)
+    istr = @fmtfloatnosign.format(z.i)
+
+    if z.i is 0
+      # pure real
+      rstr
+    else if z.r is 0
+      # pure imaginary
+      if z.i is 1
+        'i'
+      else if z.i is -1
+        '-i'
+      else
+        'i'
+    else
+      # complex value
+      if z.i < 0
+        if z.i is -1
+          rstr + ' - i'
+        else
+          rstr + ' - ' + istr + 'i'
+      else
+        if z.i is 1
+          rstr + ' + i'
+        else
+          rstr + ' + ' + istr + 'i'
 
   on_show_tooltips_change: (event) =>
     if @show_tooltips.checked
@@ -267,7 +311,7 @@ class MandelIter
     @schedule_ui_draw()
 
   rectangular_to_polar_angle: (r, i) ->
-    return Math.atan(i / r)
+    return Math.atan2(i, r)
 
   polar_to_rectangular: (radius, angle) ->
     return
@@ -360,6 +404,9 @@ class MandelIter
     mx = c.x
     my = c.y
     pos = @canvas_to_render_coord(mx, my)
+    @loc_c.innerText = @complex_to_string(pos)
+
+    @graph_ui_ctx.save()
 
     @graph_ui_ctx.beginPath()
     @graph_ui_ctx.lineWidth = 2
@@ -402,6 +449,7 @@ class MandelIter
     @graph_ui_ctx.strokeStyle = '#d5c312'
     @graph_ui_ctx.stroke()
 
+    @graph_ui_ctx.restore()
 
   cardioid: (theta) ->
     theta = theta % TAU
@@ -432,6 +480,8 @@ class MandelIter
     p = @cardioid(theta)
     first = p
 
+    @graph_ui_ctx.save()
+
     @graph_ui_ctx.beginPath()
     @graph_ui_ctx.moveTo(p.x, p.y)
 
@@ -458,33 +508,66 @@ class MandelIter
         # disabled while zooming
       else
         # show the internal angle of the mouse pointer
-        angle = @rectangular_to_polar_angle(@orbit_mouse.r, @orbit_mouse.i)
+        m = @canvas_to_render_coord(@orbit_mouse.x, @orbit_mouse.y)
+        angle = @rectangular_to_polar_angle(m.r, m.i)
     else
       # skip other/unknown modes
 
     return null unless angle?
 
+    zorigin = #@render_coord_to_canvas(r: 0, i: 0)
+      r: 0
+      i: 0
+
+    origin = @render_coord_to_canvas(zorigin)
+
     # r = 0.5 = (inner circle radius 0.25)
     #         + (outer circle radius 0.25)
     circle = @polar_to_rectangular(0.5, angle)
     radius = ((0.25 - @renderbox.start.r) / (@renderbox.end.r - @renderbox.start.r)) * @graph_width
-    console.log('angle', angle, 'radis', radius)
+
+    deltar = circle.r - zorigin.r
+    deltai = circle.i - zorigin.i
+
+    #radius = Math.sqrt((deltar * deltar) + (deltai * deltai))
 
     @graph_ui_ctx.save()
 
     @graph_ui_ctx.lineWidth = 2
 
-    inner = @render_coord_to_canvas(r: 0, i: 0)
+    radius = 20
+
+    @loc_radius.innerText = @fmtfloat.format(radius)
+    @loc_theta.innerText  = @fmtfloat.format(angle)
+
+    outer = @render_coord_to_canvas(circle)
+
+    # if @pause_mode
+    #   console.log('-----------')
+    #   console.log('angle', angle, 'radius', radius, 'orbit_mouse', @orbit_mouse)
+    #   console.log('circle', circle)
+    #   console.log('inner', origin)
+    #   console.log('outer', outer)
+
     @graph_ui_ctx.beginPath()
-    @graph_ui_ctx.arc(inner.x, inner.y, 0.25, radius, 0, TAU, false)
+    @graph_ui_ctx.moveTo(origin.x, origin.y)
+    @graph_ui_ctx.lineTo(outer.x, outer.y)
+    @graph_ui_ctx.strokeStyle = '#F67325'
+    @graph_ui_ctx.stroke()
+    @graph_ui_ctx.fillStyle = 'rgba(0,222,222,0.8)'
+    @graph_ui_ctx.fill()
+
+    @graph_ui_ctx.beginPath()
+    @graph_ui_ctx.arc(origin.x, origin.y, radius, 0, TAU, false)
     @graph_ui_ctx.strokeStyle = '#00FF47'
     @graph_ui_ctx.stroke()
 
-    outer = @render_coord_to_canvas(circle)
     @graph_ui_ctx.beginPath()
-    @graph_ui_ctx.arc(outer.x, outer.y, 0.25, radius, 0, TAU, false)
+    @graph_ui_ctx.arc(outer.x, outer.y, radius, 0, TAU, false)
     @graph_ui_ctx.strokeStyle = '#21CC50'
     @graph_ui_ctx.stroke()
+    @graph_ui_ctx.fillStyle = 'rgba(0,255,0,0.8)'
+    @graph_ui_ctx.fill()
 
     @graph_ui_ctx.restore()
 

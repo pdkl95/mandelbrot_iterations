@@ -39,7 +39,7 @@ undivert(`style.css')
             <option value="0.4">40%</option>
             <option value="0.2">20%</option>
           </select>
-          <button id="button_zoom" class="tt ttleft" data-title="Select a point to soom into.">Zoom</button>
+          <button id="button_zoom" class="tt ttright" data-title="Select a point to soom into.">Zoom</button>
         </div>
 
         <div class="tracebox buttonbox">
@@ -57,17 +57,35 @@ undivert(`style.css')
 
         <hr class="clear_both"></hr>
 
+        <div class="coordbox optionbox obright">
+          <h3>Pointer Location</h3>
+          <table>
+            <tr>
+              <th>C =</th>
+              <td><code id="loc_c" class="numfloat complex"></code></td>
+            </tr>
+            <tr>
+              <th>r =</th>
+              <td><code id="loc_radius" class="numfloat"></code></td>
+            </tr>
+            <tr>
+              <th>&#952; =</th>
+              <td><code id="loc_theta" class="numfloat"></code></td>
+            </tr>
+          </table>
+        </div>
+
         <div class="optionbox obleft">
           <h3>Optional Features</h3>
           <table>
             <tr>
-              <th>Highlight Trace Path</th>
-              <td id="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of thej main cardioid.">
+              <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of thej main cardioid.">Highlight Trace Path</th>
+              <td>
                 <input id="highlight_trace_path" type="checkbox">
               </td>
             </tr>
             <tr>
-              <th clasa="tt ttright" data-title="Show the construction of the internal angle of the cardioid. The period-n bulbs surrounding the Msndelbrot Set's ain cardioid attach at their fractional values that match their internal angle. TRe integer bulbes attach to the main cardioid at the inversse of their internal angle. E.g. the period-3 bulbs attaches at internal angles 1/3 TAU and 2/3 TAU.">Show Internal Ang;e</th>
+              <th class="tt ttright" data-title="Show the construction of the internal angle of the cardioid. The period-n bulbs surrounding the Msndelbrot Set's ain cardioid attach at their fractional values that match their internal angle. TRe integer bulbes attach to the main cardioid at the inversse of their internal angle. E.g. the period-3 bulbs attaches at internal angles 1/3 TAU and 2/3 TAU.">Show Internal Angle</th>
               <td>
                 <input id="highlight_internal_angle" type="checkbox">
               </td>
