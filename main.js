@@ -11,7 +11,7 @@
       this.context = context;
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
       this.draw_ui_callback = bind(this.draw_ui_callback, this);
-      this.canvas_to_render_coord = bind(this.canvas_to_render_coord, this);
+      this.canvas_to_complex = bind(this.canvas_to_complex, this);
       this.on_mouseout = bind(this.on_mouseout, this);
       this.on_mouseenter = bind(this.on_mouseenter, this);
       this.on_mousemove = bind(this.on_mousemove, this);
@@ -70,10 +70,10 @@
       this.highlight_trace_path = this.context.getElementById('highlight_trace_path');
       this.highlight_trace_path.addEventListener('change', this.on_highlight_trace_path_change);
       this.highlight_trace_path.checked = false;
-      this.highlight_internal_angle_enabled = true;
+      this.highlight_internal_angle_enabled = false;
       this.highlight_internal_angle = this.context.getElementById('highlight_internal_angle');
       this.highlight_internal_angle.addEventListener('change', this.on_highlight_internal_angle_change);
-      this.highlight_internal_angle.checked = true;
+      this.highlight_internal_angle.checked = false;
       this.trace_cardioid_enabled = false;
       this.button_trace_cardioid = this.context.getElementById('button_trace_cardioid');
       this.button_trace_cardioid.addEventListener('click', this.on_button_trace_cardioid_click);
@@ -330,8 +330,8 @@
       var newend, newstart, w;
       if (this.zoom_mode) {
         w = this.get_zoom_window();
-        newstart = this.canvas_to_render_coord(w.x, w.y);
-        newend = this.canvas_to_render_coord(w.x + w.w, w.y + w.h);
+        newstart = this.canvas_to_complex(w.x, w.y);
+        newend = this.canvas_to_complex(w.x + w.w, w.y + w.h);
         this.renderbox.start = newstart;
         this.renderbox.end = newend;
         this.zoom_mode = false;
@@ -378,14 +378,14 @@
       };
     };
 
-    MandelIter.prototype.canvas_to_render_coord = function(x, y) {
+    MandelIter.prototype.canvas_to_complex = function(x, y) {
       return {
         r: this.renderbox.start.r + (x / this.graph_width) * (this.renderbox.end.r - this.renderbox.start.r),
         i: this.renderbox.start.i + (y / this.graph_height) * (this.renderbox.end.i - this.renderbox.start.i)
       };
     };
 
-    MandelIter.prototype.render_coord_to_canvas = function(z) {
+    MandelIter.prototype.complex_to_canvas = function(z) {
       return {
         x: ((z.r - this.renderbox.start.r) / (this.renderbox.end.r - this.renderbox.start.r)) * this.graph_width,
         y: ((z.i - this.renderbox.start.i) / (this.renderbox.end.i - this.renderbox.start.i)) * this.graph_height
@@ -417,7 +417,7 @@
 
     MandelIter.prototype.mandel_color_value = function(x, y) {
       var c, in_set, n, ref;
-      c = this.canvas_to_render_coord(x, y);
+      c = this.canvas_to_complex(x, y);
       ref = this.mandelbrot(c), n = ref[0], in_set = ref[1];
       if (in_set) {
         return 0;
@@ -490,7 +490,7 @@
       var isize, mx, my, osize, p, pos, ref, step;
       mx = c.x;
       my = c.y;
-      pos = this.canvas_to_render_coord(mx, my);
+      pos = this.canvas_to_complex(mx, my);
       this.loc_c.innerText = this.complex_to_string(pos);
       this.graph_ui_ctx.save();
       this.graph_ui_ctx.beginPath();
@@ -500,7 +500,7 @@
       ref = this.mandelbrot_orbit(pos, 200);
       for (step of ref) {
         if (step.n > 0) {
-          p = this.render_coord_to_canvas(step.z);
+          p = this.complex_to_canvas(step.z);
           this.graph_ui_ctx.lineTo(p.x, p.y);
           this.graph_ui_ctx.stroke();
           this.graph_ui_ctx.beginPath();
@@ -543,7 +543,7 @@
       };
       a.r = ((a.r * 0.5) * mcos) + 0.25 - (shrink * 0.5);
       a.i = (a.i * 0.5) * mcos;
-      return this.render_coord_to_canvas(a);
+      return this.complex_to_canvas(a);
     };
 
     MandelIter.prototype.draw_cardioid_trace_path = function() {
@@ -570,7 +570,7 @@
     };
 
     MandelIter.prototype.draw_cardioid_internal_angle = function() {
-      var angle, circle, deltai, deltar, m, origin, outer, radius, zorigin;
+      var angle, circle, m, origin, origin_tangent_point, outer, radius, zorigin, zorigin_tangent_point;
       angle = null;
       if (this.trace_cardioid_enabled) {
         angle = this.trace_angle;
@@ -578,7 +578,7 @@
         if (this.zoom_mode) {
 
         } else {
-          m = this.canvas_to_render_coord(this.orbit_mouse.x, this.orbit_mouse.y);
+          m = this.canvas_to_complex(this.orbit_mouse.x, this.orbit_mouse.y);
           angle = this.rectangular_to_polar_angle(m.r, m.i);
         }
       } else {
@@ -591,24 +591,25 @@
         r: 0,
         i: 0
       };
-      origin = this.render_coord_to_canvas(zorigin);
+      zorigin_tangent_point = {
+        r: 0.5,
+        i: 0
+      };
+      origin = this.complex_to_canvas(zorigin);
+      origin_tangent_point = this.complex_to_canvas(zorigin_tangent_point);
+      radius = (origin_tangent_point.x - origin.x) / 2;
       circle = this.polar_to_rectangular(0.5, angle);
-      radius = ((0.25 - this.renderbox.start.r) / (this.renderbox.end.r - this.renderbox.start.r)) * this.graph_width;
-      deltar = circle.r - zorigin.r;
-      deltai = circle.i - zorigin.i;
-      this.graph_ui_ctx.save();
-      this.graph_ui_ctx.lineWidth = 2;
-      radius = 20;
       this.loc_radius.innerText = this.fmtfloat.format(radius);
       this.loc_theta.innerText = this.fmtfloat.format(angle);
-      outer = this.render_coord_to_canvas(circle);
+      this.graph_ui_ctx.save();
+      this.graph_ui_ctx.lineWidth = 2;
+      outer = this.complex_to_canvas(circle);
       this.graph_ui_ctx.beginPath();
       this.graph_ui_ctx.moveTo(origin.x, origin.y);
       this.graph_ui_ctx.lineTo(outer.x, outer.y);
+      this.graph_ui_ctx.lineTo(this.trace_angle_on_cardioid.x, this.trace_angle_on_cardioid.y);
       this.graph_ui_ctx.strokeStyle = '#F67325';
       this.graph_ui_ctx.stroke();
-      this.graph_ui_ctx.fillStyle = 'rgba(0,222,222,0.8)';
-      this.graph_ui_ctx.fill();
       this.graph_ui_ctx.beginPath();
       this.graph_ui_ctx.arc(origin.x, origin.y, radius, 0, TAU, false);
       this.graph_ui_ctx.strokeStyle = '#00FF47';
@@ -617,13 +618,11 @@
       this.graph_ui_ctx.arc(outer.x, outer.y, radius, 0, TAU, false);
       this.graph_ui_ctx.strokeStyle = '#21CC50';
       this.graph_ui_ctx.stroke();
-      this.graph_ui_ctx.fillStyle = 'rgba(0,255,0,0.8)';
-      this.graph_ui_ctx.fill();
       return this.graph_ui_ctx.restore();
     };
 
     MandelIter.prototype.draw_cardioid_trace_animation = function() {
-      this.draw_orbit(this.cardioid(this.trace_angle));
+      this.draw_orbit(this.trace_angle_on_cardioid);
       this.trace_angle = this.trace_angle + this.trace_angle_step;
       if (this.trace_angle >= TAU) {
         return this.trace_angle = this.trace_angle - TAU;
@@ -648,6 +647,11 @@
     MandelIter.prototype.draw_ui = function() {
       this.draw_ui_scheduled = false;
       this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
+      if (this.trace_cardioid_enabled) {
+        this.trace_angle_on_cardioid = this.cardioid(this.trace_angle);
+      } else {
+        this.trace_angle_on_cardioid = this.orbit_mouse;
+      }
       if (this.highlight_trace_path_enabled) {
         this.draw_cardioid_trace_path();
       }

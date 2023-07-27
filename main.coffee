@@ -57,10 +57,10 @@ class MandelIter
     @highlight_trace_path.addEventListener('change', @on_highlight_trace_path_change)
     @highlight_trace_path.checked = false
 
-    @highlight_internal_angle_enabled = true
+    @highlight_internal_angle_enabled = false
     @highlight_internal_angle   = @context.getElementById('highlight_internal_angle')
     @highlight_internal_angle.addEventListener('change', @on_highlight_internal_angle_change)
-    @highlight_internal_angle.checked = true
+    @highlight_internal_angle.checked = false
 
     @trace_cardioid_enabled = false
     @button_trace_cardioid = @context.getElementById('button_trace_cardioid')
@@ -281,8 +281,8 @@ class MandelIter
   on_graph_click: (event) =>
     if @zoom_mode
       w = @get_zoom_window()
-      newstart = @canvas_to_render_coord(w.x, w.y)
-      newend   = @canvas_to_render_coord(w.x + w.w, w.y + w.h)
+      newstart = @canvas_to_complex(w.x, w.y)
+      newend   = @canvas_to_complex(w.x + w.w, w.y + w.h)
       @renderbox.start = newstart
       @renderbox.end   = newend
       @zoom_mode = false
@@ -318,12 +318,12 @@ class MandelIter
       r: radius * Math.cos(angle)
       i: radius * Math.sin(angle)
 
-  canvas_to_render_coord: (x, y) =>
+  canvas_to_complex: (x, y) =>
     return
       r: @renderbox.start.r + (x / @graph_width)  * (@renderbox.end.r - @renderbox.start.r)
       i: @renderbox.start.i + (y / @graph_height) * (@renderbox.end.i - @renderbox.start.i)
 
-  render_coord_to_canvas: (z) ->
+  complex_to_canvas: (z) ->
     return
       x: ((z.r - @renderbox.start.r) / (@renderbox.end.r - @renderbox.start.r)) * @graph_width
       y: ((z.i - @renderbox.start.i) / (@renderbox.end.i - @renderbox.start.i)) * @graph_height
@@ -348,7 +348,7 @@ class MandelIter
     [n, d <= 2]
 
   mandel_color_value: (x, y) ->
-    c = @canvas_to_render_coord(x, y)
+    c = @canvas_to_complex(x, y)
     [n, in_set] = @mandelbrot(c)
     if in_set
       0
@@ -403,7 +403,7 @@ class MandelIter
   draw_orbit: (c) ->
     mx = c.x
     my = c.y
-    pos = @canvas_to_render_coord(mx, my)
+    pos = @canvas_to_complex(mx, my)
     @loc_c.innerText = @complex_to_string(pos)
 
     @graph_ui_ctx.save()
@@ -416,7 +416,7 @@ class MandelIter
 
     for step from @mandelbrot_orbit(pos, 200)
       if step.n > 0
-        p = @render_coord_to_canvas(step.z)
+        p = @complex_to_canvas(step.z)
         @graph_ui_ctx.lineTo(p.x, p.y)
         @graph_ui_ctx.stroke()
         @graph_ui_ctx.beginPath()
@@ -469,7 +469,7 @@ class MandelIter
     a.r = ((a.r * 0.5) * mcos) + 0.25 - (shrink * 0.5)
     a.i = ((a.i * 0.5) * mcos)
 
-    @render_coord_to_canvas(a)
+    @complex_to_canvas(a)
 
   draw_cardioid_trace_path: ->
     @graph_ui_ctx.save()
@@ -508,54 +508,44 @@ class MandelIter
         # disabled while zooming
       else
         # show the internal angle of the mouse pointer
-        m = @canvas_to_render_coord(@orbit_mouse.x, @orbit_mouse.y)
+        m = @canvas_to_complex(@orbit_mouse.x, @orbit_mouse.y)
         angle = @rectangular_to_polar_angle(m.r, m.i)
     else
       # skip other/unknown modes
 
     return null unless angle?
 
-    zorigin = #@render_coord_to_canvas(r: 0, i: 0)
+    zorigin =
       r: 0
       i: 0
 
-    origin = @render_coord_to_canvas(zorigin)
+    zorigin_tangent_point =
+      r: 0.5
+      i: 0
+
+    origin = @complex_to_canvas(zorigin)
+    origin_tangent_point  = @complex_to_canvas(zorigin_tangent_point)
+
+    radius = (origin_tangent_point.x - origin.x) / 2
 
     # r = 0.5 = (inner circle radius 0.25)
     #         + (outer circle radius 0.25)
     circle = @polar_to_rectangular(0.5, angle)
-    radius = ((0.25 - @renderbox.start.r) / (@renderbox.end.r - @renderbox.start.r)) * @graph_width
-
-    deltar = circle.r - zorigin.r
-    deltai = circle.i - zorigin.i
-
-    #radius = Math.sqrt((deltar * deltar) + (deltai * deltai))
-
-    @graph_ui_ctx.save()
-
-    @graph_ui_ctx.lineWidth = 2
-
-    radius = 20
 
     @loc_radius.innerText = @fmtfloat.format(radius)
     @loc_theta.innerText  = @fmtfloat.format(angle)
 
-    outer = @render_coord_to_canvas(circle)
+    @graph_ui_ctx.save()
+    @graph_ui_ctx.lineWidth = 2
 
-    # if @pause_mode
-    #   console.log('-----------')
-    #   console.log('angle', angle, 'radius', radius, 'orbit_mouse', @orbit_mouse)
-    #   console.log('circle', circle)
-    #   console.log('inner', origin)
-    #   console.log('outer', outer)
+    outer = @complex_to_canvas(circle)
 
     @graph_ui_ctx.beginPath()
     @graph_ui_ctx.moveTo(origin.x, origin.y)
     @graph_ui_ctx.lineTo(outer.x, outer.y)
+    @graph_ui_ctx.lineTo(@trace_angle_on_cardioid.x, @trace_angle_on_cardioid.y)
     @graph_ui_ctx.strokeStyle = '#F67325'
     @graph_ui_ctx.stroke()
-    @graph_ui_ctx.fillStyle = 'rgba(0,222,222,0.8)'
-    @graph_ui_ctx.fill()
 
     @graph_ui_ctx.beginPath()
     @graph_ui_ctx.arc(origin.x, origin.y, radius, 0, TAU, false)
@@ -566,13 +556,11 @@ class MandelIter
     @graph_ui_ctx.arc(outer.x, outer.y, radius, 0, TAU, false)
     @graph_ui_ctx.strokeStyle = '#21CC50'
     @graph_ui_ctx.stroke()
-    @graph_ui_ctx.fillStyle = 'rgba(0,255,0,0.8)'
-    @graph_ui_ctx.fill()
 
     @graph_ui_ctx.restore()
 
   draw_cardioid_trace_animation: ->
-    @draw_orbit(@cardioid(@trace_angle))
+    @draw_orbit(@trace_angle_on_cardioid)
     @trace_angle = @trace_angle + @trace_angle_step
     @trace_angle = @trace_angle - TAU if @trace_angle >= TAU
 
@@ -597,6 +585,11 @@ class MandelIter
     @draw_ui_scheduled = false
 
     @graph_ui_ctx.clearRect(0, 0, @graph_width, @graph_height)
+
+    if @trace_cardioid_enabled
+      @trace_angle_on_cardioid = @cardioid(@trace_angle)
+    else
+      @trace_angle_on_cardioid = @orbit_mouse
 
     if @highlight_trace_path_enabled
       @draw_cardioid_trace_path()
