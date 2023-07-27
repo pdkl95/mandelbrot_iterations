@@ -19,6 +19,7 @@
       this.on_zoom_amount_change = bind(this.on_zoom_amount_change, this);
       this.on_button_zoom_click = bind(this.on_button_zoom_click, this);
       this.on_button_reset_click = bind(this.on_button_reset_click, this);
+      this.on_trace_slider_input = bind(this.on_trace_slider_input, this);
       this.on_button_trace_cardioid_click = bind(this.on_button_trace_cardioid_click, this);
       this.on_highlight_internal_angle_change = bind(this.on_highlight_internal_angle_change, this);
       this.on_highlight_trace_path_change = bind(this.on_highlight_trace_path_change, this);
@@ -74,6 +75,12 @@
       this.highlight_internal_angle = this.context.getElementById('highlight_internal_angle');
       this.highlight_internal_angle.addEventListener('change', this.on_highlight_internal_angle_change);
       this.highlight_internal_angle.checked = false;
+      this.trace_angle = 0;
+      this.trace_steps = 60 * 64;
+      this.trace_angle_step = TAU / this.trace_steps;
+      this.trace_slider = this.context.getElementById('trace_slider');
+      this.trace_slider.addEventListener('input', this.on_trace_slider_input);
+      this.trace_slider.value = this.trace_angle;
       this.trace_cardioid_enabled = false;
       this.button_trace_cardioid = this.context.getElementById('button_trace_cardioid');
       this.button_trace_cardioid.addEventListener('click', this.on_button_trace_cardioid_click);
@@ -98,9 +105,6 @@
       this.maxiter = 100;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
-      this.trace_angle = 0;
-      this.trace_steps = 60 * 64;
-      this.trace_angle_step = TAU / this.trace_steps;
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -272,6 +276,8 @@
       this.button_trace_cardioid.textContent = 'Stop';
       this.button_trace_cardioid.classList.remove('inactive');
       this.button_trace_cardioid.classList.add('enabled');
+      this.trace_slider.disabled = false;
+      this.trace_slider.value = this.trace_angle;
       return this.trace_cardioid_enabled = true;
     };
 
@@ -279,6 +285,7 @@
       this.button_trace_cardioid.textContent = 'Start';
       this.button_trace_cardioid.classList.remove('enabled');
       this.button_trace_cardioid.classList.add('inactive');
+      this.trace_slider.disabled = true;
       return this.trace_cardioid_enabled = false;
     };
 
@@ -292,6 +299,10 @@
 
     MandelIter.prototype.on_button_trace_cardioid_click = function(event) {
       return this.trace_cardioid_toggle();
+    };
+
+    MandelIter.prototype.on_trace_slider_input = function(event) {
+      return this.trace_angle = parseFloat(this.trace_slider.value);
     };
 
     MandelIter.prototype.on_button_reset_click = function(event) {
@@ -623,9 +634,12 @@
 
     MandelIter.prototype.draw_cardioid_trace_animation = function() {
       this.draw_orbit(this.trace_angle_on_cardioid);
-      this.trace_angle = this.trace_angle + this.trace_angle_step;
-      if (this.trace_angle >= TAU) {
-        return this.trace_angle = this.trace_angle - TAU;
+      if (!this.pause_mode) {
+        this.trace_angle = this.trace_angle + this.trace_angle_step;
+        if (this.trace_angle >= TAU) {
+          this.trace_angle = this.trace_angle - TAU;
+        }
+        return this.trace_slider.value = this.trace_angle;
       }
     };
 

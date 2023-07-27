@@ -172,6 +172,12 @@ footer {
   top: 2px;
 }
 
+.buttonbox input[type="range"] {
+  margin: 0px 3px;
+  position: relative;
+  top: 6px;
+}
+
 .optionbox.obleft {
   float: left;
 }

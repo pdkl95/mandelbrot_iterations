@@ -45,6 +45,7 @@ undivert(`style.css')
         <div class="tracebox buttonbox">
           <span class="title">Trace Animation</span>
           <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
+          <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled">
         </div>
 
         <div class="uioptbox buttonbox bbright">

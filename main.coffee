@@ -62,6 +62,14 @@ class MandelIter
     @highlight_internal_angle.addEventListener('change', @on_highlight_internal_angle_change)
     @highlight_internal_angle.checked = false
 
+    @trace_angle = 0
+    @trace_steps = 60 * 64
+    @trace_angle_step = TAU / @trace_steps
+
+    @trace_slider = @context.getElementById('trace_slider')
+    @trace_slider.addEventListener('input', @on_trace_slider_input)
+    @trace_slider.value = @trace_angle
+
     @trace_cardioid_enabled = false
     @button_trace_cardioid = @context.getElementById('button_trace_cardioid')
     @button_trace_cardioid.addEventListener('click', @on_button_trace_cardioid_click)
@@ -87,9 +95,6 @@ class MandelIter
     @maxiter = 100
     @reset_renderbox()
     @draw_ui_scheduled = false
-    @trace_angle = 0
-    @trace_steps = 60 * 64
-    @trace_angle_step = TAU / @trace_steps
 
     console.log('init() completed!')
 
@@ -236,12 +241,15 @@ class MandelIter
     @button_trace_cardioid.textContent = 'Stop'
     @button_trace_cardioid.classList.remove('inactive')
     @button_trace_cardioid.classList.add('enabled')
+    @trace_slider.disabled = false
+    @trace_slider.value = @trace_angle
     @trace_cardioid_enabled = true
 
   trace_cardioid_off: ->
     @button_trace_cardioid.textContent = 'Start'
     @button_trace_cardioid.classList.remove('enabled')
     @button_trace_cardioid.classList.add('inactive')
+    @trace_slider.disabled = true
     @trace_cardioid_enabled = false
 
   trace_cardioid_toggle: ->
@@ -252,6 +260,9 @@ class MandelIter
 
   on_button_trace_cardioid_click: (event) =>
     @trace_cardioid_toggle()
+
+  on_trace_slider_input: (event) =>
+    @trace_angle = parseFloat(@trace_slider.value)
 
   on_button_reset_click: (event) =>
     @reset_renderbox()
@@ -561,8 +572,10 @@ class MandelIter
 
   draw_cardioid_trace_animation: ->
     @draw_orbit(@trace_angle_on_cardioid)
-    @trace_angle = @trace_angle + @trace_angle_step
-    @trace_angle = @trace_angle - TAU if @trace_angle >= TAU
+    unless @pause_mode
+      @trace_angle = @trace_angle + @trace_angle_step
+      @trace_angle = @trace_angle - TAU if @trace_angle >= TAU
+      @trace_slider.value = @trace_angle
 
   draw_zoom: ->
     @graph_ui_ctx.save()
