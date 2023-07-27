@@ -102,6 +102,7 @@ undivert(`style.css')
     <footer></footer>
 
     <script type="text/javascript">
+undivert(`uioption.js')
 undivert(`main.js')
     </script>
   </body>

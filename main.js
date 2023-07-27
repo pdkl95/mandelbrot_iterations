@@ -1,8 +1,8 @@
 (function() {
-  var APP, MandelIter, TAU,
+  var MandelIter, TAU,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  APP = null;
+  window.APP = null;
 
   TAU = 2 * Math.PI;
 
@@ -21,8 +21,6 @@
       this.on_button_reset_click = bind(this.on_button_reset_click, this);
       this.on_trace_slider_input = bind(this.on_trace_slider_input, this);
       this.on_button_trace_cardioid_click = bind(this.on_button_trace_cardioid_click, this);
-      this.on_highlight_internal_angle_change = bind(this.on_highlight_internal_angle_change, this);
-      this.on_highlight_trace_path_change = bind(this.on_highlight_trace_path_change, this);
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
       this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
@@ -67,14 +65,10 @@
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
-      this.highlight_trace_path_enabled = false;
-      this.highlight_trace_path = this.context.getElementById('highlight_trace_path');
-      this.highlight_trace_path.addEventListener('change', this.on_highlight_trace_path_change);
-      this.highlight_trace_path.checked = false;
-      this.highlight_internal_angle_enabled = false;
-      this.highlight_internal_angle = this.context.getElementById('highlight_internal_angle');
-      this.highlight_internal_angle.addEventListener('change', this.on_highlight_internal_angle_change);
-      this.highlight_internal_angle.checked = false;
+      this.option = {
+        highlight_trace_path: new UI.BoolOption('highlight_trace_path', false),
+        highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
+      };
       this.trace_angle = 0;
       this.trace_steps = 60 * 64;
       this.trace_angle_step = TAU / this.trace_steps;
@@ -253,22 +247,6 @@
         return this.zoom_mode_off();
       } else {
         return this.zoom_mode_on();
-      }
-    };
-
-    MandelIter.prototype.on_highlight_trace_path_change = function(event) {
-      if (this.highlight_trace_path.checked) {
-        return this.highlight_trace_path_enabled = true;
-      } else {
-        return this.highlight_trace_path_enabled = false;
-      }
-    };
-
-    MandelIter.prototype.on_highlight_internal_angle_change = function(event) {
-      if (this.highlight_internal_angle.checked) {
-        return this.highlight_internal_angle_enabled = true;
-      } else {
-        return this.highlight_internal_angle_enabled = false;
       }
     };
 
@@ -666,10 +644,10 @@
       } else {
         this.trace_angle_on_cardioid = this.orbit_mouse;
       }
-      if (this.highlight_trace_path_enabled) {
+      if (this.option.highlight_trace_path.value) {
         this.draw_cardioid_trace_path();
       }
-      if (this.highlight_internal_angle_enabled) {
+      if (this.option.highlight_internal_angle.value) {
         this.draw_cardioid_internal_angle();
       }
       if (this.trace_cardioid_enabled) {
@@ -701,9 +679,9 @@
 
   document.addEventListener('DOMContentLoaded', (function(_this) {
     return function() {
-      APP = new MandelIter(document);
-      APP.init();
-      return APP.schedule_ui_draw();
+      window.APP = new MandelIter(document);
+      window.APP.init();
+      return window.APP.schedule_ui_draw();
     };
   })(this));
 

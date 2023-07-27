@@ -572,10 +572,161 @@ td.blank {
 
     <script type="text/javascript">
 (function() {
-  var APP, MandelIter, TAU,
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty,
+    slice = [].slice;
+
+  window.UI || (window.UI = {});
+
+  UI.Option = (function() {
+    Option.create_input_element = function(type, id) {
+      var el;
+      if (type == null) {
+        type = null;
+      }
+      if (id == null) {
+        id = null;
+      }
+      el = window.APP.context.createElement('input');
+      if (id != null) {
+        el.id = id;
+      }
+      if (type != null) {
+        el.type = type;
+      }
+      return el;
+    };
+
+    function Option(id1, _default, on_change_callback) {
+      this.id = id1;
+      this["default"] = _default;
+      this.on_change_callback = on_change_callback != null ? on_change_callback : null;
+      this.on_change = bind(this.on_change, this);
+      if (this.id instanceof Element) {
+        this.el = this.id;
+        this.id = this.el.id;
+      } else {
+        this.el = window.APP.context.getElementById(this.id);
+      }
+      this.set(this["default"]);
+      this.el.addEventListener('change', this.on_change);
+    }
+
+    Option.prototype.on_change = function(event) {
+      this.set(this.get(event.target));
+      if (this.on_change_callback != null) {
+        return this.on_change_callback(this.value);
+      }
+    };
+
+    Option.prototype.enable = function() {
+      return this.el.disabled = false;
+    };
+
+    Option.prototype.disable = function() {
+      return this.el.disabled = true;
+    };
+
+    Option.prototype.destroy = function() {
+      if (this.el != null) {
+        this.el.remove();
+      }
+      return this.el = null;
+    };
+
+    return Option;
+
+  })();
+
+  UI.BoolOption = (function(superClass) {
+    extend(BoolOption, superClass);
+
+    function BoolOption() {
+      return BoolOption.__super__.constructor.apply(this, arguments);
+    }
+
+    BoolOption.create = function() {
+      var id1, opt, parent, rest;
+      parent = arguments[0], id1 = arguments[1], rest = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+      this.id = id1;
+      opt = (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(UI.BoolOption, [UIOption.create_input_element('checkbox', this.id)].concat(slice.call(rest)), function(){});
+      parent.appendChild(opt.el);
+      return opt;
+    };
+
+    BoolOption.prototype.get = function(element) {
+      if (element == null) {
+        element = this.el;
+      }
+      return element.checked;
+    };
+
+    BoolOption.prototype.set = function(bool_value) {
+      this.value = (function() {
+        switch (bool_value) {
+          case 'true':
+            return true;
+          case 'false':
+            return false;
+          default:
+            return !!bool_value;
+        }
+      })();
+      return this.el.checked = this.value;
+    };
+
+    return BoolOption;
+
+  })(UI.Option);
+
+  UI.IntOption = (function(superClass) {
+    extend(IntOption, superClass);
+
+    function IntOption() {
+      return IntOption.__super__.constructor.apply(this, arguments);
+    }
+
+    IntOption.create = function() {
+      var id1, opt, parent, rest;
+      parent = arguments[0], id1 = arguments[1], rest = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+      this.id = id1;
+      opt = (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(UI.IntOption, [UIOption.create_input_element('number', this.id)].concat(slice.call(rest)), function(){});
+      parent.appendChild(opt.el);
+      return opt;
+    };
+
+    IntOption.prototype.get = function(element) {
+      if (element == null) {
+        element = this.el;
+      }
+      return parseInt(element.value);
+    };
+
+    IntOption.prototype.set = function(number_value) {
+      this.value = parseInt(number_value);
+      return this.el.value = this.value;
+    };
+
+    return IntOption;
+
+  })(UI.Option);
+
+}).call(this);
+
+(function() {
+  var MandelIter, TAU,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  APP = null;
+  window.APP = null;
 
   TAU = 2 * Math.PI;
 
@@ -594,8 +745,6 @@ td.blank {
       this.on_button_reset_click = bind(this.on_button_reset_click, this);
       this.on_trace_slider_input = bind(this.on_trace_slider_input, this);
       this.on_button_trace_cardioid_click = bind(this.on_button_trace_cardioid_click, this);
-      this.on_highlight_internal_angle_change = bind(this.on_highlight_internal_angle_change, this);
-      this.on_highlight_trace_path_change = bind(this.on_highlight_trace_path_change, this);
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
       this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
@@ -640,14 +789,10 @@ td.blank {
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
-      this.highlight_trace_path_enabled = false;
-      this.highlight_trace_path = this.context.getElementById('highlight_trace_path');
-      this.highlight_trace_path.addEventListener('change', this.on_highlight_trace_path_change);
-      this.highlight_trace_path.checked = false;
-      this.highlight_internal_angle_enabled = false;
-      this.highlight_internal_angle = this.context.getElementById('highlight_internal_angle');
-      this.highlight_internal_angle.addEventListener('change', this.on_highlight_internal_angle_change);
-      this.highlight_internal_angle.checked = false;
+      this.option = {
+        highlight_trace_path: new UI.BoolOption('highlight_trace_path', false),
+        highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
+      };
       this.trace_angle = 0;
       this.trace_steps = 60 * 64;
       this.trace_angle_step = TAU / this.trace_steps;
@@ -826,22 +971,6 @@ td.blank {
         return this.zoom_mode_off();
       } else {
         return this.zoom_mode_on();
-      }
-    };
-
-    MandelIter.prototype.on_highlight_trace_path_change = function(event) {
-      if (this.highlight_trace_path.checked) {
-        return this.highlight_trace_path_enabled = true;
-      } else {
-        return this.highlight_trace_path_enabled = false;
-      }
-    };
-
-    MandelIter.prototype.on_highlight_internal_angle_change = function(event) {
-      if (this.highlight_internal_angle.checked) {
-        return this.highlight_internal_angle_enabled = true;
-      } else {
-        return this.highlight_internal_angle_enabled = false;
       }
     };
 
@@ -1239,10 +1368,10 @@ td.blank {
       } else {
         this.trace_angle_on_cardioid = this.orbit_mouse;
       }
-      if (this.highlight_trace_path_enabled) {
+      if (this.option.highlight_trace_path.value) {
         this.draw_cardioid_trace_path();
       }
-      if (this.highlight_internal_angle_enabled) {
+      if (this.option.highlight_internal_angle.value) {
         this.draw_cardioid_internal_angle();
       }
       if (this.trace_cardioid_enabled) {
@@ -1274,9 +1403,9 @@ td.blank {
 
   document.addEventListener('DOMContentLoaded', (function(_this) {
     return function() {
-      APP = new MandelIter(document);
-      APP.init();
-      return APP.schedule_ui_draw();
+      window.APP = new MandelIter(document);
+      window.APP.init();
+      return window.APP.schedule_ui_draw();
     };
   })(this));
 

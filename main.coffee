@@ -1,4 +1,4 @@
-APP = null
+window.APP = null
 
 TAU = 2 * Math.PI
 
@@ -52,15 +52,9 @@ class MandelIter
     @button_zoom.addEventListener( 'click', @on_button_zoom_click)
     @zoom_amount.addEventListener('change', @on_zoom_amount_change)
 
-    @highlight_trace_path_enabled = false
-    @highlight_trace_path   = @context.getElementById('highlight_trace_path')
-    @highlight_trace_path.addEventListener('change', @on_highlight_trace_path_change)
-    @highlight_trace_path.checked = false
-
-    @highlight_internal_angle_enabled = false
-    @highlight_internal_angle   = @context.getElementById('highlight_internal_angle')
-    @highlight_internal_angle.addEventListener('change', @on_highlight_internal_angle_change)
-    @highlight_internal_angle.checked = false
+    @option =
+      highlight_trace_path:     new UI.BoolOption('highlight_trace_path', false)
+      highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
 
     @trace_angle = 0
     @trace_steps = 60 * 64
@@ -224,18 +218,6 @@ class MandelIter
       @zoom_mode_off()
     else
       @zoom_mode_on()
-
-  on_highlight_trace_path_change: (event) =>
-    if @highlight_trace_path.checked
-      @highlight_trace_path_enabled = true
-    else
-      @highlight_trace_path_enabled = false
-
-  on_highlight_internal_angle_change: (event) =>
-    if @highlight_internal_angle.checked
-      @highlight_internal_angle_enabled = true
-    else
-      @highlight_internal_angle_enabled = false
 
   trace_cardioid_on: ->
     @button_trace_cardioid.textContent = 'Stop'
@@ -604,10 +586,10 @@ class MandelIter
     else
       @trace_angle_on_cardioid = @orbit_mouse
 
-    if @highlight_trace_path_enabled
+    if @option.highlight_trace_path.value
       @draw_cardioid_trace_path()
 
-    if @highlight_internal_angle_enabled
+    if @option.highlight_internal_angle.value
       @draw_cardioid_internal_angle()
 
     # exclusive modes
@@ -631,6 +613,6 @@ class MandelIter
       @draw_ui_scheduled = true
 
 document.addEventListener 'DOMContentLoaded', =>
-  APP = new MandelIter(document)
-  APP.init()
-  APP.schedule_ui_draw()
+  window.APP = new MandelIter(document)
+  window.APP.init()
+  window.APP.schedule_ui_draw()
