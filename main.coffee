@@ -297,10 +297,10 @@ class MandelIter
       @pause_mode_toggle()
 
   on_mousemove: (event) =>
-    [ oldx, oldy ] = @mouse
-    cc = @graph_canvas.getBoundingClientRect()
-    @mouse.x = event.pageX - cc.left
-    @mouse.y = event.pageY - cc.top
+    oldx = @mouse.x
+    oldy = @mouse.y
+    @mouse.x = event.layerX
+    @mouse.y = event.layerY
     if (oldx != @mouse.x) or (oldy != @mouse.y)
       unless @pause_mode
         @orbit_mouse.x = @mouse.x

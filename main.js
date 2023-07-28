@@ -345,11 +345,11 @@
     };
 
     MandelIter.prototype.on_mousemove = function(event) {
-      var cc, oldx, oldy, ref;
-      ref = this.mouse, oldx = ref[0], oldy = ref[1];
-      cc = this.graph_canvas.getBoundingClientRect();
-      this.mouse.x = event.pageX - cc.left;
-      this.mouse.y = event.pageY - cc.top;
+      var oldx, oldy;
+      oldx = this.mouse.x;
+      oldy = this.mouse.y;
+      this.mouse.x = event.layerX;
+      this.mouse.y = event.layerY;
       if ((oldx !== this.mouse.x) || (oldy !== this.mouse.y)) {
         if (!this.pause_mode) {
           this.orbit_mouse.x = this.mouse.x;
