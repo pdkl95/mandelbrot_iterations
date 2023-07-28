@@ -1,6 +1,6 @@
 # Mandelbrot Iterations
 
-Interactive realtime rendering of the orbits of the [Mandelbrot Set](https://en.wikipedia.org/wiki/Mandelbrot_set)".
+Interactive realtime rendering of the orbits of the [Mandelbrot Set](https://en.wikipedia.org/wiki/Mandelbrot_set).
 
 ## Usage
 
