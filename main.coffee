@@ -56,8 +56,9 @@ class MandelIter
       highlight_trace_path:     new UI.BoolOption('highlight_trace_path', false)
       highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
       trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance')
-      trace_path: new UI.SelectOption('trace_path')
-      trace_speed: new UI.FloatOption('trace_speed')
+      trace_path:               new UI.SelectOption('trace_path')
+      trace_speed:              new UI.FloatOption('trace_speed')
+      orbit_draw_length:        new UI.IntOption('orbit_draw_length')
 
     @trace_angle = 0
     @trace_steps = 60 * 64
@@ -419,7 +420,7 @@ class MandelIter
 
     @graph_ui_ctx.moveTo(mx, my)
 
-    for step from @mandelbrot_orbit(pos, 200)
+    for step from @mandelbrot_orbit(pos, @option.orbit_draw_length.value)
       if step.n > 0
         p = @complex_to_canvas(step.z)
         @graph_ui_ctx.lineTo(p.x, p.y)

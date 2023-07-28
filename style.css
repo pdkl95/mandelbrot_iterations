@@ -257,7 +257,7 @@ td.blank {
 }
 
 .tt.ttright::before {
-   top: 165%;
+   top: 145%;
    left: 0;
 }
 
@@ -282,7 +282,7 @@ td.blank {
   bottom: -12px;
   left: 50%;
   margin-top: -8px;
-  border-width: 8px;
+  border-width: 10px;
   border-style: solid;
   border-color: transparent transparent #222 transparent;
 }

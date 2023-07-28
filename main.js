@@ -70,7 +70,8 @@
         highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false),
         trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance'),
         trace_path: new UI.SelectOption('trace_path'),
-        trace_speed: new UI.FloatOption('trace_speed')
+        trace_speed: new UI.FloatOption('trace_speed'),
+        orbit_draw_length: new UI.IntOption('orbit_draw_length')
       };
       this.trace_angle = 0;
       this.trace_steps = 60 * 64;
@@ -499,7 +500,7 @@
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
       this.graph_ui_ctx.moveTo(mx, my);
-      ref = this.mandelbrot_orbit(pos, 200);
+      ref = this.mandelbrot_orbit(pos, this.option.orbit_draw_length.value);
       for (step of ref) {
         if (step.n > 0) {
           p = this.complex_to_canvas(step.z);

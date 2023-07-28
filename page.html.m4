@@ -45,7 +45,7 @@ undivert(`style.css')
         <div class="tracebox buttonbox">
           <span class="title">Trace Animation</span>
           <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
-          <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled" autocomplete="off">
+          <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled" autocomplete="off" class="tt ttright" data-title="Changes the current position along the trace path.">
 
           <label for="trace_path">
             <select name="trace_path" id="trace_path" autocomplete="off">
@@ -56,7 +56,7 @@ undivert(`style.css')
         </div>
 
         <div class="uioptbox buttonbox bbright">
-          <span class="title tt ttleft">UI Options</span>
+          <span class="title">UI Options</span>
           <label for="show_tooltips" class="tt ttleft" data-title="Enable/Disable tooltips similar to what you are reading right now.">
             Show Tooltips
             <input id="show_tooltips" type="checkbox" checked="checked">
@@ -86,6 +86,19 @@ undivert(`style.css')
         <div class="optionbox obleft">
           <h3>Optional Features</h3>
           <table>
+            <tr>
+              <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Orbit Draw Length</th>
+              <td>
+                <input id="orbit_draw_length" type="number" value="200" min="0" max="1000" step="10" list="orbit_draw_length_defaults" autocomplete="off">
+                <datalist id="orbit_draw_length_defaults">
+                  <option value="200">200</option>
+                  <option value="150">150</option>
+                  <option value="100">100</option>
+                  <option value="50">50</option>
+                  <option value="5">5</option>
+                </datalist>
+              </td>
+            </tr>
             <tr>
               <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of the main cardioid.">Highlight Trace Path</th>
               <td>
