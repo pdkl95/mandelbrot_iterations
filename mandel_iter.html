@@ -502,7 +502,7 @@ td.blank {
         <div class="zoombox buttonbox">
           <spasn class="title">Zoom</span>
           <button id="button_reset" class="tt ttright" data-title="Reset back to original non-zoomed view.">Reset</button>
-          <select name="zoom_amount" id="zoom_amount">
+          <select name="zoom_amount" id="zoom_amount" autocomplete="off">
             <option value="0.8">80%</option>
             <option value="0.6" selected="selected">60%</option>
             <option value="0.4">40%</option>
@@ -514,7 +514,14 @@ td.blank {
         <div class="tracebox buttonbox">
           <span class="title">Trace Animation</span>
           <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
-          <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled">
+          <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled" autocomplete="off">
+
+          <label for="trace_path">
+            <select name="trace_path" id="trace_path" autocomplete="off">
+              <option value="main_cardioid" selected="selected">Main Cardioid</option>
+              <option value="main_bulb">Main Bulb</option>
+            </select>
+          </label>
         </div>
 
         <div class="uioptbox buttonbox bbright">
@@ -549,18 +556,29 @@ td.blank {
           <h3>Optional Features</h3>
           <table>
             <tr>
-              <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of thej main cardioid.">Highlight Trace Path</th>
+              <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of the main cardioid.">Highlight Trace Path</th>
               <td>
-                <input id="highlight_trace_path" type="checkbox">
+                <input id="highlight_trace_path" type="checkbox" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Show the construction of the internal angle of the cardioid. The period-n bulbs surrounding the Msndelbrot Set's ain cardioid attach at their fractional values that match their internal angle. TRe integer bulbes attach to the main cardioid at the inversse of their internal angle. E.g. the period-3 bulbs attaches at internal angles 1/3 TAU and 2/3 TAU.">Show Internal Angle</th>
               <td>
-                <input id="highlight_internal_angle" type="checkbox">
+                <input id="highlight_internal_angle" type="checkbox" autocomplete="off">
               </td>
             </tr>
             <tr>
+              <th class="tt ttright" data-title="Distance the trace path is moved away from the true edge of the Mandelbrot Set.">Trace Speed</th>
+              <td>
+                <input id="trace_speed" type="range" value="0.0016362461737446838" min="0" max="0.016362461737446838" step="any" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Distance the trace path is moved away from the true edge of the Mandelbrot Set.">Trace Edge Distance</th>
+              <td>
+                <input id="trace_path_edge_distance" value="0.015" autocomplete="off">
+              </td>
+            </tr>
           </table>
         </div>
 
@@ -598,9 +616,11 @@ td.blank {
       return el;
     };
 
-    function Option(id1, _default, on_change_callback) {
+    function Option(id1, default_value, on_change_callback) {
       this.id = id1;
-      this["default"] = _default;
+      if (default_value == null) {
+        default_value = null;
+      }
       this.on_change_callback = on_change_callback != null ? on_change_callback : null;
       this.on_change = bind(this.on_change, this);
       if (this.id instanceof Element) {
@@ -608,10 +628,22 @@ td.blank {
         this.id = this.el.id;
       } else {
         this.el = window.APP.context.getElementById(this.id);
+        if (this.el == null) {
+          console.log("ERROR - could not find element with id=\"" + this.id + "\"");
+        }
+      }
+      if (default_value != null) {
+        this["default"] = default_value;
+      } else {
+        this["default"] = this.detect_default_value();
       }
       this.set(this["default"]);
       this.el.addEventListener('change', this.on_change);
     }
+
+    Option.prototype.detect_default_value = function() {
+      return this.get();
+    };
 
     Option.prototype.on_change = function(event) {
       this.set(this.get(event.target));
@@ -720,6 +752,87 @@ td.blank {
 
   })(UI.Option);
 
+  UI.FloatOption = (function(superClass) {
+    extend(FloatOption, superClass);
+
+    function FloatOption() {
+      return FloatOption.__super__.constructor.apply(this, arguments);
+    }
+
+    FloatOption.create = function() {
+      var id1, opt, parent, rest;
+      parent = arguments[0], id1 = arguments[1], rest = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+      this.id = id1;
+      opt = (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(UI.IntOption, [UIOption.create_input_element(null, this.id)].concat(slice.call(rest)), function(){});
+      parent.appendChild(opt.el);
+      return opt;
+    };
+
+    FloatOption.prototype.get = function(element) {
+      if (element == null) {
+        element = this.el;
+      }
+      return parseFloat(element.value);
+    };
+
+    FloatOption.prototype.set = function(number_value) {
+      this.value = parseFloat(number_value);
+      return this.el.value = this.value;
+    };
+
+    return FloatOption;
+
+  })(UI.Option);
+
+  UI.SelectOption = (function(superClass) {
+    extend(SelectOption, superClass);
+
+    function SelectOption() {
+      return SelectOption.__super__.constructor.apply(this, arguments);
+    }
+
+    SelectOption.prototype.get = function(element) {
+      if (element == null) {
+        element = this.el;
+      }
+      return element.options[element.selectedIndex].value;
+    };
+
+    SelectOption.prototype.set = function(option_name) {
+      var opt;
+      opt = this.option_with_name(option_name);
+      if (opt != null) {
+        this.value = opt.value;
+        return opt.selected = true;
+      }
+    };
+
+    SelectOption.prototype.values = function() {
+      return this.el.options.map(function(x) {
+        return x.name;
+      });
+    };
+
+    SelectOption.prototype.option_with_name = function(name) {
+      var i, len, opt, ref;
+      ref = this.el.options;
+      for (i = 0, len = ref.length; i < len; i++) {
+        opt = ref[i];
+        if (opt.value === name) {
+          return opt;
+        }
+      }
+      return null;
+    };
+
+    return SelectOption;
+
+  })(UI.Option);
+
 }).call(this);
 
 (function() {
@@ -791,7 +904,10 @@ td.blank {
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
       this.option = {
         highlight_trace_path: new UI.BoolOption('highlight_trace_path', false),
-        highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
+        highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false),
+        trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance'),
+        trace_path: new UI.SelectOption('trace_path'),
+        trace_speed: new UI.FloatOption('trace_speed')
       };
       this.trace_angle = 0;
       this.trace_steps = 60 * 64;
@@ -799,7 +915,7 @@ td.blank {
       this.trace_slider = this.context.getElementById('trace_slider');
       this.trace_slider.addEventListener('input', this.on_trace_slider_input);
       this.trace_slider.value = this.trace_angle;
-      this.trace_cardioid_enabled = false;
+      this.trace_animation_enabled = false;
       this.button_trace_cardioid = this.context.getElementById('button_trace_cardioid');
       this.button_trace_cardioid.addEventListener('click', this.on_button_trace_cardioid_click);
       this.trace_cardioid_off();
@@ -823,6 +939,15 @@ td.blank {
       this.maxiter = 100;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
+      this.main_bulb_center = {
+        r: -1,
+        i: 0
+      };
+      this.main_bulb_tangent_point = {
+        r: -3 / 4,
+        i: 0
+      };
+      this.main_bulb_radius = this.main_bulb_tangent_point.r - this.main_bulb_center.r;
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -947,7 +1072,8 @@ td.blank {
     };
 
     MandelIter.prototype.pause_mode_off = function() {
-      return this.pause_mode = false;
+      this.pause_mode = false;
+      return this.schedule_ui_draw();
     };
 
     MandelIter.prototype.pause_mode_toggle = function() {
@@ -980,7 +1106,7 @@ td.blank {
       this.button_trace_cardioid.classList.add('enabled');
       this.trace_slider.disabled = false;
       this.trace_slider.value = this.trace_angle;
-      return this.trace_cardioid_enabled = true;
+      return this.trace_animation_enabled = true;
     };
 
     MandelIter.prototype.trace_cardioid_off = function() {
@@ -988,11 +1114,11 @@ td.blank {
       this.button_trace_cardioid.classList.remove('enabled');
       this.button_trace_cardioid.classList.add('inactive');
       this.trace_slider.disabled = true;
-      return this.trace_cardioid_enabled = false;
+      return this.trace_animation_enabled = false;
     };
 
     MandelIter.prototype.trace_cardioid_toggle = function() {
-      if (this.trace_cardioid_enabled) {
+      if (this.trace_animation_enabled) {
         return this.trace_cardioid_off();
       } else {
         return this.trace_cardioid_on();
@@ -1243,10 +1369,19 @@ td.blank {
       return this.graph_ui_ctx.restore();
     };
 
+    MandelIter.prototype.main_bulb = function(theta) {
+      var rec, shrink;
+      theta = theta % TAU;
+      shrink = this.option.trace_path_edge_distance.value;
+      rec = this.polar_to_rectangular(this.main_bulb_radius - shrink, theta);
+      rec.r += this.main_bulb_center.r;
+      return this.complex_to_canvas(rec);
+    };
+
     MandelIter.prototype.cardioid = function(theta) {
       var a, ct, mcos, shrink;
       theta = theta % TAU;
-      shrink = 0.015;
+      shrink = this.option.trace_path_edge_distance.value;
       ct = Math.cos(theta);
       mcos = 1 - ct;
       mcos = mcos * (1 - shrink);
@@ -1285,7 +1420,7 @@ td.blank {
     MandelIter.prototype.draw_cardioid_internal_angle = function() {
       var angle, circle, m, origin, origin_tangent_point, outer, radius, zorigin, zorigin_tangent_point;
       angle = null;
-      if (this.trace_cardioid_enabled) {
+      if (this.trace_animation_enabled) {
         angle = this.trace_angle;
       } else if (this.mouse_active) {
         if (this.zoom_mode) {
@@ -1320,7 +1455,7 @@ td.blank {
       this.graph_ui_ctx.beginPath();
       this.graph_ui_ctx.moveTo(origin.x, origin.y);
       this.graph_ui_ctx.lineTo(outer.x, outer.y);
-      this.graph_ui_ctx.lineTo(this.trace_angle_on_cardioid.x, this.trace_angle_on_cardioid.y);
+      this.graph_ui_ctx.lineTo(this.current_trace_location.x, this.current_trace_location.y);
       this.graph_ui_ctx.strokeStyle = '#F67325';
       this.graph_ui_ctx.stroke();
       this.graph_ui_ctx.beginPath();
@@ -1334,10 +1469,25 @@ td.blank {
       return this.graph_ui_ctx.restore();
     };
 
-    MandelIter.prototype.draw_cardioid_trace_animation = function() {
-      this.draw_orbit(this.trace_angle_on_cardioid);
+    MandelIter.prototype.draw_main_bulb_trace_path = function() {
+      var center, radius, tangent, ztangent;
+      center = this.complex_to_canvas(this.main_bulb_center);
+      ztangent = {
+        r: this.main_bulb_tangent_point.r - this.option.trace_path_edge_distance.value,
+        i: this.main_bulb_tangent_point.i
+      };
+      tangent = this.complex_to_canvas(ztangent);
+      radius = tangent.x - center.x;
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.arc(center.x, center.y, radius, 0, TAU, false);
+      this.graph_ui_ctx.strokeStyle = '#00FF47';
+      return this.graph_ui_ctx.stroke();
+    };
+
+    MandelIter.prototype.draw_trace_animation = function() {
+      this.draw_orbit(this.current_trace_location);
       if (!this.pause_mode) {
-        this.trace_angle = this.trace_angle + this.trace_angle_step;
+        this.trace_angle = this.trace_angle + this.option.trace_speed.value;
         if (this.trace_angle >= TAU) {
           this.trace_angle = this.trace_angle - TAU;
         }
@@ -1363,19 +1513,35 @@ td.blank {
     MandelIter.prototype.draw_ui = function() {
       this.draw_ui_scheduled = false;
       this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
-      if (this.trace_cardioid_enabled) {
-        this.trace_angle_on_cardioid = this.cardioid(this.trace_angle);
+      if (this.trace_animation_enabled) {
+        this.current_trace_location = (function() {
+          switch (this.option.trace_path.value) {
+            case 'main_cardioid':
+              return this.cardioid(this.trace_angle);
+            case 'main_bulb':
+              return this.main_bulb(this.trace_angle);
+          }
+        }).call(this);
       } else {
-        this.trace_angle_on_cardioid = this.orbit_mouse;
+        this.current_trace_location = this.orbit_mouse;
       }
       if (this.option.highlight_trace_path.value) {
-        this.draw_cardioid_trace_path();
+        switch (this.option.trace_path.value) {
+          case 'main_cardioid':
+            this.draw_cardioid_trace_path();
+            break;
+          case 'main_bulb':
+            this.draw_main_bulb_trace_path();
+        }
       }
       if (this.option.highlight_internal_angle.value) {
-        this.draw_cardioid_internal_angle();
+        switch (this.option.trace_path.value) {
+          case 'main_cardioid':
+            this.draw_cardioid_internal_angle();
+        }
       }
-      if (this.trace_cardioid_enabled) {
-        return this.draw_cardioid_trace_animation();
+      if (this.trace_animation_enabled) {
+        return this.draw_trace_animation();
       } else if (this.mouse_active) {
         if (this.zoom_mode) {
           return this.draw_zoom();
@@ -1387,7 +1553,9 @@ td.blank {
 
     MandelIter.prototype.draw_ui_callback = function() {
       APP.draw_ui();
-      return this.schedule_ui_draw();
+      if (!this.pause_mode) {
+        return this.schedule_ui_draw();
+      }
     };
 
     MandelIter.prototype.schedule_ui_draw = function() {

@@ -33,7 +33,7 @@ undivert(`style.css')
         <div class="zoombox buttonbox">
           <spasn class="title">Zoom</span>
           <button id="button_reset" class="tt ttright" data-title="Reset back to original non-zoomed view.">Reset</button>
-          <select name="zoom_amount" id="zoom_amount">
+          <select name="zoom_amount" id="zoom_amount" autocomplete="off">
             <option value="0.8">80%</option>
             <option value="0.6" selected="selected">60%</option>
             <option value="0.4">40%</option>
@@ -45,7 +45,14 @@ undivert(`style.css')
         <div class="tracebox buttonbox">
           <span class="title">Trace Animation</span>
           <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
-          <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled">
+          <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled" autocomplete="off">
+
+          <label for="trace_path">
+            <select name="trace_path" id="trace_path" autocomplete="off">
+              <option value="main_cardioid" selected="selected">Main Cardioid</option>
+              <option value="main_bulb">Main Bulb</option>
+            </select>
+          </label>
         </div>
 
         <div class="uioptbox buttonbox bbright">
@@ -80,18 +87,29 @@ undivert(`style.css')
           <h3>Optional Features</h3>
           <table>
             <tr>
-              <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of thej main cardioid.">Highlight Trace Path</th>
+              <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of the main cardioid.">Highlight Trace Path</th>
               <td>
-                <input id="highlight_trace_path" type="checkbox">
+                <input id="highlight_trace_path" type="checkbox" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Show the construction of the internal angle of the cardioid. The period-n bulbs surrounding the Msndelbrot Set's ain cardioid attach at their fractional values that match their internal angle. TRe integer bulbes attach to the main cardioid at the inversse of their internal angle. E.g. the period-3 bulbs attaches at internal angles 1/3 TAU and 2/3 TAU.">Show Internal Angle</th>
               <td>
-                <input id="highlight_internal_angle" type="checkbox">
+                <input id="highlight_internal_angle" type="checkbox" autocomplete="off">
               </td>
             </tr>
             <tr>
+              <th class="tt ttright" data-title="Distance the trace path is moved away from the true edge of the Mandelbrot Set.">Trace Speed</th>
+              <td>
+                <input id="trace_speed" type="range" value="0.0016362461737446838" min="0" max="0.016362461737446838" step="any" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Distance the trace path is moved away from the true edge of the Mandelbrot Set.">Trace Edge Distance</th>
+              <td>
+                <input id="trace_path_edge_distance" value="0.015" autocomplete="off">
+              </td>
+            </tr>
           </table>
         </div>
 

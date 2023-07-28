@@ -67,7 +67,10 @@
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
       this.option = {
         highlight_trace_path: new UI.BoolOption('highlight_trace_path', false),
-        highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
+        highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false),
+        trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance'),
+        trace_path: new UI.SelectOption('trace_path'),
+        trace_speed: new UI.FloatOption('trace_speed')
       };
       this.trace_angle = 0;
       this.trace_steps = 60 * 64;
@@ -75,7 +78,7 @@
       this.trace_slider = this.context.getElementById('trace_slider');
       this.trace_slider.addEventListener('input', this.on_trace_slider_input);
       this.trace_slider.value = this.trace_angle;
-      this.trace_cardioid_enabled = false;
+      this.trace_animation_enabled = false;
       this.button_trace_cardioid = this.context.getElementById('button_trace_cardioid');
       this.button_trace_cardioid.addEventListener('click', this.on_button_trace_cardioid_click);
       this.trace_cardioid_off();
@@ -99,6 +102,15 @@
       this.maxiter = 100;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
+      this.main_bulb_center = {
+        r: -1,
+        i: 0
+      };
+      this.main_bulb_tangent_point = {
+        r: -3 / 4,
+        i: 0
+      };
+      this.main_bulb_radius = this.main_bulb_tangent_point.r - this.main_bulb_center.r;
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -223,7 +235,8 @@
     };
 
     MandelIter.prototype.pause_mode_off = function() {
-      return this.pause_mode = false;
+      this.pause_mode = false;
+      return this.schedule_ui_draw();
     };
 
     MandelIter.prototype.pause_mode_toggle = function() {
@@ -256,7 +269,7 @@
       this.button_trace_cardioid.classList.add('enabled');
       this.trace_slider.disabled = false;
       this.trace_slider.value = this.trace_angle;
-      return this.trace_cardioid_enabled = true;
+      return this.trace_animation_enabled = true;
     };
 
     MandelIter.prototype.trace_cardioid_off = function() {
@@ -264,11 +277,11 @@
       this.button_trace_cardioid.classList.remove('enabled');
       this.button_trace_cardioid.classList.add('inactive');
       this.trace_slider.disabled = true;
-      return this.trace_cardioid_enabled = false;
+      return this.trace_animation_enabled = false;
     };
 
     MandelIter.prototype.trace_cardioid_toggle = function() {
-      if (this.trace_cardioid_enabled) {
+      if (this.trace_animation_enabled) {
         return this.trace_cardioid_off();
       } else {
         return this.trace_cardioid_on();
@@ -519,10 +532,19 @@
       return this.graph_ui_ctx.restore();
     };
 
+    MandelIter.prototype.main_bulb = function(theta) {
+      var rec, shrink;
+      theta = theta % TAU;
+      shrink = this.option.trace_path_edge_distance.value;
+      rec = this.polar_to_rectangular(this.main_bulb_radius - shrink, theta);
+      rec.r += this.main_bulb_center.r;
+      return this.complex_to_canvas(rec);
+    };
+
     MandelIter.prototype.cardioid = function(theta) {
       var a, ct, mcos, shrink;
       theta = theta % TAU;
-      shrink = 0.015;
+      shrink = this.option.trace_path_edge_distance.value;
       ct = Math.cos(theta);
       mcos = 1 - ct;
       mcos = mcos * (1 - shrink);
@@ -561,7 +583,7 @@
     MandelIter.prototype.draw_cardioid_internal_angle = function() {
       var angle, circle, m, origin, origin_tangent_point, outer, radius, zorigin, zorigin_tangent_point;
       angle = null;
-      if (this.trace_cardioid_enabled) {
+      if (this.trace_animation_enabled) {
         angle = this.trace_angle;
       } else if (this.mouse_active) {
         if (this.zoom_mode) {
@@ -596,7 +618,7 @@
       this.graph_ui_ctx.beginPath();
       this.graph_ui_ctx.moveTo(origin.x, origin.y);
       this.graph_ui_ctx.lineTo(outer.x, outer.y);
-      this.graph_ui_ctx.lineTo(this.trace_angle_on_cardioid.x, this.trace_angle_on_cardioid.y);
+      this.graph_ui_ctx.lineTo(this.current_trace_location.x, this.current_trace_location.y);
       this.graph_ui_ctx.strokeStyle = '#F67325';
       this.graph_ui_ctx.stroke();
       this.graph_ui_ctx.beginPath();
@@ -610,10 +632,25 @@
       return this.graph_ui_ctx.restore();
     };
 
-    MandelIter.prototype.draw_cardioid_trace_animation = function() {
-      this.draw_orbit(this.trace_angle_on_cardioid);
+    MandelIter.prototype.draw_main_bulb_trace_path = function() {
+      var center, radius, tangent, ztangent;
+      center = this.complex_to_canvas(this.main_bulb_center);
+      ztangent = {
+        r: this.main_bulb_tangent_point.r - this.option.trace_path_edge_distance.value,
+        i: this.main_bulb_tangent_point.i
+      };
+      tangent = this.complex_to_canvas(ztangent);
+      radius = tangent.x - center.x;
+      this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.arc(center.x, center.y, radius, 0, TAU, false);
+      this.graph_ui_ctx.strokeStyle = '#00FF47';
+      return this.graph_ui_ctx.stroke();
+    };
+
+    MandelIter.prototype.draw_trace_animation = function() {
+      this.draw_orbit(this.current_trace_location);
       if (!this.pause_mode) {
-        this.trace_angle = this.trace_angle + this.trace_angle_step;
+        this.trace_angle = this.trace_angle + this.option.trace_speed.value;
         if (this.trace_angle >= TAU) {
           this.trace_angle = this.trace_angle - TAU;
         }
@@ -639,19 +676,35 @@
     MandelIter.prototype.draw_ui = function() {
       this.draw_ui_scheduled = false;
       this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
-      if (this.trace_cardioid_enabled) {
-        this.trace_angle_on_cardioid = this.cardioid(this.trace_angle);
+      if (this.trace_animation_enabled) {
+        this.current_trace_location = (function() {
+          switch (this.option.trace_path.value) {
+            case 'main_cardioid':
+              return this.cardioid(this.trace_angle);
+            case 'main_bulb':
+              return this.main_bulb(this.trace_angle);
+          }
+        }).call(this);
       } else {
-        this.trace_angle_on_cardioid = this.orbit_mouse;
+        this.current_trace_location = this.orbit_mouse;
       }
       if (this.option.highlight_trace_path.value) {
-        this.draw_cardioid_trace_path();
+        switch (this.option.trace_path.value) {
+          case 'main_cardioid':
+            this.draw_cardioid_trace_path();
+            break;
+          case 'main_bulb':
+            this.draw_main_bulb_trace_path();
+        }
       }
       if (this.option.highlight_internal_angle.value) {
-        this.draw_cardioid_internal_angle();
+        switch (this.option.trace_path.value) {
+          case 'main_cardioid':
+            this.draw_cardioid_internal_angle();
+        }
       }
-      if (this.trace_cardioid_enabled) {
-        return this.draw_cardioid_trace_animation();
+      if (this.trace_animation_enabled) {
+        return this.draw_trace_animation();
       } else if (this.mouse_active) {
         if (this.zoom_mode) {
           return this.draw_zoom();
@@ -663,7 +716,9 @@
 
     MandelIter.prototype.draw_ui_callback = function() {
       APP.draw_ui();
-      return this.schedule_ui_draw();
+      if (!this.pause_mode) {
+        return this.schedule_ui_draw();
+      }
     };
 
     MandelIter.prototype.schedule_ui_draw = function() {

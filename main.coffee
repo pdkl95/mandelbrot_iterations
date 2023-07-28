@@ -55,6 +55,9 @@ class MandelIter
     @option =
       highlight_trace_path:     new UI.BoolOption('highlight_trace_path', false)
       highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
+      trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance')
+      trace_path: new UI.SelectOption('trace_path')
+      trace_speed: new UI.FloatOption('trace_speed')
 
     @trace_angle = 0
     @trace_steps = 60 * 64
@@ -64,7 +67,7 @@ class MandelIter
     @trace_slider.addEventListener('input', @on_trace_slider_input)
     @trace_slider.value = @trace_angle
 
-    @trace_cardioid_enabled = false
+    @trace_animation_enabled = false
     @button_trace_cardioid = @context.getElementById('button_trace_cardioid')
     @button_trace_cardioid.addEventListener('click', @on_button_trace_cardioid_click)
     @trace_cardioid_off()
@@ -89,6 +92,14 @@ class MandelIter
     @maxiter = 100
     @reset_renderbox()
     @draw_ui_scheduled = false
+
+    @main_bulb_center =
+      r: -1
+      i:  0
+    @main_bulb_tangent_point =
+      r: -3/4
+      i:  0
+    @main_bulb_radius = @main_bulb_tangent_point.r - @main_bulb_center.r
 
     console.log('init() completed!')
 
@@ -200,6 +211,7 @@ class MandelIter
 
   pause_mode_off: ->
     @pause_mode = false
+    @schedule_ui_draw()
 
   pause_mode_toggle: ->
     if @pause_mode
@@ -225,17 +237,17 @@ class MandelIter
     @button_trace_cardioid.classList.add('enabled')
     @trace_slider.disabled = false
     @trace_slider.value = @trace_angle
-    @trace_cardioid_enabled = true
+    @trace_animation_enabled = true
 
   trace_cardioid_off: ->
     @button_trace_cardioid.textContent = 'Start'
     @button_trace_cardioid.classList.remove('enabled')
     @button_trace_cardioid.classList.add('inactive')
     @trace_slider.disabled = true
-    @trace_cardioid_enabled = false
+    @trace_animation_enabled = false
 
   trace_cardioid_toggle: ->
-    if @trace_cardioid_enabled
+    if @trace_animation_enabled
       @trace_cardioid_off()
     else
       @trace_cardioid_on()
@@ -444,11 +456,20 @@ class MandelIter
 
     @graph_ui_ctx.restore()
 
+  main_bulb: (theta) ->
+    theta = theta % TAU
+
+    shrink = @option.trace_path_edge_distance.value
+    rec = @polar_to_rectangular(@main_bulb_radius - shrink, theta)
+    rec.r += @main_bulb_center.r
+
+    @complex_to_canvas(rec)
+
   cardioid: (theta) ->
     theta = theta % TAU
 
-    shrink = 0.015
-    #shrink = 0.1
+    #shrink = 0.015
+    shrink = @option.trace_path_edge_distance.value
 
     ct = Math.cos(theta)
     mcos = 1 - ct
@@ -494,7 +515,7 @@ class MandelIter
   draw_cardioid_internal_angle: ->
     angle = null
 
-    if @trace_cardioid_enabled
+    if @trace_animation_enabled
       angle = @trace_angle
     else if @mouse_active
       if @zoom_mode
@@ -536,7 +557,7 @@ class MandelIter
     @graph_ui_ctx.beginPath()
     @graph_ui_ctx.moveTo(origin.x, origin.y)
     @graph_ui_ctx.lineTo(outer.x, outer.y)
-    @graph_ui_ctx.lineTo(@trace_angle_on_cardioid.x, @trace_angle_on_cardioid.y)
+    @graph_ui_ctx.lineTo(@current_trace_location.x, @current_trace_location.y)
     @graph_ui_ctx.strokeStyle = '#F67325'
     @graph_ui_ctx.stroke()
 
@@ -552,10 +573,24 @@ class MandelIter
 
     @graph_ui_ctx.restore()
 
-  draw_cardioid_trace_animation: ->
-    @draw_orbit(@trace_angle_on_cardioid)
+  draw_main_bulb_trace_path: ->
+    center  = @complex_to_canvas(@main_bulb_center)
+    ztangent =
+      r: @main_bulb_tangent_point.r - @option.trace_path_edge_distance.value
+      i: @main_bulb_tangent_point.i
+    tangent = @complex_to_canvas(ztangent)
+    radius = tangent.x - center.x
+
+    @graph_ui_ctx.beginPath()
+    @graph_ui_ctx.arc(center.x, center.y, radius, 0, TAU, false)
+    @graph_ui_ctx.strokeStyle = '#00FF47'
+    @graph_ui_ctx.stroke()
+
+  draw_trace_animation: ->
+    @draw_orbit(@current_trace_location)
+
     unless @pause_mode
-      @trace_angle = @trace_angle + @trace_angle_step
+      @trace_angle = @trace_angle + @option.trace_speed.value
       @trace_angle = @trace_angle - TAU if @trace_angle >= TAU
       @trace_slider.value = @trace_angle
 
@@ -581,21 +616,27 @@ class MandelIter
 
     @graph_ui_ctx.clearRect(0, 0, @graph_width, @graph_height)
 
-    if @trace_cardioid_enabled
-      @trace_angle_on_cardioid = @cardioid(@trace_angle)
+    if @trace_animation_enabled
+      @current_trace_location =
+        switch @option.trace_path.value
+          when 'main_cardioid' then @cardioid(@trace_angle)
+          when 'main_bulb'     then @main_bulb(@trace_angle)
     else
-      @trace_angle_on_cardioid = @orbit_mouse
+      @current_trace_location = @orbit_mouse
 
     if @option.highlight_trace_path.value
-      @draw_cardioid_trace_path()
+      switch @option.trace_path.value
+        when 'main_cardioid' then @draw_cardioid_trace_path()
+        when 'main_bulb'     then @draw_main_bulb_trace_path()
 
     if @option.highlight_internal_angle.value
-      @draw_cardioid_internal_angle()
+      switch @option.trace_path.value
+        when 'main_cardioid' then @draw_cardioid_internal_angle()
 
     # exclusive modes
 
-    if @trace_cardioid_enabled
-      @draw_cardioid_trace_animation()
+    if @trace_animation_enabled
+      @draw_trace_animation()
 
     else if @mouse_active
       if @zoom_mode
@@ -605,7 +646,7 @@ class MandelIter
 
   draw_ui_callback: =>
     APP.draw_ui()
-    @schedule_ui_draw()
+    @schedule_ui_draw() unless @pause_mode
 
   schedule_ui_draw: =>
     unless @draw_ui_scheduled

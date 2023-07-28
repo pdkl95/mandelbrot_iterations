@@ -25,9 +25,11 @@
       return el;
     };
 
-    function Option(id1, _default, on_change_callback) {
+    function Option(id1, default_value, on_change_callback) {
       this.id = id1;
-      this["default"] = _default;
+      if (default_value == null) {
+        default_value = null;
+      }
       this.on_change_callback = on_change_callback != null ? on_change_callback : null;
       this.on_change = bind(this.on_change, this);
       if (this.id instanceof Element) {
@@ -35,10 +37,22 @@
         this.id = this.el.id;
       } else {
         this.el = window.APP.context.getElementById(this.id);
+        if (this.el == null) {
+          console.log("ERROR - could not find element with id=\"" + this.id + "\"");
+        }
+      }
+      if (default_value != null) {
+        this["default"] = default_value;
+      } else {
+        this["default"] = this.detect_default_value();
       }
       this.set(this["default"]);
       this.el.addEventListener('change', this.on_change);
     }
+
+    Option.prototype.detect_default_value = function() {
+      return this.get();
+    };
 
     Option.prototype.on_change = function(event) {
       this.set(this.get(event.target));
@@ -144,6 +158,87 @@
     };
 
     return IntOption;
+
+  })(UI.Option);
+
+  UI.FloatOption = (function(superClass) {
+    extend(FloatOption, superClass);
+
+    function FloatOption() {
+      return FloatOption.__super__.constructor.apply(this, arguments);
+    }
+
+    FloatOption.create = function() {
+      var id1, opt, parent, rest;
+      parent = arguments[0], id1 = arguments[1], rest = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+      this.id = id1;
+      opt = (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(UI.IntOption, [UIOption.create_input_element(null, this.id)].concat(slice.call(rest)), function(){});
+      parent.appendChild(opt.el);
+      return opt;
+    };
+
+    FloatOption.prototype.get = function(element) {
+      if (element == null) {
+        element = this.el;
+      }
+      return parseFloat(element.value);
+    };
+
+    FloatOption.prototype.set = function(number_value) {
+      this.value = parseFloat(number_value);
+      return this.el.value = this.value;
+    };
+
+    return FloatOption;
+
+  })(UI.Option);
+
+  UI.SelectOption = (function(superClass) {
+    extend(SelectOption, superClass);
+
+    function SelectOption() {
+      return SelectOption.__super__.constructor.apply(this, arguments);
+    }
+
+    SelectOption.prototype.get = function(element) {
+      if (element == null) {
+        element = this.el;
+      }
+      return element.options[element.selectedIndex].value;
+    };
+
+    SelectOption.prototype.set = function(option_name) {
+      var opt;
+      opt = this.option_with_name(option_name);
+      if (opt != null) {
+        this.value = opt.value;
+        return opt.selected = true;
+      }
+    };
+
+    SelectOption.prototype.values = function() {
+      return this.el.options.map(function(x) {
+        return x.name;
+      });
+    };
+
+    SelectOption.prototype.option_with_name = function(name) {
+      var i, len, opt, ref;
+      ref = this.el.options;
+      for (i = 0, len = ref.length; i < len; i++) {
+        opt = ref[i];
+        if (opt.value === name) {
+          return opt;
+        }
+      }
+      return null;
+    };
+
+    return SelectOption;
 
   })(UI.Option);
 
