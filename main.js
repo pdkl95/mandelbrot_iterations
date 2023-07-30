@@ -294,7 +294,8 @@
     };
 
     MandelIter.prototype.on_trace_slider_input = function(event) {
-      return this.trace_angle = parseFloat(this.trace_slider.value);
+      this.trace_angle = parseFloat(this.trace_slider.value);
+      return this.schedule_ui_draw();
     };
 
     MandelIter.prototype.on_button_reset_click = function(event) {

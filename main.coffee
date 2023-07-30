@@ -258,6 +258,7 @@ class MandelIter
 
   on_trace_slider_input: (event) =>
     @trace_angle = parseFloat(@trace_slider.value)
+    @schedule_ui_draw()
 
   on_button_reset_click: (event) =>
     @reset_renderbox()
