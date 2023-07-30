@@ -60,6 +60,9 @@ class MandelIter
       trace_speed:              new UI.FloatOption('trace_speed')
       orbit_draw_length:        new UI.IntOption('orbit_draw_length')
 
+    @pointer_angle = 0
+    @pointer_angle_step = TAU/96
+
     @trace_angle = 0
     @trace_steps = 60 * 64
     @trace_angle_step = TAU / @trace_steps
@@ -429,10 +432,15 @@ class MandelIter
         @graph_ui_ctx.beginPath()
         @graph_ui_ctx.moveTo(p.x, p.y)
 
-    isize = 3
-    osize = isize * 3
+    isize = 3.2
+    osize = isize * 3.4
 
     @graph_ui_ctx.beginPath()
+    @graph_ui_ctx.save()
+
+    @graph_ui_ctx.translate(mx, my)
+    @graph_ui_ctx.rotate(@pointer_angle)
+    @graph_ui_ctx.translate(-1 * mx, -1 * my)
 
     @graph_ui_ctx.moveTo(mx + isize, my + isize)  # BR
     @graph_ui_ctx.lineTo(mx + osize, my)          #    R
@@ -444,17 +452,18 @@ class MandelIter
     @graph_ui_ctx.lineTo(mx,         my + osize)  #    B
     @graph_ui_ctx.lineTo(mx + isize, my + isize)  # BR
 
-
-    @graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.1)'
+    @graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.2)'
     @graph_ui_ctx.fill()
 
-    @graph_ui_ctx.lineWidth = 2
-    @graph_ui_ctx.strokeStyle = '#bb7e24'
+    @graph_ui_ctx.lineWidth = 1
+    @graph_ui_ctx.strokeStyle = '#F09456'
     @graph_ui_ctx.stroke()
 
-    @graph_ui_ctx.lineWidth = 2
-    @graph_ui_ctx.strokeStyle = '#d5c312'
+    @graph_ui_ctx.lineWidth = 1
+    @graph_ui_ctx.strokeStyle = '#F2CE72'
     @graph_ui_ctx.stroke()
+
+    @graph_ui_ctx.restore()
 
     @graph_ui_ctx.restore()
 
@@ -617,6 +626,9 @@ class MandelIter
     @draw_ui_scheduled = false
 
     @graph_ui_ctx.clearRect(0, 0, @graph_width, @graph_height)
+
+    @pointer_angle = @pointer_angle + @pointer_angle_step
+    @pointer_angle = @pointer_angle - TAU if @pointer_angle >= TAU
 
     if @trace_animation_enabled
       @current_trace_location =

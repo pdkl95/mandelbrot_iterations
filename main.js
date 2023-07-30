@@ -73,6 +73,8 @@
         trace_speed: new UI.FloatOption('trace_speed'),
         orbit_draw_length: new UI.IntOption('orbit_draw_length')
       };
+      this.pointer_angle = 0;
+      this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
       this.trace_steps = 60 * 64;
       this.trace_angle_step = TAU / this.trace_steps;
@@ -511,9 +513,13 @@
           this.graph_ui_ctx.moveTo(p.x, p.y);
         }
       }
-      isize = 3;
-      osize = isize * 3;
+      isize = 3.2;
+      osize = isize * 3.4;
       this.graph_ui_ctx.beginPath();
+      this.graph_ui_ctx.save();
+      this.graph_ui_ctx.translate(mx, my);
+      this.graph_ui_ctx.rotate(this.pointer_angle);
+      this.graph_ui_ctx.translate(-1 * mx, -1 * my);
       this.graph_ui_ctx.moveTo(mx + isize, my + isize);
       this.graph_ui_ctx.lineTo(mx + osize, my);
       this.graph_ui_ctx.lineTo(mx + isize, my - isize);
@@ -523,14 +529,15 @@
       this.graph_ui_ctx.lineTo(mx - isize, my + isize);
       this.graph_ui_ctx.lineTo(mx, my + osize);
       this.graph_ui_ctx.lineTo(mx + isize, my + isize);
-      this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.1)';
+      this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.2)';
       this.graph_ui_ctx.fill();
-      this.graph_ui_ctx.lineWidth = 2;
-      this.graph_ui_ctx.strokeStyle = '#bb7e24';
+      this.graph_ui_ctx.lineWidth = 1;
+      this.graph_ui_ctx.strokeStyle = '#F09456';
       this.graph_ui_ctx.stroke();
-      this.graph_ui_ctx.lineWidth = 2;
-      this.graph_ui_ctx.strokeStyle = '#d5c312';
+      this.graph_ui_ctx.lineWidth = 1;
+      this.graph_ui_ctx.strokeStyle = '#F2CE72';
       this.graph_ui_ctx.stroke();
+      this.graph_ui_ctx.restore();
       return this.graph_ui_ctx.restore();
     };
 
@@ -678,6 +685,10 @@
     MandelIter.prototype.draw_ui = function() {
       this.draw_ui_scheduled = false;
       this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
+      this.pointer_angle = this.pointer_angle + this.pointer_angle_step;
+      if (this.pointer_angle >= TAU) {
+        this.pointer_angle = this.pointer_angle - TAU;
+      }
       if (this.trace_animation_enabled) {
         this.current_trace_location = (function() {
           switch (this.option.trace_path.value) {
