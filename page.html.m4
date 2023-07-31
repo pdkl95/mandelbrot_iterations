@@ -83,8 +83,8 @@ undivert(`style.css')
           </table>
         </div>
 
-        <div class="optionbox obleft">
-          <h3>Optional Features</h3>
+        <div id="orbit_options" class="optionbox obleft">
+          <h3>Orbit Options</h3>
           <table>
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Orbit Draw Length</th>
@@ -99,6 +99,30 @@ undivert(`style.css')
                 </datalist>
               </td>
             </tr>
+            <tr>
+              <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Draw Lines</th>
+              <td>
+                <input id="orbit_draw_lines" type="checkbox" checked="checked">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Draw Points</th>
+              <td>
+                <input id="orbit_draw_points" type="checkbox" checked="checked">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Point Size</th>
+              <td>
+                <input id="orbit_point_size" type="number" min="0" max="20" step="0.25" value="2">
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div id="trace_options" class="optionbox obleft">
+          <h3>Trace Options</h3>
+          <table>
             <tr>
               <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of the main cardioid.">Highlight Trace Path</th>
               <td>

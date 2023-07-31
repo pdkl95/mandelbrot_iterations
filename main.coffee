@@ -59,6 +59,9 @@ class MandelIter
       trace_path:               new UI.SelectOption('trace_path')
       trace_speed:              new UI.FloatOption('trace_speed')
       orbit_draw_length:        new UI.IntOption('orbit_draw_length')
+      orbit_draw_lines:         new UI.BoolOption('orbit_draw_lines', true)
+      orbit_draw_points:        new UI.BoolOption('orbit_draw_points', true)
+      orbit_point_size:         new UI.FloatOption('orbit_point_size', 2)
 
     @pointer_angle = 0
     @pointer_angle_step = TAU/96
@@ -416,21 +419,37 @@ class MandelIter
     pos = @canvas_to_complex(mx, my)
     @loc_c.innerText = @complex_to_string(pos)
 
+    draw_lines  = @option.orbit_draw_lines.value
+    draw_points = @option.orbit_draw_points.value
+    point_size  = @option.orbit_point_size.value
+
     @graph_ui_ctx.save()
 
-    @graph_ui_ctx.beginPath()
     @graph_ui_ctx.lineWidth = 2
     @graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)'
+    @graph_ui_ctx.fillStyle   = 'rgba(255,249,187, 0.6)'
 
-    @graph_ui_ctx.moveTo(mx, my)
+    if draw_lines
+      @graph_ui_ctx.beginPath()
+      @graph_ui_ctx.moveTo(mx, my)
 
-    for step from @mandelbrot_orbit(pos, @option.orbit_draw_length.value)
-      if step.n > 0
-        p = @complex_to_canvas(step.z)
-        @graph_ui_ctx.lineTo(p.x, p.y)
-        @graph_ui_ctx.stroke()
-        @graph_ui_ctx.beginPath()
-        @graph_ui_ctx.moveTo(p.x, p.y)
+    if draw_lines || draw_points
+      for step from @mandelbrot_orbit(pos, @option.orbit_draw_length.value)
+        if step.n > 0
+          p = @complex_to_canvas(step.z)
+
+          if draw_lines
+            @graph_ui_ctx.lineTo(p.x, p.y)
+            @graph_ui_ctx.stroke()
+
+          if draw_points
+            @graph_ui_ctx.beginPath()
+            @graph_ui_ctx.arc(p.x, p.y, point_size, 0, TAU, false)
+            @graph_ui_ctx.fill()
+
+          if draw_lines
+            @graph_ui_ctx.beginPath()
+            @graph_ui_ctx.moveTo(p.x, p.y)
 
     isize = 3.2
     osize = isize * 3.4

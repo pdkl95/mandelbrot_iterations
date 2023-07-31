@@ -71,7 +71,10 @@
         trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance'),
         trace_path: new UI.SelectOption('trace_path'),
         trace_speed: new UI.FloatOption('trace_speed'),
-        orbit_draw_length: new UI.IntOption('orbit_draw_length')
+        orbit_draw_length: new UI.IntOption('orbit_draw_length'),
+        orbit_draw_lines: new UI.BoolOption('orbit_draw_lines', true),
+        orbit_draw_points: new UI.BoolOption('orbit_draw_points', true),
+        orbit_point_size: new UI.FloatOption('orbit_point_size', 2)
       };
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
@@ -493,24 +496,41 @@
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
-      var isize, mx, my, osize, p, pos, ref, step;
+      var draw_lines, draw_points, isize, mx, my, osize, p, point_size, pos, ref, step;
       mx = c.x;
       my = c.y;
       pos = this.canvas_to_complex(mx, my);
       this.loc_c.innerText = this.complex_to_string(pos);
+      draw_lines = this.option.orbit_draw_lines.value;
+      draw_points = this.option.orbit_draw_points.value;
+      point_size = this.option.orbit_point_size.value;
       this.graph_ui_ctx.save();
-      this.graph_ui_ctx.beginPath();
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
-      this.graph_ui_ctx.moveTo(mx, my);
-      ref = this.mandelbrot_orbit(pos, this.option.orbit_draw_length.value);
-      for (step of ref) {
-        if (step.n > 0) {
-          p = this.complex_to_canvas(step.z);
-          this.graph_ui_ctx.lineTo(p.x, p.y);
-          this.graph_ui_ctx.stroke();
-          this.graph_ui_ctx.beginPath();
-          this.graph_ui_ctx.moveTo(p.x, p.y);
+      this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.6)';
+      if (draw_lines) {
+        this.graph_ui_ctx.beginPath();
+        this.graph_ui_ctx.moveTo(mx, my);
+      }
+      if (draw_lines || draw_points) {
+        ref = this.mandelbrot_orbit(pos, this.option.orbit_draw_length.value);
+        for (step of ref) {
+          if (step.n > 0) {
+            p = this.complex_to_canvas(step.z);
+            if (draw_lines) {
+              this.graph_ui_ctx.lineTo(p.x, p.y);
+              this.graph_ui_ctx.stroke();
+            }
+            if (draw_points) {
+              this.graph_ui_ctx.beginPath();
+              this.graph_ui_ctx.arc(p.x, p.y, point_size, 0, TAU, false);
+              this.graph_ui_ctx.fill();
+            }
+            if (draw_lines) {
+              this.graph_ui_ctx.beginPath();
+              this.graph_ui_ctx.moveTo(p.x, p.y);
+            }
+          }
         }
       }
       isize = 3.2;
