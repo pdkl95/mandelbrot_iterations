@@ -7,6 +7,8 @@
   TAU = 2 * Math.PI;
 
   MandelIter = (function() {
+    MandelIter.deferred_background_render_callback = null;
+
     function MandelIter(context) {
       this.context = context;
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
@@ -108,6 +110,12 @@
       this.maxiter = 100;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
+      this.deferred_render_passes = 3;
+      this.deferred_render_pass_scale = 3;
+      this.initial_render_pixel_size = Math.pow(this.deferred_render_pass_scale, this.deferred_render_passes);
+      this.rendering_note = this.context.getElementById('rendering_note');
+      this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
+      this.rendering_note_value = this.context.getElementById('rendering_note_value');
       this.main_bulb_center = {
         r: -1,
         i: 0
@@ -124,14 +132,14 @@
     MandelIter.prototype.debug = function(msg) {
       var timestamp;
       if (this.debugbox == null) {
-        this.debugbox = $('#debugbox');
-        this.debugbox_hdr = this.debugbox.find('.hdr');
-        this.debugbox_msg = this.debugbox.find('.msg');
-        this.debugbox.removeClass('hidden');
+        this.debugbox = this.context.getElementById('debugbox');
+        this.debugbox_hdr = this.context.getElementById('debugbox_hdr');
+        this.debugbox_msg = this.context.getElementById('debugbox_msg');
+        this.debugbox.classList.remove('hidden');
       }
       timestamp = new Date();
-      this.debugbox_hdr.text(timestamp.toISOString());
-      return this.debugbox_msg.text('' + msg);
+      this.debugbox_hdr.textContent = timestamp.toISOString();
+      return this.debugbox_msg.textContent = '' + msg;
     };
 
     MandelIter.prototype.complex_to_string = function(z) {
@@ -435,29 +443,106 @@
       }
     };
 
+    MandelIter.prototype.set_rendering_note = function(text) {
+      if (text != null) {
+        this.rendering_note.classList.remove('hidden');
+        return this.rendering_note_value.textContent = text;
+      } else {
+        this.rendering_note.classList.add('hidden');
+        return this.rendering_note_value.textContent = '';
+      }
+    };
+
+    MandelIter.prototype.hide_rendering_note = function() {
+      return this.set_rendering_note(null);
+    };
+
     MandelIter.prototype.draw_background = function() {
-      var data, img, j, k, pos, ref, ref1, val, x, y;
       this.graph_ctx.fillStyle = 'rgb(0,0,0)';
       this.graph_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
-      img = this.graph_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
-      data = img.data;
-      for (y = j = 0, ref = this.graph_height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
-        for (x = k = 0, ref1 = this.graph_width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
-          val = this.mandel_color_value(x, y);
-          if (this.antialias) {
-            val += this.mandel_color_value(x + 0.5, y);
-            val += this.mandel_color_value(x, y + 0.5);
-            val += this.mandel_color_value(x + 0.5, y + 0.5);
-            val /= 4;
-          }
-          pos = 4 * (x + (y * this.graph_width));
-          val = Math.pow(val / this.maxiter, 0.5) * 255;
-          data[pos] = val;
-          data[pos + 1] = val;
-          data[pos + 2] = val;
-        }
+      this.render_pixel_size = this.initial_render_pixel_size;
+      this.set_rendering_note("...");
+      return this.schedule_background_render_pass();
+    };
+
+    MandelIter.prototype.do_antialias = function() {
+      return this.antialias && this.render_pixel_size <= 1;
+    };
+
+    MandelIter.prototype.schedule_background_render_pass = function() {
+      var render_msg;
+      render_msg = this.render_pixel_size + "x";
+      if (this.do_antialias()) {
+        render_msg += " (antialias)";
       }
-      return this.graph_ctx.putImageData(img, 0, 0);
+      this.set_rendering_note(render_msg);
+      console.log(render_msg);
+      return setTimeout((function(_this) {
+        return function() {
+          return _this.deferred_background_render_callback();
+        };
+      })(this), 5);
+    };
+
+    MandelIter.prototype.deferred_background_render_callback = function() {
+      this.render_img = this.graph_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
+      this.render_mandelbrot(this.render_pixel_size, this.do_antialias());
+      this.graph_ctx.putImageData(this.render_img, 0, 0);
+      if (this.render_pixel_size > 1) {
+        this.render_pixel_size /= this.deferred_render_pass_scale;
+        return this.schedule_background_render_pass();
+      } else {
+        console.log('finished rendering, @render_pixel_size = ' + this.render_pixel_size);
+        return this.hide_rendering_note();
+      }
+    };
+
+    MandelIter.prototype.render_mandelbrot = function(pixelsize, do_antialias) {
+      var j, px, py, ref, ref1, results, val, x, y;
+      results = [];
+      for (y = j = 0, ref = this.graph_height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
+        results.push((function() {
+          var k, ref2, ref3, results1;
+          results1 = [];
+          for (x = k = 0, ref2 = this.graph_width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
+            val = this.mandel_color_value(x, y);
+            if (do_antialias) {
+              val += this.mandel_color_value(x + 0.5, y);
+              val += this.mandel_color_value(x, y + 0.5);
+              val += this.mandel_color_value(x + 0.5, y + 0.5);
+              val /= 4;
+            }
+            results1.push((function() {
+              var l, ref4, results2;
+              results2 = [];
+              for (py = l = 0, ref4 = pixelsize; 0 <= ref4 ? l <= ref4 : l >= ref4; py = 0 <= ref4 ? ++l : --l) {
+                results2.push((function() {
+                  var o, ref5, results3;
+                  results3 = [];
+                  for (px = o = 0, ref5 = pixelsize; 0 <= ref5 ? o <= ref5 : o >= ref5; px = 0 <= ref5 ? ++o : --o) {
+                    results3.push(this.render_pixel(x + px, y + py, val));
+                  }
+                  return results3;
+                }).call(this));
+              }
+              return results2;
+            }).call(this));
+          }
+          return results1;
+        }).call(this));
+      }
+      return results;
+    };
+
+    MandelIter.prototype.render_pixel = function(x, y, value) {
+      var pos;
+      if (x < this.graph_width && y < this.graph_height) {
+        pos = 4 * (x + (y * this.graph_width));
+        value = Math.pow(value / this.maxiter, 0.5) * 255;
+        this.render_img.data[pos] = value;
+        this.render_img.data[pos + 1] = value;
+        return this.render_img.data[pos + 2] = value;
+      }
     };
 
     MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {

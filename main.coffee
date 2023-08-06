@@ -3,6 +3,8 @@ window.APP = null
 TAU = 2 * Math.PI
 
 class MandelIter
+  @deferred_background_render_callback = null
+
   constructor: (@context) ->
 
   init: () ->
@@ -100,6 +102,14 @@ class MandelIter
     @reset_renderbox()
     @draw_ui_scheduled = false
 
+    @deferred_render_passes = 3
+    @deferred_render_pass_scale = 3
+    @initial_render_pixel_size = @deferred_render_pass_scale ** @deferred_render_passes
+
+    @rendering_note       = @context.getElementById('rendering_note')
+    @rendering_note_hdr   = @context.getElementById('rendering_note_hdr')
+    @rendering_note_value = @context.getElementById('rendering_note_value')
+
     @main_bulb_center =
       r: -1
       i:  0
@@ -115,14 +125,14 @@ class MandelIter
 
   debug: (msg) ->
     unless @debugbox?
-      @debugbox = $('#debugbox')
-      @debugbox_hdr = @debugbox.find('.hdr')
-      @debugbox_msg = @debugbox.find('.msg')
-      @debugbox.removeClass('hidden')
+      @debugbox     = @context.getElementById('debugbox')
+      @debugbox_hdr = @context.getElementById('debugbox_hdr')
+      @debugbox_msg = @context.getElementById('debugbox_msg')
+      @debugbox.classList.remove('hidden')
 
     timestamp = new Date()
-    @debugbox_hdr.text(timestamp.toISOString())
-    @debugbox_msg.text('' + msg)
+    @debugbox_hdr.textContent = timestamp.toISOString()
+    @debugbox_msg.textContent = '' + msg
 
   complex_to_string: (z) ->
     rstr = @fmtfloat.format(z.r)
@@ -368,29 +378,71 @@ class MandelIter
     else
       n
 
+  set_rendering_note: (text) ->
+    if text?
+      @rendering_note.classList.remove('hidden')
+      @rendering_note_value.textContent = text
+    else
+      @rendering_note.classList.add('hidden')
+      @rendering_note_value.textContent = ''
+
+  hide_rendering_note: ->
+    @set_rendering_note(null)
+
   draw_background: ->
     @graph_ctx.fillStyle = 'rgb(0,0,0)'
     @graph_ctx.fillRect(0, 0, @graph_width, @graph_height)
 
-    img = @graph_ctx.getImageData(0, 0, @graph_width, @graph_height)
-    data = img.data
+    @render_pixel_size = @initial_render_pixel_size
+    @set_rendering_note("...")
+    @schedule_background_render_pass()
 
-    for y in [0..@graph_height]
-      for x in [0..@graph_width]
+  do_antialias: ->
+    @antialias and @render_pixel_size <= 1
+
+  schedule_background_render_pass: ->
+    render_msg = "#{@render_pixel_size}x"
+    render_msg += " (antialias)" if @do_antialias()
+    @set_rendering_note(render_msg)
+    console.log(render_msg)
+
+    setTimeout =>
+      @deferred_background_render_callback()
+    , 5
+
+  deferred_background_render_callback: ->
+    @render_img = @graph_ctx.getImageData(0, 0, @graph_width, @graph_height)
+    @render_mandelbrot(@render_pixel_size, @do_antialias())
+    @graph_ctx.putImageData(@render_img, 0, 0)
+
+    if @render_pixel_size > 1
+      @render_pixel_size /= @deferred_render_pass_scale
+      @schedule_background_render_pass()
+    else
+      console.log('finished rendering, @render_pixel_size = ' + @render_pixel_size)
+      @hide_rendering_note()
+
+  render_mandelbrot: (pixelsize, do_antialias) ->
+    for y in [0..@graph_height] by pixelsize
+      for x in [0..@graph_width] by pixelsize
         val = @mandel_color_value(x, y)
-        if @antialias
+        if do_antialias
           val += @mandel_color_value(x + 0.5, y      )
           val += @mandel_color_value(x      , y + 0.5)
           val += @mandel_color_value(x + 0.5, y + 0.5)
           val /= 4
 
-        pos = 4 * (x + (y * @graph_width))
-        val = Math.pow((val / @maxiter), 0.5) * 255
-        data[pos    ] = val
-        data[pos + 1] = val
-        data[pos + 2] = val
+        for py in [0..pixelsize]
+          for px in [0..pixelsize]
+            @render_pixel(x + px, y + py, val)
 
-    @graph_ctx.putImageData(img, 0, 0)
+  render_pixel: (x, y, value) ->
+    if x < @graph_width and y < @graph_height
+      pos = 4 * (x + (y * @graph_width))
+      value = Math.pow((value / @maxiter), 0.5) * 255
+      @render_img.data[pos    ] = value
+      @render_img.data[pos + 1] = value
+      @render_img.data[pos + 2] = value
 
   mandelbrot_orbit: (c, max_yield = @maxiter) ->
     n = 0

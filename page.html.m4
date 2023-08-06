@@ -15,10 +15,14 @@ undivert(`style.css')
       <h1>Mandelbrot Iterations</h1>
     </header>
 
-    <pre id="debugbox" class="hidden"><span class="hdr"></span><span class="msg"></span></pre>
+    <pre id="debugbox" class="hidden"><span id="debugbox_hdr" class="hdr"></span><span id="debugbox_msg" class="msg"></span></pre>
 
     <div id="content" class="show_tt">
       <div class="graph panel">
+        <div id="rendering_note" class="hidden">
+          <span id-"rendering_note_hdr">Rendering</span>
+          <span id="rendering_note_value"></span>
+        </div>
         <div id="graph_wrapper" class="canvas_wrapper canvas_size">
           <canvas id="graph" class="graph_canvas canvas_size" width="900" height="600">
             This requires a browser that supports the &lt;canvas&gt; tag.

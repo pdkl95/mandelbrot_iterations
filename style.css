@@ -57,6 +57,10 @@ h1 {
   overflow: hidden;
 }
 
+.hidden {
+  display: none;
+}
+
 .clear_both {
   clear: both;
 }
@@ -302,3 +306,22 @@ td.blank {
   display: block;
 }
 
+#rendering_note {
+  float: left;
+  position: absolute;
+  top:  7em;
+  left: 5em;
+  padding: 0.8em;
+  background-color: rgba(242,236,236,0.8);
+  border: 2px outset rgba(186,71,71,0.5);
+  border-radius: 10px;
+  font-size: large;
+  color: #000;
+  z-index: 1;
+  box-shadow: 2px 2px 3px rgba(180,70,70,0.6);
+  text-shadow: 1px 1px 1px rgba(255,234,234,0.7);
+}
+
+#rendering_note_value {
+  font-weight: bolder;
+}
