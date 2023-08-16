@@ -24,7 +24,10 @@ undivert(`style.css')
           <span id="rendering_note_value"></span>
         </div>
         <div id="graph_wrapper" class="canvas_wrapper canvas_size">
-          <canvas id="graph" class="graph_canvas canvas_size" width="900" height="600">
+          <canvas id="graph_mandel" class="graph_canvas canvas_size" width="900" height="600">
+            This requires a browser that supports the &lt;canvas&gt; tag.
+          </canvas>
+          <canvas id="graph_julia" class="graph_canvas canvas_size hidden" width="900" height="600">
             This requires a browser that supports the &lt;canvas&gt; tag.
           </canvas>
           <canvas id="graph_ui" class="graph_canvas canvas_size" width="900" height="600">
@@ -154,6 +157,56 @@ undivert(`style.css')
           </table>
         </div>
 
+        <div id="julia_options" class="optionbox obleft">
+          <h3>Julia Options</h3>
+          <table>
+            <tr>
+              <th class="tt ttright" data-title="Show the Julia set in a box surrounding the currently rendered Mandelbrot orbit. WARNING: significantly increasres the amount of computation that is recomputed every time the orbit changes (i.e. every time the mouse moves)">Show Nearby Julia</th>
+              <td>
+                <input id="julia_draw_local" type="checkbox" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Maximum iterations when rendering the Julia overlay. WARNING: Higher values significantly increase Julia rendering time!">Max Iterations</th>
+              <td>
+                <label for="julia_max_iterations" id="julia_max_iterations_label">60%</label>
+                <input id="julia_max_iterations" type="range" value="50" min="20" max="200" step="10" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Opacity of the Julia overlay.">Opacity</th>
+              <td>
+                <label for="julia_local_opacity" id="julia_local_opacity_label">60%</label>
+                <input id="julia_local_opacity" type="range" value="0.6" min="0" max="1" step="0.05" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Additional margin (in pixels) to render around the current orbit.">Rendering Margin</th>
+              <td>
+                <input id="julia_local_margin" value="55" min="0" max="50" step="5" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Maximum size (in pixels) of the height & width of the Julia rendering box.">Max Julia Size</th>
+              <td>
+                <input id="julia_local_max_size" value="550" min="50" max="750" step="50" autocomplete="off">
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div id="mandel_options" class="optionbox obleft">
+          <h3>Mandelbrot Options</h3>
+          <table>
+            <tr>
+              <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
+              <td>
+                <label for="mandel_max_iterations" id="mandel_max_iterations_label">60%</label>
+                <input id="mandel_max_iterations" type="range" value="100" min="20" max="1000" step="20" autocomplete="off">
+              </td>
+            </tr>
+          </table>
+</div>
         <div class="clear_both"></div>
       </div>
     </div>

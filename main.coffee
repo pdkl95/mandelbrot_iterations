@@ -30,12 +30,14 @@ class MandelIter
     @show_tooltips.addEventListener('change', @on_show_tooltips_change)
     @show_tooltips.checked = true
 
-    @graph_wrapper   = @context.getElementById('graph_wrapper')
-    @graph_canvas    = @context.getElementById('graph')
-    @graph_ui_canvas = @context.getElementById('graph_ui')
+    @graph_wrapper       = @context.getElementById('graph_wrapper')
+    @graph_mandel_canvas = @context.getElementById('graph_mandel')
+    @graph_julia_canvas  = @context.getElementById('graph_julia')
+    @graph_ui_canvas     = @context.getElementById('graph_ui')
 
-    @graph_ctx    = @graph_canvas.getContext('2d', alpha: false)
-    @graph_ui_ctx = @graph_ui_canvas.getContext('2d', alpha: true)
+    @graph_mandel_ctx = @graph_mandel_canvas.getContext('2d', alpha: false)
+    @graph_julia_ctx  = @graph_julia_canvas.getContext( '2d', alpha: true)
+    @graph_ui_ctx     = @graph_ui_canvas.getContext(    '2d', alpha: true)
 
     @resize_canvas(900, 600)
     @fit_canvas_to_width()
@@ -64,6 +66,16 @@ class MandelIter
       orbit_draw_lines:         new UI.BoolOption('orbit_draw_lines', true)
       orbit_draw_points:        new UI.BoolOption('orbit_draw_points', true)
       orbit_point_size:         new UI.FloatOption('orbit_point_size', 2)
+      julia_draw_local:         new UI.BoolOption('julia_draw_local', false)
+      julia_local_margin:       new UI.IntOption('julia_local_margin', 55)
+      julia_local_max_size:     new UI.IntOption('julia_local_max_size', 550)
+      julia_local_opacity:      new UI.PercentOption('julia_local_opacity', 0.6)
+      julia_max_iterations:     new UI.IntOption('julia_max_iterations', 50)
+      mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 100)
+
+    @option.julia_draw_local.register_callback
+      on_true:  @on_julia_draw_local_true
+      on_false: @on_julia_draw_local_false
 
     @pointer_angle = 0
     @pointer_angle_step = TAU/96
@@ -98,7 +110,6 @@ class MandelIter
     @pause_mode = false
     @zoon_mode = false
     @antialias = true
-    @maxiter = 100
     @reset_renderbox()
     @draw_ui_scheduled = false
 
@@ -117,6 +128,18 @@ class MandelIter
       r: -3/4
       i:  0
     @main_bulb_radius = @main_bulb_tangent_point.r - @main_bulb_center.r
+
+    @orbit_bb =
+      min_x: 0
+      max_x: 0
+      min_y: 0
+      max_y: 0
+
+    @local_julia =
+      width:  0
+      height: 0
+      x: 0
+      y: 0
 
     console.log('init() completed!')
 
@@ -170,15 +193,17 @@ class MandelIter
 
   resize_canvas: (w, h) ->
     console.log('resize', w, h)
-    @graph_canvas.width  = w
-    @graph_canvas.height = h
-    @graph_width  = @graph_canvas.width
-    @graph_height = @graph_canvas.height
+    @graph_mandel_canvas.width  = w
+    @graph_mandel_canvas.height = h
+    @graph_width  = @graph_mandel_canvas.width
+    @graph_height = @graph_mandel_canvas.height
 
-    @graph_ui_canvas.width  = @graph_canvas.width
-    @graph_ui_canvas.height = @graph_canvas.height
-    @graph_ui_width  = @graph_canvas.width
-    @graph_ui_height = @graph_canvas.height
+    @graph_julia_canvas.width  = @graph_mandel_canvas.width
+    @graph_julia_canvas.height = @graph_mandel_canvas.height
+    @graph_ui_canvas.width  = @graph_mandel_canvas.width
+    @graph_ui_canvas.height = @graph_mandel_canvas.height
+    @graph_ui_width  = @graph_mandel_canvas.width
+    @graph_ui_height = @graph_mandel_canvas.height
 
     @graph_aspect = @graph_width / @graph_height
 
@@ -188,8 +213,10 @@ class MandelIter
     @graph_wrapper.style.height = hpx
     @graph_ui_canvas.style.width  = wpx
     @graph_ui_canvas.style.height = hpx
-    @graph_canvas.style.width  = wpx
-    @graph_canvas.style.height = hpx
+    @graph_julia_canvas.style.width  = wpx
+    @graph_julia_canvas.style.height = hpx
+    @graph_mandel_canvas.style.width  = wpx
+    @graph_mandel_canvas.style.height = hpx
 
     if (@graph_width != @graph_ui_width) or (@graph_height != @graph_ui_height)
       @debug('Canvas #graph is not the same size as canvas #graph_ui')
@@ -333,6 +360,12 @@ class MandelIter
     @mouse_active = false
     @schedule_ui_draw()
 
+  on_julia_draw_local_true: =>
+    @graph_julia_canvas.classList.remove('hidden')
+
+  on_julia_draw_local_false: =>
+    @graph_julia_canvas.classList.add('hidden')
+
   rectangular_to_polar_angle: (r, i) ->
     return Math.atan2(i, r)
 
@@ -358,7 +391,7 @@ class MandelIter
       r: 0
       i: 0
 
-    while (d <= 2) and (n < @maxiter)
+    while (d <= 2) and (n < @mandel_maxiter)
       p =
         r: Math.pow(z.r, 2) - Math.pow(z.i, 2)
         i: 2 * z.r * z.i
@@ -390,8 +423,10 @@ class MandelIter
     @set_rendering_note(null)
 
   draw_background: ->
-    @graph_ctx.fillStyle = 'rgb(0,0,0)'
-    @graph_ctx.fillRect(0, 0, @graph_width, @graph_height)
+    @graph_julia_ctx.clearRect(0, 0, @graph_width, @graph_height)
+
+    @graph_mandel_ctx.fillStyle = 'rgb(0,0,0)'
+    @graph_mandel_ctx.fillRect(0, 0, @graph_width, @graph_height)
 
     @render_pixel_size = @initial_render_pixel_size
     @set_rendering_note("...")
@@ -411,9 +446,9 @@ class MandelIter
     , 5
 
   deferred_background_render_callback: ->
-    @render_img = @graph_ctx.getImageData(0, 0, @graph_width, @graph_height)
+    @render_mandel_img = @graph_mandel_ctx.getImageData(0, 0, @graph_width, @graph_height)
     @render_mandelbrot(@render_pixel_size, @do_antialias())
-    @graph_ctx.putImageData(@render_img, 0, 0)
+    @graph_mandel_ctx.putImageData(@render_mandel_img, 0, 0)
 
     if @render_pixel_size > 1
       @render_pixel_size /= @deferred_render_pass_scale
@@ -423,6 +458,7 @@ class MandelIter
       @hide_rendering_note()
 
   render_mandelbrot: (pixelsize, do_antialias) ->
+    @mandel_maxiter = @option.mandel_max_iterations.value
     for y in [0..@graph_height] by pixelsize
       for x in [0..@graph_width] by pixelsize
         val = @mandel_color_value(x, y)
@@ -439,12 +475,12 @@ class MandelIter
   render_pixel: (x, y, value) ->
     if x < @graph_width and y < @graph_height
       pos = 4 * (x + (y * @graph_width))
-      value = Math.pow((value / @maxiter), 0.5) * 255
-      @render_img.data[pos    ] = value
-      @render_img.data[pos + 1] = value
-      @render_img.data[pos + 2] = value
+      value = Math.pow((value / @mandel_maxiter), 0.5) * 255
+      @render_mandel_img.data[pos    ] = value
+      @render_mandel_img.data[pos + 1] = value
+      @render_mandel_img.data[pos + 2] = value
 
-  mandelbrot_orbit: (c, max_yield = @maxiter) ->
+  mandelbrot_orbit: (c, max_yield = @mandel_maxiter) ->
     n = 0
     d = 0
     z =
@@ -474,6 +510,7 @@ class MandelIter
     draw_lines  = @option.orbit_draw_lines.value
     draw_points = @option.orbit_draw_points.value
     point_size  = @option.orbit_point_size.value
+    julia_bb    = @option.julia_draw_local.value
 
     @graph_ui_ctx.save()
 
@@ -486,6 +523,12 @@ class MandelIter
       @graph_ui_ctx.moveTo(mx, my)
 
     if draw_lines || draw_points
+      if julia_bb
+        @orbit_bb.min_x = @graph_width
+        @orbit_bb.max_x = 0
+        @orbit_bb.min_y = @graph_height
+        @orbit_bb.max_y = 0
+
       for step from @mandelbrot_orbit(pos, @option.orbit_draw_length.value)
         if step.n > 0
           p = @complex_to_canvas(step.z)
@@ -502,6 +545,12 @@ class MandelIter
           if draw_lines
             @graph_ui_ctx.beginPath()
             @graph_ui_ctx.moveTo(p.x, p.y)
+
+          if julia_bb
+            @orbit_bb.min_x = Math.min(@orbit_bb.min_x, p.x)
+            @orbit_bb.max_x = Math.max(@orbit_bb.max_x, p.x)
+            @orbit_bb.min_y = Math.min(@orbit_bb.min_y, p.y)
+            @orbit_bb.max_y = Math.max(@orbit_bb.max_y, p.y)
 
     isize = 3.2
     osize = isize * 3.4
@@ -668,8 +717,80 @@ class MandelIter
     @graph_ui_ctx.strokeStyle = '#00FF47'
     @graph_ui_ctx.stroke()
 
+  julia: (c, z) ->
+    n = 0
+    d = 0
+    zr = z.r
+    zi = z.i
+
+    while (d <= 2) and (n < @julia_maxiter)
+      pr = (zr * zr) - (zi * zi)
+      pi = 2 * zr * zi
+      zr = pr + c.r
+      zi = pi + c.i
+      d = (zr * zr) + (zi * zi)
+      n += 1
+
+    [n, d <= 2]
+
+  julia_color_value: (c, x, y) ->
+    p = @canvas_to_complex(x, y)
+    [n, in_set] = @julia(@canvas_to_complex(c.x, c.y), @canvas_to_complex(x, y))
+    if in_set
+      0
+    else
+      n
+
+  draw_local_julia: (c) ->
+    if (@local_julia.width > 0) and (@local_julia.height > 0)
+      @graph_julia_ctx.clearRect(@local_julia.x, @local_julia.y, @local_julia.width, @local_julia.height)
+
+    orbit_cx = Math.floor((@orbit_bb.max_x + @orbit_bb.min_x) / 2)
+    orbit_cy = Math.floor((@orbit_bb.max_y + @orbit_bb.min_y) / 2)
+    maxsize  = @option.julia_local_max_size.value
+    margin2x = @option.julia_local_margin.value * 2
+    @local_julia.width  = @orbit_bb.max_x - @orbit_bb.min_x + margin2x
+    @local_julia.height = @orbit_bb.max_y - @orbit_bb.min_y + margin2x
+    @local_julia.width  = Math.floor(@local_julia.width)
+    @local_julia.height = Math.floor(@local_julia.height)
+    @local_julia.width  = maxsize       if @local_julia.width  > maxsize
+    @local_julia.height = maxsize       if @local_julia.height > maxsize
+    @local_julia.width  = @graph_width  if @local_julia.width  > @graph_width
+    @local_julia.height = @graph_height if @local_julia.height > @graph_height
+    @local_julia.x = orbit_cx - Math.floor(@local_julia.width  / 2)
+    @local_julia.y = orbit_cy - Math.floor(@local_julia.height / 2)
+    @local_julia.x = 0 if @local_julia.x < 0
+    @local_julia.y = 0 if @local_julia.y < 0
+    maxx = Math.floor(@graph_width  - @local_julia.width)
+    maxy = Math.floor(@graph_height - @local_julia.height)
+    @local_julia.x = maxx if @local_julia.x > maxx
+    @local_julia.y = maxy if @local_julia.y > maxy
+
+    img = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
+
+    @julia_maxiter = @option.julia_max_iterations.value
+    opacity = Math.ceil(@option.julia_local_opacity.value * 255)
+    for y in [0..@local_julia.height]
+      for x in [0..@local_julia.width]
+        px = x + @local_julia.x
+        py = y + @local_julia.y
+        val = @julia_color_value(c, px, py)
+        pos = 4 * (x + (y * img.width))
+        value = Math.pow((val / @julia_maxiter), 0.5) * 255
+        img.data[pos    ] = value * 2
+        img.data[pos + 1] = value / 2
+        img.data[pos + 2] = value * 2
+        img.data[pos + 3] = opacity
+
+    @graph_julia_ctx.putImageData(img, @local_julia.x, @local_julia.y)
+
+  draw_orbit_features: (c) ->
+    @draw_orbit(c)
+    if @option.julia_draw_local.value
+      @draw_local_julia(c)
+
   draw_trace_animation: ->
-    @draw_orbit(@current_trace_location)
+    @draw_orbit_features(@current_trace_location)
 
     unless @pause_mode
       @trace_angle = @trace_angle + @option.trace_speed.value
@@ -691,7 +812,7 @@ class MandelIter
     @graph_ui_ctx.restore()
 
     @orbit_mouse = @cardioid(@trace_angle)
-    @draw_orbit()
+    @draw_orbit(@orbit_mouse)
 
   draw_ui: ->
     @draw_ui_scheduled = false
@@ -727,7 +848,10 @@ class MandelIter
       if @zoom_mode
         @draw_zoom()
       else
-        @draw_orbit(@orbit_mouse)
+        @draw_orbit_features(@orbit_mouse)
+    else
+      if @pause_mode
+        @draw_orbit_features(@orbit_mouse)
 
   draw_ui_callback: =>
     APP.draw_ui()

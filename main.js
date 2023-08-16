@@ -14,6 +14,8 @@
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
       this.draw_ui_callback = bind(this.draw_ui_callback, this);
       this.canvas_to_complex = bind(this.canvas_to_complex, this);
+      this.on_julia_draw_local_false = bind(this.on_julia_draw_local_false, this);
+      this.on_julia_draw_local_true = bind(this.on_julia_draw_local_true, this);
       this.on_mouseout = bind(this.on_mouseout, this);
       this.on_mouseenter = bind(this.on_mouseenter, this);
       this.on_mousemove = bind(this.on_mousemove, this);
@@ -48,10 +50,14 @@
       this.show_tooltips.addEventListener('change', this.on_show_tooltips_change);
       this.show_tooltips.checked = true;
       this.graph_wrapper = this.context.getElementById('graph_wrapper');
-      this.graph_canvas = this.context.getElementById('graph');
+      this.graph_mandel_canvas = this.context.getElementById('graph_mandel');
+      this.graph_julia_canvas = this.context.getElementById('graph_julia');
       this.graph_ui_canvas = this.context.getElementById('graph_ui');
-      this.graph_ctx = this.graph_canvas.getContext('2d', {
+      this.graph_mandel_ctx = this.graph_mandel_canvas.getContext('2d', {
         alpha: false
+      });
+      this.graph_julia_ctx = this.graph_julia_canvas.getContext('2d', {
+        alpha: true
       });
       this.graph_ui_ctx = this.graph_ui_canvas.getContext('2d', {
         alpha: true
@@ -76,8 +82,18 @@
         orbit_draw_length: new UI.IntOption('orbit_draw_length'),
         orbit_draw_lines: new UI.BoolOption('orbit_draw_lines', true),
         orbit_draw_points: new UI.BoolOption('orbit_draw_points', true),
-        orbit_point_size: new UI.FloatOption('orbit_point_size', 2)
+        orbit_point_size: new UI.FloatOption('orbit_point_size', 2),
+        julia_draw_local: new UI.BoolOption('julia_draw_local', false),
+        julia_local_margin: new UI.IntOption('julia_local_margin', 55),
+        julia_local_max_size: new UI.IntOption('julia_local_max_size', 550),
+        julia_local_opacity: new UI.PercentOption('julia_local_opacity', 0.6),
+        julia_max_iterations: new UI.IntOption('julia_max_iterations', 50),
+        mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 100)
       };
+      this.option.julia_draw_local.register_callback({
+        on_true: this.on_julia_draw_local_true,
+        on_false: this.on_julia_draw_local_false
+      });
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -107,7 +123,6 @@
       this.pause_mode = false;
       this.zoon_mode = false;
       this.antialias = true;
-      this.maxiter = 100;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
       this.deferred_render_passes = 3;
@@ -125,6 +140,18 @@
         i: 0
       };
       this.main_bulb_radius = this.main_bulb_tangent_point.r - this.main_bulb_center.r;
+      this.orbit_bb = {
+        min_x: 0,
+        max_x: 0,
+        min_y: 0,
+        max_y: 0
+      };
+      this.local_julia = {
+        width: 0,
+        height: 0,
+        x: 0,
+        y: 0
+      };
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -184,14 +211,16 @@
     MandelIter.prototype.resize_canvas = function(w, h) {
       var hpx, wpx;
       console.log('resize', w, h);
-      this.graph_canvas.width = w;
-      this.graph_canvas.height = h;
-      this.graph_width = this.graph_canvas.width;
-      this.graph_height = this.graph_canvas.height;
-      this.graph_ui_canvas.width = this.graph_canvas.width;
-      this.graph_ui_canvas.height = this.graph_canvas.height;
-      this.graph_ui_width = this.graph_canvas.width;
-      this.graph_ui_height = this.graph_canvas.height;
+      this.graph_mandel_canvas.width = w;
+      this.graph_mandel_canvas.height = h;
+      this.graph_width = this.graph_mandel_canvas.width;
+      this.graph_height = this.graph_mandel_canvas.height;
+      this.graph_julia_canvas.width = this.graph_mandel_canvas.width;
+      this.graph_julia_canvas.height = this.graph_mandel_canvas.height;
+      this.graph_ui_canvas.width = this.graph_mandel_canvas.width;
+      this.graph_ui_canvas.height = this.graph_mandel_canvas.height;
+      this.graph_ui_width = this.graph_mandel_canvas.width;
+      this.graph_ui_height = this.graph_mandel_canvas.height;
       this.graph_aspect = this.graph_width / this.graph_height;
       wpx = w + "px";
       hpx = h + "px";
@@ -199,8 +228,10 @@
       this.graph_wrapper.style.height = hpx;
       this.graph_ui_canvas.style.width = wpx;
       this.graph_ui_canvas.style.height = hpx;
-      this.graph_canvas.style.width = wpx;
-      this.graph_canvas.style.height = hpx;
+      this.graph_julia_canvas.style.width = wpx;
+      this.graph_julia_canvas.style.height = hpx;
+      this.graph_mandel_canvas.style.width = wpx;
+      this.graph_mandel_canvas.style.height = hpx;
       if ((this.graph_width !== this.graph_ui_width) || (this.graph_height !== this.graph_ui_height)) {
         return this.debug('Canvas #graph is not the same size as canvas #graph_ui');
       }
@@ -384,6 +415,14 @@
       return this.schedule_ui_draw();
     };
 
+    MandelIter.prototype.on_julia_draw_local_true = function() {
+      return this.graph_julia_canvas.classList.remove('hidden');
+    };
+
+    MandelIter.prototype.on_julia_draw_local_false = function() {
+      return this.graph_julia_canvas.classList.add('hidden');
+    };
+
     MandelIter.prototype.rectangular_to_polar_angle = function(r, i) {
       return Math.atan2(i, r);
     };
@@ -417,7 +456,7 @@
         r: 0,
         i: 0
       };
-      while ((d <= 2) && (n < this.maxiter)) {
+      while ((d <= 2) && (n < this.mandel_maxiter)) {
         p = {
           r: Math.pow(z.r, 2) - Math.pow(z.i, 2),
           i: 2 * z.r * z.i
@@ -458,8 +497,9 @@
     };
 
     MandelIter.prototype.draw_background = function() {
-      this.graph_ctx.fillStyle = 'rgb(0,0,0)';
-      this.graph_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
+      this.graph_julia_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
+      this.graph_mandel_ctx.fillStyle = 'rgb(0,0,0)';
+      this.graph_mandel_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
       this.render_pixel_size = this.initial_render_pixel_size;
       this.set_rendering_note("...");
       return this.schedule_background_render_pass();
@@ -485,9 +525,9 @@
     };
 
     MandelIter.prototype.deferred_background_render_callback = function() {
-      this.render_img = this.graph_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
+      this.render_mandel_img = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
       this.render_mandelbrot(this.render_pixel_size, this.do_antialias());
-      this.graph_ctx.putImageData(this.render_img, 0, 0);
+      this.graph_mandel_ctx.putImageData(this.render_mandel_img, 0, 0);
       if (this.render_pixel_size > 1) {
         this.render_pixel_size /= this.deferred_render_pass_scale;
         return this.schedule_background_render_pass();
@@ -499,6 +539,7 @@
 
     MandelIter.prototype.render_mandelbrot = function(pixelsize, do_antialias) {
       var j, px, py, ref, ref1, results, val, x, y;
+      this.mandel_maxiter = this.option.mandel_max_iterations.value;
       results = [];
       for (y = j = 0, ref = this.graph_height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
         results.push((function() {
@@ -538,17 +579,17 @@
       var pos;
       if (x < this.graph_width && y < this.graph_height) {
         pos = 4 * (x + (y * this.graph_width));
-        value = Math.pow(value / this.maxiter, 0.5) * 255;
-        this.render_img.data[pos] = value;
-        this.render_img.data[pos + 1] = value;
-        return this.render_img.data[pos + 2] = value;
+        value = Math.pow(value / this.mandel_maxiter, 0.5) * 255;
+        this.render_mandel_img.data[pos] = value;
+        this.render_mandel_img.data[pos + 1] = value;
+        return this.render_mandel_img.data[pos + 2] = value;
       }
     };
 
     MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
       var d, n, p, results, z;
       if (max_yield == null) {
-        max_yield = this.maxiter;
+        max_yield = this.mandel_maxiter;
       }
       n = 0;
       d = 0;
@@ -581,7 +622,7 @@
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
-      var draw_lines, draw_points, isize, mx, my, osize, p, point_size, pos, ref, step;
+      var draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, step;
       mx = c.x;
       my = c.y;
       pos = this.canvas_to_complex(mx, my);
@@ -589,6 +630,7 @@
       draw_lines = this.option.orbit_draw_lines.value;
       draw_points = this.option.orbit_draw_points.value;
       point_size = this.option.orbit_point_size.value;
+      julia_bb = this.option.julia_draw_local.value;
       this.graph_ui_ctx.save();
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
@@ -598,6 +640,12 @@
         this.graph_ui_ctx.moveTo(mx, my);
       }
       if (draw_lines || draw_points) {
+        if (julia_bb) {
+          this.orbit_bb.min_x = this.graph_width;
+          this.orbit_bb.max_x = 0;
+          this.orbit_bb.min_y = this.graph_height;
+          this.orbit_bb.max_y = 0;
+        }
         ref = this.mandelbrot_orbit(pos, this.option.orbit_draw_length.value);
         for (step of ref) {
           if (step.n > 0) {
@@ -614,6 +662,12 @@
             if (draw_lines) {
               this.graph_ui_ctx.beginPath();
               this.graph_ui_ctx.moveTo(p.x, p.y);
+            }
+            if (julia_bb) {
+              this.orbit_bb.min_x = Math.min(this.orbit_bb.min_x, p.x);
+              this.orbit_bb.max_x = Math.max(this.orbit_bb.max_x, p.x);
+              this.orbit_bb.min_y = Math.min(this.orbit_bb.min_y, p.y);
+              this.orbit_bb.max_y = Math.max(this.orbit_bb.max_y, p.y);
             }
           }
         }
@@ -761,8 +815,103 @@
       return this.graph_ui_ctx.stroke();
     };
 
+    MandelIter.prototype.julia = function(c, z) {
+      var d, n, pi, pr, zi, zr;
+      n = 0;
+      d = 0;
+      zr = z.r;
+      zi = z.i;
+      while ((d <= 2) && (n < this.julia_maxiter)) {
+        pr = (zr * zr) - (zi * zi);
+        pi = 2 * zr * zi;
+        zr = pr + c.r;
+        zi = pi + c.i;
+        d = (zr * zr) + (zi * zi);
+        n += 1;
+      }
+      return [n, d <= 2];
+    };
+
+    MandelIter.prototype.julia_color_value = function(c, x, y) {
+      var in_set, n, p, ref;
+      p = this.canvas_to_complex(x, y);
+      ref = this.julia(this.canvas_to_complex(c.x, c.y), this.canvas_to_complex(x, y)), n = ref[0], in_set = ref[1];
+      if (in_set) {
+        return 0;
+      } else {
+        return n;
+      }
+    };
+
+    MandelIter.prototype.draw_local_julia = function(c) {
+      var img, j, k, margin2x, maxsize, maxx, maxy, opacity, orbit_cx, orbit_cy, pos, px, py, ref, ref1, val, value, x, y;
+      if ((this.local_julia.width > 0) && (this.local_julia.height > 0)) {
+        this.graph_julia_ctx.clearRect(this.local_julia.x, this.local_julia.y, this.local_julia.width, this.local_julia.height);
+      }
+      orbit_cx = Math.floor((this.orbit_bb.max_x + this.orbit_bb.min_x) / 2);
+      orbit_cy = Math.floor((this.orbit_bb.max_y + this.orbit_bb.min_y) / 2);
+      maxsize = this.option.julia_local_max_size.value;
+      margin2x = this.option.julia_local_margin.value * 2;
+      this.local_julia.width = this.orbit_bb.max_x - this.orbit_bb.min_x + margin2x;
+      this.local_julia.height = this.orbit_bb.max_y - this.orbit_bb.min_y + margin2x;
+      this.local_julia.width = Math.floor(this.local_julia.width);
+      this.local_julia.height = Math.floor(this.local_julia.height);
+      if (this.local_julia.width > maxsize) {
+        this.local_julia.width = maxsize;
+      }
+      if (this.local_julia.height > maxsize) {
+        this.local_julia.height = maxsize;
+      }
+      if (this.local_julia.width > this.graph_width) {
+        this.local_julia.width = this.graph_width;
+      }
+      if (this.local_julia.height > this.graph_height) {
+        this.local_julia.height = this.graph_height;
+      }
+      this.local_julia.x = orbit_cx - Math.floor(this.local_julia.width / 2);
+      this.local_julia.y = orbit_cy - Math.floor(this.local_julia.height / 2);
+      if (this.local_julia.x < 0) {
+        this.local_julia.x = 0;
+      }
+      if (this.local_julia.y < 0) {
+        this.local_julia.y = 0;
+      }
+      maxx = Math.floor(this.graph_width - this.local_julia.width);
+      maxy = Math.floor(this.graph_height - this.local_julia.height);
+      if (this.local_julia.x > maxx) {
+        this.local_julia.x = maxx;
+      }
+      if (this.local_julia.y > maxy) {
+        this.local_julia.y = maxy;
+      }
+      img = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
+      this.julia_maxiter = this.option.julia_max_iterations.value;
+      opacity = Math.ceil(this.option.julia_local_opacity.value * 255);
+      for (y = j = 0, ref = this.local_julia.height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
+        for (x = k = 0, ref1 = this.local_julia.width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
+          px = x + this.local_julia.x;
+          py = y + this.local_julia.y;
+          val = this.julia_color_value(c, px, py);
+          pos = 4 * (x + (y * img.width));
+          value = Math.pow(val / this.julia_maxiter, 0.5) * 255;
+          img.data[pos] = value * 2;
+          img.data[pos + 1] = value / 2;
+          img.data[pos + 2] = value * 2;
+          img.data[pos + 3] = opacity;
+        }
+      }
+      return this.graph_julia_ctx.putImageData(img, this.local_julia.x, this.local_julia.y);
+    };
+
+    MandelIter.prototype.draw_orbit_features = function(c) {
+      this.draw_orbit(c);
+      if (this.option.julia_draw_local.value) {
+        return this.draw_local_julia(c);
+      }
+    };
+
     MandelIter.prototype.draw_trace_animation = function() {
-      this.draw_orbit(this.current_trace_location);
+      this.draw_orbit_features(this.current_trace_location);
       if (!this.pause_mode) {
         this.trace_angle = this.trace_angle + this.option.trace_speed.value;
         if (this.trace_angle >= TAU) {
@@ -784,7 +933,7 @@
       this.graph_ui_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
       this.graph_ui_ctx.restore();
       this.orbit_mouse = this.cardioid(this.trace_angle);
-      return this.draw_orbit();
+      return this.draw_orbit(this.orbit_mouse);
     };
 
     MandelIter.prototype.draw_ui = function() {
@@ -827,7 +976,11 @@
         if (this.zoom_mode) {
           return this.draw_zoom();
         } else {
-          return this.draw_orbit(this.orbit_mouse);
+          return this.draw_orbit_features(this.orbit_mouse);
+        }
+      } else {
+        if (this.pause_mode) {
+          return this.draw_orbit_features(this.orbit_mouse);
         }
       }
     };

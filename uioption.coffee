@@ -6,7 +6,7 @@ class UI.Option
     el.type = type if type?
     el
 
-  constructor: (@id, default_value = null, @on_change_callback = null) ->
+  constructor: (@id, default_value = null, @callback = {}) ->
     if @id instanceof Element
       @el = @id
       @id = @el.id
@@ -14,6 +14,9 @@ class UI.Option
       @el = window.APP.context.getElementById(@id)
       unless @el?
         console.log("ERROR - could not find element with id=\"#{@id}\"")
+
+    @label_id = "#{@id}_label"
+    @label_el = window.APP.context.getElementById(@label_id)
 
     if default_value?
       @default = default_value
@@ -27,9 +30,23 @@ class UI.Option
   detect_default_value: ->
     @get()
 
+  register_callback: (opt = {}) ->
+    for name, func of opt
+      @callback[name] = func
+
+    for key, func of @callback
+      delete @callback[name] unless func?
+
+  set_value: (new_value) ->
+    @value = new_value
+    @label_el.innerText = @label_text() if @label_el?
+
+  label_text: ->
+    "#{@value}"
+
   on_change: (event) =>
     @set(@get(event.target))
-    @on_change_callback(@value) if @on_change_callback?
+    @callback.on_change?(@value)
 
   enable: ->
     @el.disabled = false
@@ -51,12 +68,20 @@ class UI.BoolOption extends UI.Option
     element.checked
 
   set: (bool_value) ->
-    @value = switch bool_value
+    oldvalue = @value
+    newvalue = switch bool_value
       when 'true'  then true
       when 'false' then false
       else
         !!bool_value
-    @el.checked = @value
+    @el.checked = newvalue
+
+    @set_value(newvalue)
+    if oldvalue != newvalue
+      if newvalue
+        @callback.on_true?()
+      else
+        @callback.on_false?()
 
 class UI.IntOption extends UI.Option
   @create: (parent, @id, rest...) ->
@@ -68,7 +93,7 @@ class UI.IntOption extends UI.Option
     parseInt(element.value)
 
   set: (number_value) ->
-    @value = parseInt(number_value)
+    @set_value(parseInt(number_value))
     @el.value = @value
 
 class UI.FloatOption extends UI.Option
@@ -81,8 +106,13 @@ class UI.FloatOption extends UI.Option
     parseFloat(element.value)
 
   set: (number_value) ->
-    @value = parseFloat(number_value)
+    @set_value(parseFloat(number_value))
     @el.value = @value
+
+class UI.PercentOption extends UI.FloatOption
+  label_text: ->
+    perc = parseInt(@value * 100)
+    "#{perc}%"
 
 class UI.SelectOption extends UI.Option
   get: (element = @el) ->
@@ -91,7 +121,7 @@ class UI.SelectOption extends UI.Option
   set: (option_name) ->
     opt = @option_with_name(option_name)
     if opt?
-      @value = opt.value
+      @set_value(opt.value)
       opt.selected = true
 
   values: ->

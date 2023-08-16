@@ -25,12 +25,12 @@
       return el;
     };
 
-    function Option(id1, default_value, on_change_callback) {
+    function Option(id1, default_value, callback) {
       this.id = id1;
       if (default_value == null) {
         default_value = null;
       }
-      this.on_change_callback = on_change_callback != null ? on_change_callback : null;
+      this.callback = callback != null ? callback : {};
       this.on_change = bind(this.on_change, this);
       if (this.id instanceof Element) {
         this.el = this.id;
@@ -41,6 +41,8 @@
           console.log("ERROR - could not find element with id=\"" + this.id + "\"");
         }
       }
+      this.label_id = this.id + "_label";
+      this.label_el = window.APP.context.getElementById(this.label_id);
       if (default_value != null) {
         this["default"] = default_value;
       } else {
@@ -54,11 +56,43 @@
       return this.get();
     };
 
-    Option.prototype.on_change = function(event) {
-      this.set(this.get(event.target));
-      if (this.on_change_callback != null) {
-        return this.on_change_callback(this.value);
+    Option.prototype.register_callback = function(opt) {
+      var func, key, name, ref, results;
+      if (opt == null) {
+        opt = {};
       }
+      for (name in opt) {
+        func = opt[name];
+        this.callback[name] = func;
+      }
+      ref = this.callback;
+      results = [];
+      for (key in ref) {
+        func = ref[key];
+        if (func == null) {
+          results.push(delete this.callback[name]);
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
+
+    Option.prototype.set_value = function(new_value) {
+      this.value = new_value;
+      if (this.label_el != null) {
+        return this.label_el.innerText = this.label_text();
+      }
+    };
+
+    Option.prototype.label_text = function() {
+      return "" + this.value;
+    };
+
+    Option.prototype.on_change = function(event) {
+      var base;
+      this.set(this.get(event.target));
+      return typeof (base = this.callback).on_change === "function" ? base.on_change(this.value) : void 0;
     };
 
     Option.prototype.enable = function() {
@@ -108,7 +142,9 @@
     };
 
     BoolOption.prototype.set = function(bool_value) {
-      this.value = (function() {
+      var base, base1, newvalue, oldvalue;
+      oldvalue = this.value;
+      newvalue = (function() {
         switch (bool_value) {
           case 'true':
             return true;
@@ -118,7 +154,15 @@
             return !!bool_value;
         }
       })();
-      return this.el.checked = this.value;
+      this.el.checked = newvalue;
+      this.set_value(newvalue);
+      if (oldvalue !== newvalue) {
+        if (newvalue) {
+          return typeof (base = this.callback).on_true === "function" ? base.on_true() : void 0;
+        } else {
+          return typeof (base1 = this.callback).on_false === "function" ? base1.on_false() : void 0;
+        }
+      }
     };
 
     return BoolOption;
@@ -153,7 +197,7 @@
     };
 
     IntOption.prototype.set = function(number_value) {
-      this.value = parseInt(number_value);
+      this.set_value(parseInt(number_value));
       return this.el.value = this.value;
     };
 
@@ -189,13 +233,30 @@
     };
 
     FloatOption.prototype.set = function(number_value) {
-      this.value = parseFloat(number_value);
+      this.set_value(parseFloat(number_value));
       return this.el.value = this.value;
     };
 
     return FloatOption;
 
   })(UI.Option);
+
+  UI.PercentOption = (function(superClass) {
+    extend(PercentOption, superClass);
+
+    function PercentOption() {
+      return PercentOption.__super__.constructor.apply(this, arguments);
+    }
+
+    PercentOption.prototype.label_text = function() {
+      var perc;
+      perc = parseInt(this.value * 100);
+      return perc + "%";
+    };
+
+    return PercentOption;
+
+  })(UI.FloatOption);
 
   UI.SelectOption = (function(superClass) {
     extend(SelectOption, superClass);
@@ -215,7 +276,7 @@
       var opt;
       opt = this.option_with_name(option_name);
       if (opt != null) {
-        this.value = opt.value;
+        this.set_value(opt.value);
         return opt.selected = true;
       }
     };
