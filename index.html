@@ -492,16 +492,16 @@ td.blank {
 #rendering_note {
   float: left;
   position: absolute;
-  top:  7em;
-  left: 5em;
-  padding: 0.8em;
-  background-color: rgba(242,236,236,0.8);
-  border: 2px outset rgba(186,71,71,0.5);
-  border-radius: 10px;
-  font-size: large;
+  top: 10em;
+  left: 10em;
+  padding: 1em;
+  background-color: rgba(230, 215, 215, 0.88);
+  border: 3px dashed rgba(255, 18, 18, 0.9);
+  border-radius: 22px;
+  font-size: xx-large;
   color: #000;
   z-index: 1;
-  box-shadow: 2px 2px 3px rgba(180,70,70,0.6);
+  box-shadow: 3px 4px 15px rgba(68, 21, 21, 0.9);
   text-shadow: 1px 1px 1px rgba(255,234,234,0.7);
 }
 
@@ -521,8 +521,9 @@ td.blank {
     <div id="content" class="show_tt">
       <div class="graph panel">
         <div id="rendering_note" class="hidden">
-          <span id-"rendering_note_hdr">Rendering</span>
+          <span id="rendering_note_hdr">Rendering</span>
           <span id="rendering_note_value"></span>
+          <progress id="rendering_note_progress" max="100" value="0">0%</progress>
         </div>
         <div id="graph_wrapper" class="canvas_wrapper canvas_size">
           <canvas id="graph_mandel" class="graph_canvas canvas_size" width="900" height="600">
@@ -626,9 +627,7 @@ td.blank {
               </td>
             </tr>
           </table>
-        </div>
 
-        <div id="trace_options" class="optionbox obleft">
           <h3>Trace Options</h3>
           <table>
             <tr>
@@ -670,40 +669,58 @@ td.blank {
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the Julia overlay. WARNING: Higher values significantly increase Julia rendering time!">Max Iterations</th>
               <td>
-                <label for="julia_max_iterations" id="julia_max_iterations_label">60%</label>
-                <input id="julia_max_iterations" type="range" value="50" min="20" max="200" step="10" autocomplete="off">
+                <label for="julia_max_iterations" id="julia_max_iterations_label">120</label>
+                <input id="julia_max_iterations" type="range" value="100" min="20" max="250" step="10" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space)">Max Iter When Paused</th>
+              <td>
+                <label for="julia_max_iter_paused" id="julia_max_iter_paused_label">200</label>
+                <input id="julia_max_iter_paused" type="range" value="250" min="50" max="500" step="50" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Expand Rendering of the Julia set to the entire window when paused (by clicking or pressing space)">Show More When Paused</th>
+              <td>
+                <input id="julia_more_when_paused" type="checkbox" autocomplete="off" checked="checked">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Opacity of the Julia overlay.">Opacity</th>
               <td>
                 <label for="julia_local_opacity" id="julia_local_opacity_label">60%</label>
-                <input id="julia_local_opacity" type="range" value="0.6" min="0" max="1" step="0.05" autocomplete="off">
+                <input id="julia_local_opacity" type="range" value="0.65" min="0" max="1" step="0.05" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Opacity of the Julia overlay.">Pixel Size</th>
+              <td>
+                <label for="julia_local_pixel_size" id="julia_local_pixel_size_label">3x</label>
+                <input id="julia_local_pixel_size" type="range" value="3" min="1" max="4" step="1" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Additional margin (in pixels) to render around the current orbit.">Rendering Margin</th>
               <td>
-                <input id="julia_local_margin" value="55" min="0" max="50" step="5" autocomplete="off">
+                <input id="julia_local_margin" type="number" value="80" min="0" max="500" step="10" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Maximum size (in pixels) of the height & width of the Julia rendering box.">Max Julia Size</th>
               <td>
-                <input id="julia_local_max_size" value="550" min="50" max="750" step="50" autocomplete="off">
+                <input id="julia_local_max_size" type="number" value="750" min="50" max="1000" step="50" autocomplete="off">
               </td>
             </tr>
           </table>
-        </div>
 
-        <div id="mandel_options" class="optionbox obleft">
           <h3>Mandelbrot Options</h3>
           <table>
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td>
                 <label for="mandel_max_iterations" id="mandel_max_iterations_label">60%</label>
-                <input id="mandel_max_iterations" type="range" value="100" min="20" max="1000" step="20" autocomplete="off">
+                <input id="mandel_max_iterations" type="range" value="120" min="20" max="1000" step="20" autocomplete="off">
               </td>
             </tr>
           </table>
@@ -1052,6 +1069,7 @@ td.blank {
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
       this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
@@ -1108,16 +1126,23 @@ td.blank {
         orbit_draw_points: new UI.BoolOption('orbit_draw_points', true),
         orbit_point_size: new UI.FloatOption('orbit_point_size', 2),
         julia_draw_local: new UI.BoolOption('julia_draw_local', false),
-        julia_local_margin: new UI.IntOption('julia_local_margin', 55),
-        julia_local_max_size: new UI.IntOption('julia_local_max_size', 550),
+        julia_more_when_paused: new UI.BoolOption('julia_more_when_paused', true),
+        julia_local_margin: new UI.IntOption('julia_local_margin', 80),
+        julia_local_max_size: new UI.IntOption('julia_local_max_size', 750),
         julia_local_opacity: new UI.PercentOption('julia_local_opacity', 0.6),
-        julia_max_iterations: new UI.IntOption('julia_max_iterations', 50),
-        mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 100)
+        julia_local_pixel_size: new UI.IntOption('julia_local_pixel_size', 3),
+        julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 250),
+        julia_max_iterations: new UI.IntOption('julia_max_iterations', 100),
+        mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120)
       };
       this.option.julia_draw_local.register_callback({
         on_true: this.on_julia_draw_local_true,
         on_false: this.on_julia_draw_local_false
       });
+      this.option.julia_local_pixel_size.label_text = function() {
+        return this.value + "x";
+      };
+      this.option.julia_local_pixel_size.set(3);
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -1152,9 +1177,11 @@ td.blank {
       this.deferred_render_passes = 3;
       this.deferred_render_pass_scale = 3;
       this.initial_render_pixel_size = Math.pow(this.deferred_render_pass_scale, this.deferred_render_passes);
+      this.render_lines_per_pass = 32;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
+      this.rendering_note_progress = this.context.getElementById('rendering_note_progress');
       this.main_bulb_center = {
         r: -1,
         i: 0
@@ -1176,8 +1203,17 @@ td.blank {
         x: 0,
         y: 0
       };
+      document.addEventListener('keydown', this.on_keydown);
       console.log('init() completed!');
       return this.draw_background();
+    };
+
+    MandelIter.prototype.on_keydown = function(event) {
+      switch (event.code) {
+        case 'Space':
+          this.pause_mode_toggle();
+          return event.preventDefault();
+      }
     };
 
     MandelIter.prototype.debug = function(msg) {
@@ -1509,7 +1545,8 @@ td.blank {
     MandelIter.prototype.set_rendering_note = function(text) {
       if (text != null) {
         this.rendering_note.classList.remove('hidden');
-        return this.rendering_note_value.textContent = text;
+        this.rendering_note_value.textContent = text;
+        return this.set_rendering_note_progress();
       } else {
         this.rendering_note.classList.add('hidden');
         return this.rendering_note_value.textContent = '';
@@ -1520,11 +1557,19 @@ td.blank {
       return this.set_rendering_note(null);
     };
 
+    MandelIter.prototype.set_rendering_note_progress = function() {
+      var perc;
+      perc = parseInt((this.lines_finished / this.graph_height) * 100);
+      this.rendering_note_progress.value = perc;
+      return this.rendering_note_progress.textContent = perc + "%";
+    };
+
     MandelIter.prototype.draw_background = function() {
       this.graph_julia_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
       this.graph_mandel_ctx.fillStyle = 'rgb(0,0,0)';
       this.graph_mandel_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
       this.render_pixel_size = this.initial_render_pixel_size;
+      this.lines_finished = 0;
       this.set_rendering_note("...");
       return this.schedule_background_render_pass();
     };
@@ -1535,6 +1580,7 @@ td.blank {
 
     MandelIter.prototype.schedule_background_render_pass = function() {
       var render_msg;
+      this.render_mandel_img = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
       render_msg = this.render_pixel_size + "x";
       if (this.do_antialias()) {
         render_msg += " (antialias)";
@@ -1548,12 +1594,30 @@ td.blank {
       })(this), 5);
     };
 
+    MandelIter.prototype.schedule_background_render_more_lines = function() {
+      this.set_rendering_note_progress();
+      return setTimeout((function(_this) {
+        return function() {
+          return _this.deferred_background_render_callback();
+        };
+      })(this), 0);
+    };
+
     MandelIter.prototype.deferred_background_render_callback = function() {
-      this.render_mandel_img = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
-      this.render_mandelbrot(this.render_pixel_size, this.do_antialias());
-      this.graph_mandel_ctx.putImageData(this.render_mandel_img, 0, 0);
-      if (this.render_pixel_size > 1) {
+      var dirtyheight, elapsed, lastline;
+      elapsed = 0;
+      while ((this.lines_finished < this.graph_height) && (elapsed < 1000)) {
+        lastline = this.render_mandelbrot(this.render_pixel_size, this.do_antialias());
+        dirtyheight = lastline - this.lines_finished;
+        this.graph_mandel_ctx.putImageData(this.render_mandel_img, 0, 0, 0, this.lines_finished, this.graph_width, dirtyheight);
+        this.lines_finished = lastline;
+        elapsed = performance.now();
+      }
+      if (this.lines_finished < this.graph_height) {
+        return this.schedule_background_render_more_lines();
+      } else if (this.render_pixel_size > 1) {
         this.render_pixel_size /= this.deferred_render_pass_scale;
+        this.lines_finished = 0;
         return this.schedule_background_render_pass();
       } else {
         console.log('finished rendering, @render_pixel_size = ' + this.render_pixel_size);
@@ -1562,41 +1626,29 @@ td.blank {
     };
 
     MandelIter.prototype.render_mandelbrot = function(pixelsize, do_antialias) {
-      var j, px, py, ref, ref1, results, val, x, y;
+      var j, k, l, o, px, py, ref, ref1, ref2, ref3, ref4, ref5, ref6, stopline, val, x, y;
       this.mandel_maxiter = this.option.mandel_max_iterations.value;
-      results = [];
-      for (y = j = 0, ref = this.graph_height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
-        results.push((function() {
-          var k, ref2, ref3, results1;
-          results1 = [];
-          for (x = k = 0, ref2 = this.graph_width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
-            val = this.mandel_color_value(x, y);
-            if (do_antialias) {
-              val += this.mandel_color_value(x + 0.5, y);
-              val += this.mandel_color_value(x, y + 0.5);
-              val += this.mandel_color_value(x + 0.5, y + 0.5);
-              val /= 4;
-            }
-            results1.push((function() {
-              var l, ref4, results2;
-              results2 = [];
-              for (py = l = 0, ref4 = pixelsize; 0 <= ref4 ? l <= ref4 : l >= ref4; py = 0 <= ref4 ? ++l : --l) {
-                results2.push((function() {
-                  var o, ref5, results3;
-                  results3 = [];
-                  for (px = o = 0, ref5 = pixelsize; 0 <= ref5 ? o <= ref5 : o >= ref5; px = 0 <= ref5 ? ++o : --o) {
-                    results3.push(this.render_pixel(x + px, y + py, val));
-                  }
-                  return results3;
-                }).call(this));
-              }
-              return results2;
-            }).call(this));
-          }
-          return results1;
-        }).call(this));
+      stopline = this.lines_finished + this.render_lines_per_pass;
+      if (stopline >= this.graph_height) {
+        stopline = this.graph_height;
       }
-      return results;
+      for (y = j = ref = this.lines_finished, ref1 = stopline, ref2 = pixelsize; ref2 > 0 ? j <= ref1 : j >= ref1; y = j += ref2) {
+        for (x = k = 0, ref3 = this.graph_width, ref4 = pixelsize; ref4 > 0 ? k <= ref3 : k >= ref3; x = k += ref4) {
+          val = this.mandel_color_value(x, y);
+          if (do_antialias) {
+            val += this.mandel_color_value(x + 0.5, y);
+            val += this.mandel_color_value(x, y + 0.5);
+            val += this.mandel_color_value(x + 0.5, y + 0.5);
+            val /= 4;
+          }
+          for (py = l = 0, ref5 = pixelsize; 0 <= ref5 ? l <= ref5 : l >= ref5; py = 0 <= ref5 ? ++l : --l) {
+            for (px = o = 0, ref6 = pixelsize; 0 <= ref6 ? o <= ref6 : o >= ref6; px = 0 <= ref6 ? ++o : --o) {
+              this.render_pixel(x + px, y + py, val);
+            }
+          }
+        }
+      }
+      return stopline;
     };
 
     MandelIter.prototype.render_pixel = function(x, y, value) {
@@ -1657,7 +1709,7 @@ td.blank {
       julia_bb = this.option.julia_draw_local.value;
       this.graph_ui_ctx.save();
       this.graph_ui_ctx.lineWidth = 2;
-      this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
+      this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.35)';
       this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.6)';
       if (draw_lines) {
         this.graph_ui_ctx.beginPath();
@@ -1868,60 +1920,74 @@ td.blank {
     };
 
     MandelIter.prototype.draw_local_julia = function(c) {
-      var img, j, k, margin2x, maxsize, maxx, maxy, opacity, orbit_cx, orbit_cy, pos, px, py, ref, ref1, val, value, x, y;
+      var img, j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos, px, py, ref, ref1, ref2, ref3, ref4, ref5, val, value, x, y;
       if ((this.local_julia.width > 0) && (this.local_julia.height > 0)) {
         this.graph_julia_ctx.clearRect(this.local_julia.x, this.local_julia.y, this.local_julia.width, this.local_julia.height);
       }
-      orbit_cx = Math.floor((this.orbit_bb.max_x + this.orbit_bb.min_x) / 2);
-      orbit_cy = Math.floor((this.orbit_bb.max_y + this.orbit_bb.min_y) / 2);
-      maxsize = this.option.julia_local_max_size.value;
-      margin2x = this.option.julia_local_margin.value * 2;
-      this.local_julia.width = this.orbit_bb.max_x - this.orbit_bb.min_x + margin2x;
-      this.local_julia.height = this.orbit_bb.max_y - this.orbit_bb.min_y + margin2x;
-      this.local_julia.width = Math.floor(this.local_julia.width);
-      this.local_julia.height = Math.floor(this.local_julia.height);
-      if (this.local_julia.width > maxsize) {
-        this.local_julia.width = maxsize;
-      }
-      if (this.local_julia.height > maxsize) {
-        this.local_julia.height = maxsize;
-      }
-      if (this.local_julia.width > this.graph_width) {
-        this.local_julia.width = this.graph_width;
-      }
-      if (this.local_julia.height > this.graph_height) {
-        this.local_julia.height = this.graph_height;
-      }
-      this.local_julia.x = orbit_cx - Math.floor(this.local_julia.width / 2);
-      this.local_julia.y = orbit_cy - Math.floor(this.local_julia.height / 2);
-      if (this.local_julia.x < 0) {
-        this.local_julia.x = 0;
-      }
-      if (this.local_julia.y < 0) {
-        this.local_julia.y = 0;
-      }
-      maxx = Math.floor(this.graph_width - this.local_julia.width);
-      maxy = Math.floor(this.graph_height - this.local_julia.height);
-      if (this.local_julia.x > maxx) {
-        this.local_julia.x = maxx;
-      }
-      if (this.local_julia.y > maxy) {
-        this.local_julia.y = maxy;
-      }
-      img = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
+      pixelsize = this.option.julia_local_pixel_size.value;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       opacity = Math.ceil(this.option.julia_local_opacity.value * 255);
-      for (y = j = 0, ref = this.local_julia.height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
-        for (x = k = 0, ref1 = this.local_julia.width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
+      if (this.pause_mode && this.option.julia_more_when_paused.value) {
+        this.local_julia.x = 0;
+        this.local_julia.y = 0;
+        this.local_julia.width = this.graph_width;
+        this.local_julia.height = this.graph_height;
+        pixelsize = 1;
+        this.julia_maxiter = this.option.julia_max_iter_paused.value;
+      } else {
+        orbit_cx = Math.floor((this.orbit_bb.max_x + this.orbit_bb.min_x) / 2);
+        orbit_cy = Math.floor((this.orbit_bb.max_y + this.orbit_bb.min_y) / 2);
+        maxsize = this.option.julia_local_max_size.value;
+        margin2x = this.option.julia_local_margin.value * 2;
+        this.local_julia.width = this.orbit_bb.max_x - this.orbit_bb.min_x + margin2x;
+        this.local_julia.height = this.orbit_bb.max_y - this.orbit_bb.min_y + margin2x;
+        this.local_julia.width = Math.floor(this.local_julia.width);
+        this.local_julia.height = Math.floor(this.local_julia.height);
+        if (this.local_julia.width > maxsize) {
+          this.local_julia.width = maxsize;
+        }
+        if (this.local_julia.height > maxsize) {
+          this.local_julia.height = maxsize;
+        }
+        if (this.local_julia.width > this.graph_width) {
+          this.local_julia.width = this.graph_width;
+        }
+        if (this.local_julia.height > this.graph_height) {
+          this.local_julia.height = this.graph_height;
+        }
+        this.local_julia.x = orbit_cx - Math.floor(this.local_julia.width / 2);
+        this.local_julia.y = orbit_cy - Math.floor(this.local_julia.height / 2);
+        if (this.local_julia.x < 0) {
+          this.local_julia.x = 0;
+        }
+        if (this.local_julia.y < 0) {
+          this.local_julia.y = 0;
+        }
+        maxx = Math.floor(this.graph_width - this.local_julia.width);
+        maxy = Math.floor(this.graph_height - this.local_julia.height);
+        if (this.local_julia.x > maxx) {
+          this.local_julia.x = maxx;
+        }
+        if (this.local_julia.y > maxy) {
+          this.local_julia.y = maxy;
+        }
+      }
+      img = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
+      for (y = j = 0, ref = this.local_julia.height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
+        for (x = k = 0, ref2 = this.local_julia.width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
           px = x + this.local_julia.x;
           py = y + this.local_julia.y;
           val = this.julia_color_value(c, px, py);
-          pos = 4 * (x + (y * img.width));
-          value = Math.pow(val / this.julia_maxiter, 0.5) * 255;
-          img.data[pos] = value * 2;
-          img.data[pos + 1] = value / 2;
-          img.data[pos + 2] = value * 2;
-          img.data[pos + 3] = opacity;
+          for (py = l = 0, ref4 = pixelsize; 0 <= ref4 ? l <= ref4 : l >= ref4; py = 0 <= ref4 ? ++l : --l) {
+            for (px = o = 0, ref5 = pixelsize; 0 <= ref5 ? o <= ref5 : o >= ref5; px = 0 <= ref5 ? ++o : --o) {
+              pos = 4 * ((x + px) + ((y + py) * img.width));
+              value = Math.pow(val / this.julia_maxiter, 0.5) * 255;
+              img.data[pos] = value * 2;
+              img.data[pos + 1] = value * 0.8;
+              img.data[pos + 2] = value * 2;
+              img.data[pos + 3] = opacity;
+            }
+          }
         }
       }
       return this.graph_julia_ctx.putImageData(img, this.local_julia.x, this.local_julia.y);
