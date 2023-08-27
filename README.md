@@ -1,16 +1,63 @@
 # Mandelbrot Iterations
 
-Interactive realtime rendering of the orbits of the [Mandelbrot Set](https://en.wikipedia.org/wiki/Mandelbrot_set).
+Interactive realtime rendering of the orbits of the
+[Mandelbrot Set](https://en.wikipedia.org/wiki/Mandelbrot_set). The
+correspondng [Julia Set](https://en.wikipedia.org/wiki/Julia_set)
+can be overlayed on top of the orbit trace, demonstrating the
+relationship between the two fractals and how they both are a product
+of the attractors in the orbits.
 
 ## Usage
 
-Try it live on GitHub:
+Try it live on Codeberg:
+
+[https://pdkl95.codeberg.page/mandelbrot_iterations/](https://pdkl95.codeberg.page/mandelbrot_iterations/)
+
+or GitHub:
 
 [https://pdkl95.github.io/mandelbrot_iterations/](https://pdkl95.github.io/mandelbrot_iterations/)
 
-## Explanation
+### Things To Try
 
-_TODO..._
+Press the "Start" button to see the orbits just inside the edge of the
+main cardioid. Try turning on the "Show Internal Angle" while while
+it's animating.
+
+Turn on the Julia Set overlay with the "Show Nearby Julia"
+option. The rendering qualitty if the Julia Set is greatly reduced to
+limit the CPU load; clicking or pressing space will pause movement and
+render a full-size static image at much higher quality (and more
+iterations).
+
+### Limiations
+
+#### Very Limited Zoom
+
+While rendering the Mandelbrot Set usually unvolves large amounts of
+zooming (sometimes to
+[zoom factors with insane iteration requirements]()) this software
+uses Javascript's native double precision (64 bit) floating point for
+all calculations.
+
+## Motivation
+
+While I first leaened about the Mandelbrot Set _many_ years
+ago. Playing with
+[James Gleick's CHAOS: The Software](https://github.com/rudyrucker/chaos)
+on my IBM AT's 80286 CPU required a lot of patients just to see a tiny
+16 color image of a Julia or Mandelbrot. I thought I understood the iterative
+math underltying these fractals.
+
+This understanding was shaken when I saw
+[this Numberphile video](https://www.youtube.com/watch?v=FFftmWSzgmk)
+featuring Ben Sparks, and a short
+[series of videos by The Mathemagicians' Guild](https://www.youtube.com/playlist?list=PL9tHLTl03LqG4ajDvqyfCDMKSxmR_plJ3)
+complety changed my undrstanding of the Set. I highly recommend
+watching them.
+
+Whay was different about those videos that was missing from most of
+the articl4s/videos/etc I had seen before? These videos focus on the
+_orbits_. So I wrote this as a tool for exploring the orbits directly.
 
 ## License
 
