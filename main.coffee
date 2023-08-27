@@ -150,10 +150,20 @@ class MandelIter
       x: 0
       y: 0
 
+
+    document.addEventListener('keydown', @on_keydown)
+
     console.log('init() completed!')
 
     @draw_background()
 
+
+  on_keydown: (event) =>
+    #console.log(event.code)
+    switch event.code
+      when 'Space'
+        @pause_mode_toggle()
+        event.preventDefault()
 
   debug: (msg) ->
     unless @debugbox?

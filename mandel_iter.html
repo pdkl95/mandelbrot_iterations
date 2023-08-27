@@ -1069,6 +1069,7 @@ td.blank {
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
       this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
@@ -1202,8 +1203,17 @@ td.blank {
         x: 0,
         y: 0
       };
+      document.addEventListener('keydown', this.on_keydown);
       console.log('init() completed!');
       return this.draw_background();
+    };
+
+    MandelIter.prototype.on_keydown = function(event) {
+      switch (event.code) {
+        case 'Space':
+          this.pause_mode_toggle();
+          return event.preventDefault();
+      }
     };
 
     MandelIter.prototype.debug = function(msg) {
