@@ -67,11 +67,13 @@ class MandelIter
       orbit_draw_points:        new UI.BoolOption('orbit_draw_points', true)
       orbit_point_size:         new UI.FloatOption('orbit_point_size', 2)
       julia_draw_local:         new UI.BoolOption('julia_draw_local', false)
+      julia_more_when_paused:   new UI.BoolOption('julia_more_when_paused', true)
       julia_local_margin:       new UI.IntOption('julia_local_margin', 80)
       julia_local_max_size:     new UI.IntOption('julia_local_max_size', 750)
       julia_local_opacity:      new UI.PercentOption('julia_local_opacity', 0.6)
       julia_local_pixel_size:   new UI.IntOption('julia_local_pixel_size', 3)
-      julia_max_iterations:     new UI.IntOption('julia_max_iterations', 120)
+      julia_max_iter_paused:    new UI.IntOption('julia_max_iter_paused', 250)
+      julia_max_iterations:     new UI.IntOption('julia_max_iterations', 100)
       mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 120)
 
     @option.julia_draw_local.register_callback
@@ -552,7 +554,7 @@ class MandelIter
     @graph_ui_ctx.save()
 
     @graph_ui_ctx.lineWidth = 2
-    @graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)'
+    @graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.35)'
     @graph_ui_ctx.fillStyle   = 'rgba(255,249,187, 0.6)'
 
     if draw_lines
@@ -782,33 +784,41 @@ class MandelIter
     if (@local_julia.width > 0) and (@local_julia.height > 0)
       @graph_julia_ctx.clearRect(@local_julia.x, @local_julia.y, @local_julia.width, @local_julia.height)
 
-    orbit_cx = Math.floor((@orbit_bb.max_x + @orbit_bb.min_x) / 2)
-    orbit_cy = Math.floor((@orbit_bb.max_y + @orbit_bb.min_y) / 2)
-    maxsize  = @option.julia_local_max_size.value
-    margin2x = @option.julia_local_margin.value * 2
-    @local_julia.width  = @orbit_bb.max_x - @orbit_bb.min_x + margin2x
-    @local_julia.height = @orbit_bb.max_y - @orbit_bb.min_y + margin2x
-    @local_julia.width  = Math.floor(@local_julia.width)
-    @local_julia.height = Math.floor(@local_julia.height)
-    @local_julia.width  = maxsize       if @local_julia.width  > maxsize
-    @local_julia.height = maxsize       if @local_julia.height > maxsize
-    @local_julia.width  = @graph_width  if @local_julia.width  > @graph_width
-    @local_julia.height = @graph_height if @local_julia.height > @graph_height
-    @local_julia.x = orbit_cx - Math.floor(@local_julia.width  / 2)
-    @local_julia.y = orbit_cy - Math.floor(@local_julia.height / 2)
-    @local_julia.x = 0 if @local_julia.x < 0
-    @local_julia.y = 0 if @local_julia.y < 0
-    maxx = Math.floor(@graph_width  - @local_julia.width)
-    maxy = Math.floor(@graph_height - @local_julia.height)
-    @local_julia.x = maxx if @local_julia.x > maxx
-    @local_julia.y = maxy if @local_julia.y > maxy
-
-    img = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
-
+    pixelsize = @option.julia_local_pixel_size.value
     @julia_maxiter = @option.julia_max_iterations.value
     opacity = Math.ceil(@option.julia_local_opacity.value * 255)
 
-    pixelsize = @option.julia_local_pixel_size.value
+    if @pause_mode and @option.julia_more_when_paused.value
+      @local_julia.x = 0
+      @local_julia.y = 0
+      @local_julia.width  = @graph_width
+      @local_julia.height = @graph_height
+      pixelsize = 1
+      @julia_maxiter = @option.julia_max_iter_paused.value
+
+    else
+      orbit_cx = Math.floor((@orbit_bb.max_x + @orbit_bb.min_x) / 2)
+      orbit_cy = Math.floor((@orbit_bb.max_y + @orbit_bb.min_y) / 2)
+      maxsize  = @option.julia_local_max_size.value
+      margin2x = @option.julia_local_margin.value * 2
+      @local_julia.width  = @orbit_bb.max_x - @orbit_bb.min_x + margin2x
+      @local_julia.height = @orbit_bb.max_y - @orbit_bb.min_y + margin2x
+      @local_julia.width  = Math.floor(@local_julia.width)
+      @local_julia.height = Math.floor(@local_julia.height)
+      @local_julia.width  = maxsize       if @local_julia.width  > maxsize
+      @local_julia.height = maxsize       if @local_julia.height > maxsize
+      @local_julia.width  = @graph_width  if @local_julia.width  > @graph_width
+      @local_julia.height = @graph_height if @local_julia.height > @graph_height
+      @local_julia.x = orbit_cx - Math.floor(@local_julia.width  / 2)
+      @local_julia.y = orbit_cy - Math.floor(@local_julia.height / 2)
+      @local_julia.x = 0 if @local_julia.x < 0
+      @local_julia.y = 0 if @local_julia.y < 0
+      maxx = Math.floor(@graph_width  - @local_julia.width)
+      maxy = Math.floor(@graph_height - @local_julia.height)
+      @local_julia.x = maxx if @local_julia.x > maxx
+      @local_julia.y = maxy if @local_julia.y > maxy
+
+    img = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
 
     for y in [0..@local_julia.height] by pixelsize
       for x in [0..@local_julia.width] by pixelsize
@@ -821,7 +831,7 @@ class MandelIter
             pos = 4 * ((x + px) + ((y + py) * img.width))
             value = Math.pow((val / @julia_maxiter), 0.5) * 255
             img.data[pos    ] = value * 2
-            img.data[pos + 1] = value / 2
+            img.data[pos + 1] = value * 0.8
             img.data[pos + 2] = value * 2
             img.data[pos + 3] = opacity
 

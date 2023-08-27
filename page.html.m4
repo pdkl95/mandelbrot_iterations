@@ -126,9 +126,7 @@ undivert(`style.css')
               </td>
             </tr>
           </table>
-        </div>
 
-        <div id="trace_options" class="optionbox obleft">
           <h3>Trace Options</h3>
           <table>
             <tr>
@@ -171,7 +169,20 @@ undivert(`style.css')
               <th class="tt ttright" data-title="Maximum iterations when rendering the Julia overlay. WARNING: Higher values significantly increase Julia rendering time!">Max Iterations</th>
               <td>
                 <label for="julia_max_iterations" id="julia_max_iterations_label">120</label>
-                <input id="julia_max_iterations" type="range" value="120" min="20" max="250" step="10" autocomplete="off">
+                <input id="julia_max_iterations" type="range" value="100" min="20" max="250" step="10" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space)">Max Iter When Paused</th>
+              <td>
+                <label for="julia_max_iter_paused" id="julia_max_iter_paused_label">200</label>
+                <input id="julia_max_iter_paused" type="range" value="250" min="50" max="500" step="50" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Expand Rendering of the Julia set to the entire window when paused (by clicking or pressing space)">Show More When Paused</th>
+              <td>
+                <input id="julia_more_when_paused" type="checkbox" autocomplete="off" checked="checked">
               </td>
             </tr>
             <tr>
@@ -201,9 +212,7 @@ undivert(`style.css')
               </td>
             </tr>
           </table>
-        </div>
 
-        <div id="mandel_options" class="optionbox obleft">
           <h3>Mandelbrot Options</h3>
           <table>
             <tr>

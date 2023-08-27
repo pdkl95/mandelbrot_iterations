@@ -84,11 +84,13 @@
         orbit_draw_points: new UI.BoolOption('orbit_draw_points', true),
         orbit_point_size: new UI.FloatOption('orbit_point_size', 2),
         julia_draw_local: new UI.BoolOption('julia_draw_local', false),
+        julia_more_when_paused: new UI.BoolOption('julia_more_when_paused', true),
         julia_local_margin: new UI.IntOption('julia_local_margin', 80),
         julia_local_max_size: new UI.IntOption('julia_local_max_size', 750),
         julia_local_opacity: new UI.PercentOption('julia_local_opacity', 0.6),
         julia_local_pixel_size: new UI.IntOption('julia_local_pixel_size', 3),
-        julia_max_iterations: new UI.IntOption('julia_max_iterations', 120),
+        julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 250),
+        julia_max_iterations: new UI.IntOption('julia_max_iterations', 100),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120)
       };
       this.option.julia_draw_local.register_callback({
@@ -656,7 +658,7 @@
       julia_bb = this.option.julia_draw_local.value;
       this.graph_ui_ctx.save();
       this.graph_ui_ctx.lineWidth = 2;
-      this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.5)';
+      this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.35)';
       this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.6)';
       if (draw_lines) {
         this.graph_ui_ctx.beginPath();
@@ -871,46 +873,55 @@
       if ((this.local_julia.width > 0) && (this.local_julia.height > 0)) {
         this.graph_julia_ctx.clearRect(this.local_julia.x, this.local_julia.y, this.local_julia.width, this.local_julia.height);
       }
-      orbit_cx = Math.floor((this.orbit_bb.max_x + this.orbit_bb.min_x) / 2);
-      orbit_cy = Math.floor((this.orbit_bb.max_y + this.orbit_bb.min_y) / 2);
-      maxsize = this.option.julia_local_max_size.value;
-      margin2x = this.option.julia_local_margin.value * 2;
-      this.local_julia.width = this.orbit_bb.max_x - this.orbit_bb.min_x + margin2x;
-      this.local_julia.height = this.orbit_bb.max_y - this.orbit_bb.min_y + margin2x;
-      this.local_julia.width = Math.floor(this.local_julia.width);
-      this.local_julia.height = Math.floor(this.local_julia.height);
-      if (this.local_julia.width > maxsize) {
-        this.local_julia.width = maxsize;
-      }
-      if (this.local_julia.height > maxsize) {
-        this.local_julia.height = maxsize;
-      }
-      if (this.local_julia.width > this.graph_width) {
-        this.local_julia.width = this.graph_width;
-      }
-      if (this.local_julia.height > this.graph_height) {
-        this.local_julia.height = this.graph_height;
-      }
-      this.local_julia.x = orbit_cx - Math.floor(this.local_julia.width / 2);
-      this.local_julia.y = orbit_cy - Math.floor(this.local_julia.height / 2);
-      if (this.local_julia.x < 0) {
-        this.local_julia.x = 0;
-      }
-      if (this.local_julia.y < 0) {
-        this.local_julia.y = 0;
-      }
-      maxx = Math.floor(this.graph_width - this.local_julia.width);
-      maxy = Math.floor(this.graph_height - this.local_julia.height);
-      if (this.local_julia.x > maxx) {
-        this.local_julia.x = maxx;
-      }
-      if (this.local_julia.y > maxy) {
-        this.local_julia.y = maxy;
-      }
-      img = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
+      pixelsize = this.option.julia_local_pixel_size.value;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       opacity = Math.ceil(this.option.julia_local_opacity.value * 255);
-      pixelsize = this.option.julia_local_pixel_size.value;
+      if (this.pause_mode && this.option.julia_more_when_paused.value) {
+        this.local_julia.x = 0;
+        this.local_julia.y = 0;
+        this.local_julia.width = this.graph_width;
+        this.local_julia.height = this.graph_height;
+        pixelsize = 1;
+        this.julia_maxiter = this.option.julia_max_iter_paused.value;
+      } else {
+        orbit_cx = Math.floor((this.orbit_bb.max_x + this.orbit_bb.min_x) / 2);
+        orbit_cy = Math.floor((this.orbit_bb.max_y + this.orbit_bb.min_y) / 2);
+        maxsize = this.option.julia_local_max_size.value;
+        margin2x = this.option.julia_local_margin.value * 2;
+        this.local_julia.width = this.orbit_bb.max_x - this.orbit_bb.min_x + margin2x;
+        this.local_julia.height = this.orbit_bb.max_y - this.orbit_bb.min_y + margin2x;
+        this.local_julia.width = Math.floor(this.local_julia.width);
+        this.local_julia.height = Math.floor(this.local_julia.height);
+        if (this.local_julia.width > maxsize) {
+          this.local_julia.width = maxsize;
+        }
+        if (this.local_julia.height > maxsize) {
+          this.local_julia.height = maxsize;
+        }
+        if (this.local_julia.width > this.graph_width) {
+          this.local_julia.width = this.graph_width;
+        }
+        if (this.local_julia.height > this.graph_height) {
+          this.local_julia.height = this.graph_height;
+        }
+        this.local_julia.x = orbit_cx - Math.floor(this.local_julia.width / 2);
+        this.local_julia.y = orbit_cy - Math.floor(this.local_julia.height / 2);
+        if (this.local_julia.x < 0) {
+          this.local_julia.x = 0;
+        }
+        if (this.local_julia.y < 0) {
+          this.local_julia.y = 0;
+        }
+        maxx = Math.floor(this.graph_width - this.local_julia.width);
+        maxy = Math.floor(this.graph_height - this.local_julia.height);
+        if (this.local_julia.x > maxx) {
+          this.local_julia.x = maxx;
+        }
+        if (this.local_julia.y > maxy) {
+          this.local_julia.y = maxy;
+        }
+      }
+      img = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
       for (y = j = 0, ref = this.local_julia.height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
         for (x = k = 0, ref2 = this.local_julia.width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
           px = x + this.local_julia.x;
@@ -921,7 +932,7 @@
               pos = 4 * ((x + px) + ((y + py) * img.width));
               value = Math.pow(val / this.julia_maxiter, 0.5) * 255;
               img.data[pos] = value * 2;
-              img.data[pos + 1] = value / 2;
+              img.data[pos + 1] = value * 0.8;
               img.data[pos + 2] = value * 2;
               img.data[pos + 3] = opacity;
             }
