@@ -84,16 +84,21 @@
         orbit_draw_points: new UI.BoolOption('orbit_draw_points', true),
         orbit_point_size: new UI.FloatOption('orbit_point_size', 2),
         julia_draw_local: new UI.BoolOption('julia_draw_local', false),
-        julia_local_margin: new UI.IntOption('julia_local_margin', 55),
-        julia_local_max_size: new UI.IntOption('julia_local_max_size', 550),
+        julia_local_margin: new UI.IntOption('julia_local_margin', 80),
+        julia_local_max_size: new UI.IntOption('julia_local_max_size', 750),
         julia_local_opacity: new UI.PercentOption('julia_local_opacity', 0.6),
-        julia_max_iterations: new UI.IntOption('julia_max_iterations', 50),
-        mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 100)
+        julia_local_pixel_size: new UI.IntOption('julia_local_pixel_size', 3),
+        julia_max_iterations: new UI.IntOption('julia_max_iterations', 120),
+        mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120)
       };
       this.option.julia_draw_local.register_callback({
         on_true: this.on_julia_draw_local_true,
         on_false: this.on_julia_draw_local_false
       });
+      this.option.julia_local_pixel_size.label_text = function() {
+        return this.value + "x";
+      };
+      this.option.julia_local_pixel_size.set(3);
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -844,7 +849,7 @@
     };
 
     MandelIter.prototype.draw_local_julia = function(c) {
-      var img, j, k, margin2x, maxsize, maxx, maxy, opacity, orbit_cx, orbit_cy, pos, px, py, ref, ref1, val, value, x, y;
+      var img, j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos, px, py, ref, ref1, ref2, ref3, ref4, ref5, val, value, x, y;
       if ((this.local_julia.width > 0) && (this.local_julia.height > 0)) {
         this.graph_julia_ctx.clearRect(this.local_julia.x, this.local_julia.y, this.local_julia.width, this.local_julia.height);
       }
@@ -887,17 +892,22 @@
       img = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
       this.julia_maxiter = this.option.julia_max_iterations.value;
       opacity = Math.ceil(this.option.julia_local_opacity.value * 255);
-      for (y = j = 0, ref = this.local_julia.height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
-        for (x = k = 0, ref1 = this.local_julia.width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
+      pixelsize = this.option.julia_local_pixel_size.value;
+      for (y = j = 0, ref = this.local_julia.height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
+        for (x = k = 0, ref2 = this.local_julia.width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
           px = x + this.local_julia.x;
           py = y + this.local_julia.y;
           val = this.julia_color_value(c, px, py);
-          pos = 4 * (x + (y * img.width));
-          value = Math.pow(val / this.julia_maxiter, 0.5) * 255;
-          img.data[pos] = value * 2;
-          img.data[pos + 1] = value / 2;
-          img.data[pos + 2] = value * 2;
-          img.data[pos + 3] = opacity;
+          for (py = l = 0, ref4 = pixelsize; 0 <= ref4 ? l <= ref4 : l >= ref4; py = 0 <= ref4 ? ++l : --l) {
+            for (px = o = 0, ref5 = pixelsize; 0 <= ref5 ? o <= ref5 : o >= ref5; px = 0 <= ref5 ? ++o : --o) {
+              pos = 4 * ((x + px) + ((y + py) * img.width));
+              value = Math.pow(val / this.julia_maxiter, 0.5) * 255;
+              img.data[pos] = value * 2;
+              img.data[pos + 1] = value / 2;
+              img.data[pos + 2] = value * 2;
+              img.data[pos + 3] = opacity;
+            }
+          }
         }
       }
       return this.graph_julia_ctx.putImageData(img, this.local_julia.x, this.local_julia.y);

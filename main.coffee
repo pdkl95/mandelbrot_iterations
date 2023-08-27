@@ -67,15 +67,20 @@ class MandelIter
       orbit_draw_points:        new UI.BoolOption('orbit_draw_points', true)
       orbit_point_size:         new UI.FloatOption('orbit_point_size', 2)
       julia_draw_local:         new UI.BoolOption('julia_draw_local', false)
-      julia_local_margin:       new UI.IntOption('julia_local_margin', 55)
-      julia_local_max_size:     new UI.IntOption('julia_local_max_size', 550)
+      julia_local_margin:       new UI.IntOption('julia_local_margin', 80)
+      julia_local_max_size:     new UI.IntOption('julia_local_max_size', 750)
       julia_local_opacity:      new UI.PercentOption('julia_local_opacity', 0.6)
-      julia_max_iterations:     new UI.IntOption('julia_max_iterations', 50)
-      mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 100)
+      julia_local_pixel_size:   new UI.IntOption('julia_local_pixel_size', 3)
+      julia_max_iterations:     new UI.IntOption('julia_max_iterations', 120)
+      mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 120)
 
     @option.julia_draw_local.register_callback
       on_true:  @on_julia_draw_local_true
       on_false: @on_julia_draw_local_false
+
+    @option.julia_local_pixel_size.label_text = ->
+      "#{@value}x"
+    @option.julia_local_pixel_size.set(3)
 
     @pointer_angle = 0
     @pointer_angle_step = TAU/96
@@ -770,17 +775,23 @@ class MandelIter
 
     @julia_maxiter = @option.julia_max_iterations.value
     opacity = Math.ceil(@option.julia_local_opacity.value * 255)
-    for y in [0..@local_julia.height]
-      for x in [0..@local_julia.width]
+
+    pixelsize = @option.julia_local_pixel_size.value
+
+    for y in [0..@local_julia.height] by pixelsize
+      for x in [0..@local_julia.width] by pixelsize
         px = x + @local_julia.x
         py = y + @local_julia.y
         val = @julia_color_value(c, px, py)
-        pos = 4 * (x + (y * img.width))
-        value = Math.pow((val / @julia_maxiter), 0.5) * 255
-        img.data[pos    ] = value * 2
-        img.data[pos + 1] = value / 2
-        img.data[pos + 2] = value * 2
-        img.data[pos + 3] = opacity
+
+        for py in [0..pixelsize]
+          for px in [0..pixelsize]
+            pos = 4 * ((x + px) + ((y + py) * img.width))
+            value = Math.pow((val / @julia_maxiter), 0.5) * 255
+            img.data[pos    ] = value * 2
+            img.data[pos + 1] = value / 2
+            img.data[pos + 2] = value * 2
+            img.data[pos + 3] = opacity
 
     @graph_julia_ctx.putImageData(img, @local_julia.x, @local_julia.y)
 

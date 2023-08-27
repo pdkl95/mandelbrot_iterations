@@ -169,27 +169,34 @@ undivert(`style.css')
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the Julia overlay. WARNING: Higher values significantly increase Julia rendering time!">Max Iterations</th>
               <td>
-                <label for="julia_max_iterations" id="julia_max_iterations_label">60%</label>
-                <input id="julia_max_iterations" type="range" value="50" min="20" max="200" step="10" autocomplete="off">
+                <label for="julia_max_iterations" id="julia_max_iterations_label">120</label>
+                <input id="julia_max_iterations" type="range" value="120" min="20" max="250" step="10" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Opacity of the Julia overlay.">Opacity</th>
               <td>
                 <label for="julia_local_opacity" id="julia_local_opacity_label">60%</label>
-                <input id="julia_local_opacity" type="range" value="0.6" min="0" max="1" step="0.05" autocomplete="off">
+                <input id="julia_local_opacity" type="range" value="0.65" min="0" max="1" step="0.05" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Opacity of the Julia overlay.">Pixel Size</th>
+              <td>
+                <label for="julia_local_pixel_size" id="julia_local_pixel_size_label">3x</label>
+                <input id="julia_local_pixel_size" type="range" value="3" min="1" max="4" step="1" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Additional margin (in pixels) to render around the current orbit.">Rendering Margin</th>
               <td>
-                <input id="julia_local_margin" value="55" min="0" max="50" step="5" autocomplete="off">
+                <input id="julia_local_margin" type="number" value="80" min="0" max="500" step="10" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Maximum size (in pixels) of the height & width of the Julia rendering box.">Max Julia Size</th>
               <td>
-                <input id="julia_local_max_size" value="550" min="50" max="750" step="50" autocomplete="off">
+                <input id="julia_local_max_size" type="number" value="750" min="50" max="1000" step="50" autocomplete="off">
               </td>
             </tr>
           </table>
@@ -202,7 +209,7 @@ undivert(`style.css')
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td>
                 <label for="mandel_max_iterations" id="mandel_max_iterations_label">60%</label>
-                <input id="mandel_max_iterations" type="range" value="100" min="20" max="1000" step="20" autocomplete="off">
+                <input id="mandel_max_iterations" type="range" value="120" min="20" max="1000" step="20" autocomplete="off">
               </td>
             </tr>
           </table>
