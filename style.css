@@ -309,16 +309,16 @@ td.blank {
 #rendering_note {
   float: left;
   position: absolute;
-  top:  7em;
-  left: 5em;
-  padding: 0.8em;
-  background-color: rgba(242,236,236,0.8);
-  border: 2px outset rgba(186,71,71,0.5);
-  border-radius: 10px;
-  font-size: large;
+  top: 10em;
+  left: 10em;
+  padding: 1em;
+  background-color: rgba(230, 215, 215, 0.88);
+  border: 3px dashed rgba(255, 18, 18, 0.9);
+  border-radius: 22px;
+  font-size: xx-large;
   color: #000;
   z-index: 1;
-  box-shadow: 2px 2px 3px rgba(180,70,70,0.6);
+  box-shadow: 3px 4px 15px rgba(68, 21, 21, 0.9);
   text-shadow: 1px 1px 1px rgba(255,234,234,0.7);
 }
 

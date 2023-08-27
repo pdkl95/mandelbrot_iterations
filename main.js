@@ -133,9 +133,11 @@
       this.deferred_render_passes = 3;
       this.deferred_render_pass_scale = 3;
       this.initial_render_pixel_size = Math.pow(this.deferred_render_pass_scale, this.deferred_render_passes);
+      this.render_lines_per_pass = 32;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
+      this.rendering_note_progress = this.context.getElementById('rendering_note_progress');
       this.main_bulb_center = {
         r: -1,
         i: 0
@@ -490,7 +492,8 @@
     MandelIter.prototype.set_rendering_note = function(text) {
       if (text != null) {
         this.rendering_note.classList.remove('hidden');
-        return this.rendering_note_value.textContent = text;
+        this.rendering_note_value.textContent = text;
+        return this.set_rendering_note_progress();
       } else {
         this.rendering_note.classList.add('hidden');
         return this.rendering_note_value.textContent = '';
@@ -501,11 +504,19 @@
       return this.set_rendering_note(null);
     };
 
+    MandelIter.prototype.set_rendering_note_progress = function() {
+      var perc;
+      perc = parseInt((this.lines_finished / this.graph_height) * 100);
+      this.rendering_note_progress.value = perc;
+      return this.rendering_note_progress.textContent = perc + "%";
+    };
+
     MandelIter.prototype.draw_background = function() {
       this.graph_julia_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
       this.graph_mandel_ctx.fillStyle = 'rgb(0,0,0)';
       this.graph_mandel_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
       this.render_pixel_size = this.initial_render_pixel_size;
+      this.lines_finished = 0;
       this.set_rendering_note("...");
       return this.schedule_background_render_pass();
     };
@@ -516,6 +527,7 @@
 
     MandelIter.prototype.schedule_background_render_pass = function() {
       var render_msg;
+      this.render_mandel_img = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
       render_msg = this.render_pixel_size + "x";
       if (this.do_antialias()) {
         render_msg += " (antialias)";
@@ -529,12 +541,30 @@
       })(this), 5);
     };
 
+    MandelIter.prototype.schedule_background_render_more_lines = function() {
+      this.set_rendering_note_progress();
+      return setTimeout((function(_this) {
+        return function() {
+          return _this.deferred_background_render_callback();
+        };
+      })(this), 0);
+    };
+
     MandelIter.prototype.deferred_background_render_callback = function() {
-      this.render_mandel_img = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
-      this.render_mandelbrot(this.render_pixel_size, this.do_antialias());
-      this.graph_mandel_ctx.putImageData(this.render_mandel_img, 0, 0);
-      if (this.render_pixel_size > 1) {
+      var dirtyheight, elapsed, lastline;
+      elapsed = 0;
+      while ((this.lines_finished < this.graph_height) && (elapsed < 1000)) {
+        lastline = this.render_mandelbrot(this.render_pixel_size, this.do_antialias());
+        dirtyheight = lastline - this.lines_finished;
+        this.graph_mandel_ctx.putImageData(this.render_mandel_img, 0, 0, 0, this.lines_finished, this.graph_width, dirtyheight);
+        this.lines_finished = lastline;
+        elapsed = performance.now();
+      }
+      if (this.lines_finished < this.graph_height) {
+        return this.schedule_background_render_more_lines();
+      } else if (this.render_pixel_size > 1) {
         this.render_pixel_size /= this.deferred_render_pass_scale;
+        this.lines_finished = 0;
         return this.schedule_background_render_pass();
       } else {
         console.log('finished rendering, @render_pixel_size = ' + this.render_pixel_size);
@@ -543,41 +573,29 @@
     };
 
     MandelIter.prototype.render_mandelbrot = function(pixelsize, do_antialias) {
-      var j, px, py, ref, ref1, results, val, x, y;
+      var j, k, l, o, px, py, ref, ref1, ref2, ref3, ref4, ref5, ref6, stopline, val, x, y;
       this.mandel_maxiter = this.option.mandel_max_iterations.value;
-      results = [];
-      for (y = j = 0, ref = this.graph_height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
-        results.push((function() {
-          var k, ref2, ref3, results1;
-          results1 = [];
-          for (x = k = 0, ref2 = this.graph_width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
-            val = this.mandel_color_value(x, y);
-            if (do_antialias) {
-              val += this.mandel_color_value(x + 0.5, y);
-              val += this.mandel_color_value(x, y + 0.5);
-              val += this.mandel_color_value(x + 0.5, y + 0.5);
-              val /= 4;
-            }
-            results1.push((function() {
-              var l, ref4, results2;
-              results2 = [];
-              for (py = l = 0, ref4 = pixelsize; 0 <= ref4 ? l <= ref4 : l >= ref4; py = 0 <= ref4 ? ++l : --l) {
-                results2.push((function() {
-                  var o, ref5, results3;
-                  results3 = [];
-                  for (px = o = 0, ref5 = pixelsize; 0 <= ref5 ? o <= ref5 : o >= ref5; px = 0 <= ref5 ? ++o : --o) {
-                    results3.push(this.render_pixel(x + px, y + py, val));
-                  }
-                  return results3;
-                }).call(this));
-              }
-              return results2;
-            }).call(this));
-          }
-          return results1;
-        }).call(this));
+      stopline = this.lines_finished + this.render_lines_per_pass;
+      if (stopline >= this.graph_height) {
+        stopline = this.graph_height;
       }
-      return results;
+      for (y = j = ref = this.lines_finished, ref1 = stopline, ref2 = pixelsize; ref2 > 0 ? j <= ref1 : j >= ref1; y = j += ref2) {
+        for (x = k = 0, ref3 = this.graph_width, ref4 = pixelsize; ref4 > 0 ? k <= ref3 : k >= ref3; x = k += ref4) {
+          val = this.mandel_color_value(x, y);
+          if (do_antialias) {
+            val += this.mandel_color_value(x + 0.5, y);
+            val += this.mandel_color_value(x, y + 0.5);
+            val += this.mandel_color_value(x + 0.5, y + 0.5);
+            val /= 4;
+          }
+          for (py = l = 0, ref5 = pixelsize; 0 <= ref5 ? l <= ref5 : l >= ref5; py = 0 <= ref5 ? ++l : --l) {
+            for (px = o = 0, ref6 = pixelsize; 0 <= ref6 ? o <= ref6 : o >= ref6; px = 0 <= ref6 ? ++o : --o) {
+              this.render_pixel(x + px, y + py, val);
+            }
+          }
+        }
+      }
+      return stopline;
     };
 
     MandelIter.prototype.render_pixel = function(x, y, value) {

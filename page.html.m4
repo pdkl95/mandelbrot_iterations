@@ -20,8 +20,9 @@ undivert(`style.css')
     <div id="content" class="show_tt">
       <div class="graph panel">
         <div id="rendering_note" class="hidden">
-          <span id-"rendering_note_hdr">Rendering</span>
+          <span id="rendering_note_hdr">Rendering</span>
           <span id="rendering_note_value"></span>
+          <progress id="rendering_note_progress" max="100" value="0">0%</progress>
         </div>
         <div id="graph_wrapper" class="canvas_wrapper canvas_size">
           <canvas id="graph_mandel" class="graph_canvas canvas_size" width="900" height="600">

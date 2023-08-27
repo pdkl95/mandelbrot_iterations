@@ -121,10 +121,12 @@ class MandelIter
     @deferred_render_passes = 3
     @deferred_render_pass_scale = 3
     @initial_render_pixel_size = @deferred_render_pass_scale ** @deferred_render_passes
+    @render_lines_per_pass = 32
 
-    @rendering_note       = @context.getElementById('rendering_note')
-    @rendering_note_hdr   = @context.getElementById('rendering_note_hdr')
-    @rendering_note_value = @context.getElementById('rendering_note_value')
+    @rendering_note          = @context.getElementById('rendering_note')
+    @rendering_note_hdr      = @context.getElementById('rendering_note_hdr')
+    @rendering_note_value    = @context.getElementById('rendering_note_value')
+    @rendering_note_progress = @context.getElementById('rendering_note_progress')
 
     @main_bulb_center =
       r: -1
@@ -420,12 +422,18 @@ class MandelIter
     if text?
       @rendering_note.classList.remove('hidden')
       @rendering_note_value.textContent = text
+      @set_rendering_note_progress()
     else
       @rendering_note.classList.add('hidden')
       @rendering_note_value.textContent = ''
 
   hide_rendering_note: ->
     @set_rendering_note(null)
+
+  set_rendering_note_progress: ->
+    perc = parseInt(( @lines_finished / @graph_height) * 100)
+    @rendering_note_progress.value = perc
+    @rendering_note_progress.textContent = "#{perc}%"
 
   draw_background: ->
     @graph_julia_ctx.clearRect(0, 0, @graph_width, @graph_height)
@@ -434,6 +442,7 @@ class MandelIter
     @graph_mandel_ctx.fillRect(0, 0, @graph_width, @graph_height)
 
     @render_pixel_size = @initial_render_pixel_size
+    @lines_finished = 0
     @set_rendering_note("...")
     @schedule_background_render_pass()
 
@@ -441,6 +450,8 @@ class MandelIter
     @antialias and @render_pixel_size <= 1
 
   schedule_background_render_pass: ->
+    @render_mandel_img = @graph_mandel_ctx.getImageData(0, 0, @graph_width, @graph_height)
+
     render_msg = "#{@render_pixel_size}x"
     render_msg += " (antialias)" if @do_antialias()
     @set_rendering_note(render_msg)
@@ -450,13 +461,27 @@ class MandelIter
       @deferred_background_render_callback()
     , 5
 
-  deferred_background_render_callback: ->
-    @render_mandel_img = @graph_mandel_ctx.getImageData(0, 0, @graph_width, @graph_height)
-    @render_mandelbrot(@render_pixel_size, @do_antialias())
-    @graph_mandel_ctx.putImageData(@render_mandel_img, 0, 0)
+  schedule_background_render_more_lines: ->
+    @set_rendering_note_progress()
 
-    if @render_pixel_size > 1
+    setTimeout =>
+      @deferred_background_render_callback()
+    , 0
+
+  deferred_background_render_callback: ->
+    elapsed = 0
+    while (@lines_finished < @graph_height) and (elapsed < 1000)
+      lastline = @render_mandelbrot(@render_pixel_size, @do_antialias())
+      dirtyheight = lastline - @lines_finished
+      @graph_mandel_ctx.putImageData(@render_mandel_img, 0, 0,  0, @lines_finished,   @graph_width, dirtyheight)
+      @lines_finished = lastline
+      elapsed = performance.now()
+
+    if @lines_finished < @graph_height
+      @schedule_background_render_more_lines()
+    else if @render_pixel_size > 1
       @render_pixel_size /= @deferred_render_pass_scale
+      @lines_finished = 0
       @schedule_background_render_pass()
     else
       console.log('finished rendering, @render_pixel_size = ' + @render_pixel_size)
@@ -464,7 +489,12 @@ class MandelIter
 
   render_mandelbrot: (pixelsize, do_antialias) ->
     @mandel_maxiter = @option.mandel_max_iterations.value
-    for y in [0..@graph_height] by pixelsize
+
+    stopline = @lines_finished + @render_lines_per_pass
+    if stopline >= @graph_height
+      stopline = @graph_height
+
+    for y in [@lines_finished..stopline] by pixelsize
       for x in [0..@graph_width] by pixelsize
         val = @mandel_color_value(x, y)
         if do_antialias
@@ -476,6 +506,8 @@ class MandelIter
         for py in [0..pixelsize]
           for px in [0..pixelsize]
             @render_pixel(x + px, y + py, val)
+
+    return stopline
 
   render_pixel: (x, y, value) ->
     if x < @graph_width and y < @graph_height
