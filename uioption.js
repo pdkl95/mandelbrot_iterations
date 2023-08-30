@@ -31,6 +31,7 @@
         default_value = null;
       }
       this.callback = callback != null ? callback : {};
+      this.on_input = bind(this.on_input, this);
       this.on_change = bind(this.on_change, this);
       if (this.id instanceof Element) {
         this.el = this.id;
@@ -43,6 +44,7 @@
       }
       this.label_id = this.id + "_label";
       this.label_el = window.APP.context.getElementById(this.label_id);
+      this.label_text_formater = this.default_label_text_formater;
       if (default_value != null) {
         this["default"] = default_value;
       } else {
@@ -50,6 +52,7 @@
       }
       this.set(this["default"]);
       this.el.addEventListener('change', this.on_change);
+      this.el.addEventListener('input', this.on_change);
     }
 
     Option.prototype.detect_default_value = function() {
@@ -79,17 +82,37 @@
     };
 
     Option.prototype.set_value = function(new_value) {
-      this.value = new_value;
+      if (new_value == null) {
+        new_value = null;
+      }
+      if (new_value != null) {
+        this.value = new_value;
+      }
       if (this.label_el != null) {
         return this.label_el.innerText = this.label_text();
       }
     };
 
+    Option.prototype.default_label_text_formater = function(value) {
+      return "" + value;
+    };
+
     Option.prototype.label_text = function() {
-      return "" + this.value;
+      return this.label_text_formater(this.value);
+    };
+
+    Option.prototype.set_label_text_formater = function(func) {
+      this.label_text_formater = func;
+      return this.set_value();
     };
 
     Option.prototype.on_change = function(event) {
+      var base;
+      this.set(this.get(event.target));
+      return typeof (base = this.callback).on_change === "function" ? base.on_change(this.value) : void 0;
+    };
+
+    Option.prototype.on_input = function(event) {
       var base;
       this.set(this.get(event.target));
       return typeof (base = this.callback).on_change === "function" ? base.on_change(this.value) : void 0;

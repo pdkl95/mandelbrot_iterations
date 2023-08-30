@@ -12,6 +12,13 @@ class MandelIter
 
     @running = false
 
+    @colorize_themes =
+      linear_greyscale: [1, 1, 1]
+      greyish_purple:   [2, 0.8, 2]
+
+    @default_mandel_theme = 'linear_greyscale'
+    @default_julia_theme  = 'greyish_purple'
+
     fmtfloatopts =
       notation:    'standard'
       style:       'decimal'
@@ -75,14 +82,24 @@ class MandelIter
       julia_max_iter_paused:    new UI.IntOption('julia_max_iter_paused', 250)
       julia_max_iterations:     new UI.IntOption('julia_max_iterations', 100)
       mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 120)
+      mandel_color_scale_r:     new UI.FloatOption('mandel_color_scale_r', @colorize_themes[@default_mandel_theme][0])
+      mandel_color_scale_g:     new UI.FloatOption('mandel_color_scale_g', @colorize_themes[@default_mandel_theme][1])
+      mandel_color_scale_b:     new UI.FloatOption('mandel_color_scale_b', @colorize_themes[@default_mandel_theme][2])
 
     @option.julia_draw_local.register_callback
       on_true:  @on_julia_draw_local_true
       on_false: @on_julia_draw_local_false
 
-    @option.julia_local_pixel_size.label_text = ->
-      "#{@value}x"
-    @option.julia_local_pixel_size.set(3)
+    @option.julia_local_pixel_size.set_label_text_formater (value) -> "#{value}x"
+
+    format_color_scale = (value) ->
+      parseFloat(value).toFixed(2)
+    @option.mandel_color_scale_r.set_label_text_formater(format_color_scale)
+    @option.mandel_color_scale_g.set_label_text_formater(format_color_scale)
+    @option.mandel_color_scale_b.set_label_text_formater(format_color_scale)
+    @option.mandel_color_scale_r.register_callback on_change: @on_mandel_color_scale_change
+    @option.mandel_color_scale_g.register_callback on_change: @on_mandel_color_scale_change
+    @option.mandel_color_scale_b.register_callback on_change: @on_mandel_color_scale_change
 
     @pointer_angle = 0
     @pointer_angle_step = TAU/96
@@ -150,7 +167,6 @@ class MandelIter
       x: 0
       y: 0
 
-
     document.addEventListener('keydown', @on_keydown)
 
     console.log('init() completed!')
@@ -175,6 +191,18 @@ class MandelIter
     timestamp = new Date()
     @debugbox_hdr.textContent = timestamp.toISOString()
     @debugbox_msg.textContent = '' + msg
+
+  current_mandel_theme: ->
+    if @option.mandel_color_scale_r? and @option.mandel_color_scale_g? and @option.mandel_color_scale_r?
+      [ @option.mandel_color_scale_r.value, @option.mandel_color_scale_g.value, @option.mandel_color_scale_b.value ]
+    else
+      @colorize_themes[@default_mandel_theme]
+
+  current_julia_theme: ->
+    @colorize_themes[@default_julia_theme]
+
+  on_mandel_color_scale_change: =>
+    @repaint_mandelbrot()
 
   complex_to_string: (z) ->
     rstr = @fmtfloat.format(z.r)
@@ -211,7 +239,9 @@ class MandelIter
       @content_el.classList.remove('show_tt')
 
   resize_canvas: (w, h) ->
-    console.log('resize', w, h)
+    @canvas_num_pixels = w * h
+    console.log("resize: #{w}x#{h}, #{@canvas_num_pixels} pixels")
+
     @graph_mandel_canvas.width  = w
     @graph_mandel_canvas.height = h
     @graph_width  = @graph_mandel_canvas.width
@@ -236,6 +266,9 @@ class MandelIter
     @graph_julia_canvas.style.height = hpx
     @graph_mandel_canvas.style.width  = wpx
     @graph_mandel_canvas.style.height = hpx
+
+    unless @mandel_values? and @mandel_values.length is @canvas_num_pixels
+      @mandel_values = new Float64Array(@canvas_num_pixels)
 
     if (@graph_width != @graph_ui_width) or (@graph_height != @graph_ui_height)
       @debug('Canvas #graph is not the same size as canvas #graph_ui')
@@ -506,14 +539,28 @@ class MandelIter
     if stopline >= @graph_height
       stopline = @graph_height
 
+    @current_theme = @current_mandel_theme()
+    @current_image = @render_mandel_img
+
+    aamult = 2
+    aastep = 1.0 / aamult
+
     for y in [@lines_finished..stopline] by pixelsize
       for x in [0..@graph_width] by pixelsize
-        val = @mandel_color_value(x, y)
+        val = 0
+
         if do_antialias
-          val += @mandel_color_value(x + 0.5, y      )
-          val += @mandel_color_value(x      , y + 0.5)
-          val += @mandel_color_value(x + 0.5, y + 0.5)
-          val /= 4
+          iter = 0
+          for aay in [0..aamult] by aastep
+            for aax in [0..aamult] by aastep
+              val += @mandel_color_value(x + aax, y + aay)
+              iter++
+
+          val /= iter
+
+        else
+          val = @mandel_color_value(x, y)
+
 
         for py in [0..pixelsize]
           for px in [0..pixelsize]
@@ -523,11 +570,37 @@ class MandelIter
 
   render_pixel: (x, y, value) ->
     if x < @graph_width and y < @graph_height
-      pos = 4 * (x + (y * @graph_width))
-      value = Math.pow((value / @mandel_maxiter), 0.5) * 255
-      @render_mandel_img.data[pos    ] = value
-      @render_mandel_img.data[pos + 1] = value
-      @render_mandel_img.data[pos + 2] = value
+      pos1x = x + (y * @graph_width)
+      pos4x = 4 * pos1x
+
+      value /= @mandel_maxiter
+      @mandel_values[pos1x] = value
+      @colorize_pixel(value, pos4x)
+
+  colorize_pixel: (value, offset) ->
+    value = Math.pow(value, 0.5) * 255
+    @current_image.data[offset    ] = value * @current_theme[0]
+    @current_image.data[offset + 1] = value * @current_theme[1]
+    @current_image.data[offset + 2] = value * @current_theme[2]
+
+  repaint_canvas: (ctx, values, theme) ->
+    return unless ctx? and values?
+
+    #@current_image = ctx.createImageData(@graph_width, @graph_height)
+    @current_image = @graph_mandel_ctx.getImageData(0, 0, @graph_width, @graph_height)
+    @current_theme = theme
+
+    for y in [0..@graph_height]
+      for x in [0..@graph_width]
+        pos1x = x + (y * @graph_width)
+        pos4x = 4 * pos1x
+        @colorize_pixel(@mandel_values[pos1x], pos4x)
+        @current_image.data[pos4x + 3] = 255
+
+    ctx.putImageData(@current_image, 0, 0)
+
+  repaint_mandelbrot: ->
+    @repaint_canvas(@graph_mandel_ctx, @mandel_values, @current_mandel_theme())
 
   mandelbrot_orbit: (c, max_yield = @mandel_maxiter) ->
     n = 0
@@ -796,7 +869,7 @@ class MandelIter
 
     pixelsize = @option.julia_local_pixel_size.value
     @julia_maxiter = @option.julia_max_iterations.value
-    opacity = Math.ceil(@option.julia_local_opacity.value * 255)
+    opacity = Math.ceil(@option.julia_local_opacity.value * 256)
 
     if @pause_mode and @option.julia_more_when_paused.value
       @local_julia.x = 0
@@ -828,24 +901,24 @@ class MandelIter
       @local_julia.x = maxx if @local_julia.x > maxx
       @local_julia.y = maxy if @local_julia.y > maxy
 
-    img = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
+    @current_image = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
+    @current_theme = @current_julia_theme()
 
     for y in [0..@local_julia.height] by pixelsize
       for x in [0..@local_julia.width] by pixelsize
         px = x + @local_julia.x
         py = y + @local_julia.y
         val = @julia_color_value(c, px, py)
+        val /= 255
 
         for py in [0..pixelsize]
           for px in [0..pixelsize]
-            pos = 4 * ((x + px) + ((y + py) * img.width))
-            value = Math.pow((val / @julia_maxiter), 0.5) * 255
-            img.data[pos    ] = value * 2
-            img.data[pos + 1] = value * 0.8
-            img.data[pos + 2] = value * 2
-            img.data[pos + 3] = opacity
+            pos1x = (x + px) + ((y + py) * @current_image.width)
+            pos4x = 4 * pos1x
+            @colorize_pixel(val, pos4x)
+            @current_image.data[pos4x + 3] = opacity
 
-    @graph_julia_ctx.putImageData(img, @local_julia.x, @local_julia.y)
+    @graph_julia_ctx.putImageData(@current_image, @local_julia.x, @local_julia.y)
 
   draw_orbit_features: (c) ->
     @draw_orbit(c)

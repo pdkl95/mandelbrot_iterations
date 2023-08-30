@@ -18,6 +18,8 @@ class UI.Option
     @label_id = "#{@id}_label"
     @label_el = window.APP.context.getElementById(@label_id)
 
+    @label_text_formater = @default_label_text_formater
+
     if default_value?
       @default = default_value
     else
@@ -26,6 +28,7 @@ class UI.Option
     @set(@default)
 
     @el.addEventListener('change', @on_change)
+    @el.addEventListener('input', @on_change)
 
   detect_default_value: ->
     @get()
@@ -37,14 +40,25 @@ class UI.Option
     for key, func of @callback
       delete @callback[name] unless func?
 
-  set_value: (new_value) ->
-    @value = new_value
+  set_value: (new_value = null) ->
+    @value = new_value if new_value?
     @label_el.innerText = @label_text() if @label_el?
+ 
+  default_label_text_formater: (value) ->
+    "#{value}"
 
   label_text: ->
-    "#{@value}"
+    @label_text_formater(@value)
+
+  set_label_text_formater: (func) ->
+    @label_text_formater = func
+    @set_value()
 
   on_change: (event) =>
+    @set(@get(event.target))
+    @callback.on_change?(@value)
+
+  on_input: (event) =>
     @set(@get(event.target))
     @callback.on_change?(@value)
 

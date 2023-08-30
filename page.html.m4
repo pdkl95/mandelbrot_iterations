@@ -143,7 +143,7 @@ undivert(`style.css')
             </tr>
             <tr>
               <th class="tt ttright" data-title="Distance the trace path is moved away from the true edge of the Mandelbrot Set.">Trace Speed</th>
-              <td>
+              <td class="slider">
                 <input id="trace_speed" type="range" value="0.0016362461737446838" min="0" max="0.016362461737446838" step="any" autocomplete="off">
               </td>
             </tr>
@@ -167,14 +167,14 @@ undivert(`style.css')
             </tr>
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the Julia overlay. WARNING: Higher values significantly increase Julia rendering time!">Max Iterations</th>
-              <td>
+              <td class="slider">
                 <label for="julia_max_iterations" id="julia_max_iterations_label">120</label>
                 <input id="julia_max_iterations" type="range" value="100" min="20" max="250" step="10" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space)">Max Iter When Paused</th>
-              <td>
+              <td class="slider">
                 <label for="julia_max_iter_paused" id="julia_max_iter_paused_label">200</label>
                 <input id="julia_max_iter_paused" type="range" value="250" min="50" max="500" step="50" autocomplete="off">
               </td>
@@ -187,14 +187,14 @@ undivert(`style.css')
             </tr>
             <tr>
               <th class="tt ttright" data-title="Opacity of the Julia overlay.">Opacity</th>
-              <td>
+              <td class="slider">
                 <label for="julia_local_opacity" id="julia_local_opacity_label">60%</label>
                 <input id="julia_local_opacity" type="range" value="0.65" min="0" max="1" step="0.05" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="Opacity of the Julia overlay.">Pixel Size</th>
-              <td>
+              <td class="slider">
                 <label for="julia_local_pixel_size" id="julia_local_pixel_size_label">3x</label>
                 <input id="julia_local_pixel_size" type="range" value="3" min="1" max="4" step="1" autocomplete="off">
               </td>
@@ -217,13 +217,40 @@ undivert(`style.css')
           <table>
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
-              <td>
+              <td class="slider">
                 <label for="mandel_max_iterations" id="mandel_max_iterations_label">60%</label>
                 <input id="mandel_max_iterations" type="range" value="120" min="20" max="1000" step="20" autocomplete="off">
               </td>
             </tr>
+            <tr>
+              <th>
+                Color Scale <span class="textcolor red">Red</span>
+              </th>
+              <td class="slider color red">
+                <label for="mandel_color_scale_r" id="mandel_color_scale_r_label"></label>
+                <input id="mandel_color_scale_r" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Color Scale <span class="textcolor green">Green</span>
+              </th>
+              <td class="slider color green">
+                <label for="mandel_color_scale_g" id="mandel_color_scale_g_label"></label>
+                <input id="mandel_color_scale_g" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th>
+                Color Scale <span class="textcolor blue">Blue</span>
+              </th>
+              <td class="slider color blue">
+                <label for="mandel_color_scale_b" id="mandel_color_scale_b_label"></label>
+                <input id="mandel_color_scale_b" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
+              </td>
+            </tr>
           </table>
-</div>
+        </div>
         <div class="clear_both"></div>
       </div>
     </div>

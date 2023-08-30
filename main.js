@@ -28,13 +28,20 @@
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
       this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_mandel_color_scale_change = bind(this.on_mandel_color_scale_change, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts;
+      var fmtfloatopts, format_color_scale;
       console.log('Starting init()...');
       this.running = false;
+      this.colorize_themes = {
+        linear_greyscale: [1, 1, 1],
+        greyish_purple: [2, 0.8, 2]
+      };
+      this.default_mandel_theme = 'linear_greyscale';
+      this.default_julia_theme = 'greyish_purple';
       fmtfloatopts = {
         notation: 'standard',
         style: 'decimal',
@@ -92,16 +99,33 @@
         julia_local_pixel_size: new UI.IntOption('julia_local_pixel_size', 3),
         julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 250),
         julia_max_iterations: new UI.IntOption('julia_max_iterations', 100),
-        mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120)
+        mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
+        mandel_color_scale_r: new UI.FloatOption('mandel_color_scale_r', this.colorize_themes[this.default_mandel_theme][0]),
+        mandel_color_scale_g: new UI.FloatOption('mandel_color_scale_g', this.colorize_themes[this.default_mandel_theme][1]),
+        mandel_color_scale_b: new UI.FloatOption('mandel_color_scale_b', this.colorize_themes[this.default_mandel_theme][2])
       };
       this.option.julia_draw_local.register_callback({
         on_true: this.on_julia_draw_local_true,
         on_false: this.on_julia_draw_local_false
       });
-      this.option.julia_local_pixel_size.label_text = function() {
-        return this.value + "x";
+      this.option.julia_local_pixel_size.set_label_text_formater(function(value) {
+        return value + "x";
+      });
+      format_color_scale = function(value) {
+        return parseFloat(value).toFixed(2);
       };
-      this.option.julia_local_pixel_size.set(3);
+      this.option.mandel_color_scale_r.set_label_text_formater(format_color_scale);
+      this.option.mandel_color_scale_g.set_label_text_formater(format_color_scale);
+      this.option.mandel_color_scale_b.set_label_text_formater(format_color_scale);
+      this.option.mandel_color_scale_r.register_callback({
+        on_change: this.on_mandel_color_scale_change
+      });
+      this.option.mandel_color_scale_g.register_callback({
+        on_change: this.on_mandel_color_scale_change
+      });
+      this.option.mandel_color_scale_b.register_callback({
+        on_change: this.on_mandel_color_scale_change
+      });
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -188,6 +212,22 @@
       return this.debugbox_msg.textContent = '' + msg;
     };
 
+    MandelIter.prototype.current_mandel_theme = function() {
+      if ((this.option.mandel_color_scale_r != null) && (this.option.mandel_color_scale_g != null) && (this.option.mandel_color_scale_r != null)) {
+        return [this.option.mandel_color_scale_r.value, this.option.mandel_color_scale_g.value, this.option.mandel_color_scale_b.value];
+      } else {
+        return this.colorize_themes[this.default_mandel_theme];
+      }
+    };
+
+    MandelIter.prototype.current_julia_theme = function() {
+      return this.colorize_themes[this.default_julia_theme];
+    };
+
+    MandelIter.prototype.on_mandel_color_scale_change = function() {
+      return this.repaint_mandelbrot();
+    };
+
     MandelIter.prototype.complex_to_string = function(z) {
       var istr, rstr;
       rstr = this.fmtfloat.format(z.r);
@@ -229,7 +269,8 @@
 
     MandelIter.prototype.resize_canvas = function(w, h) {
       var hpx, wpx;
-      console.log('resize', w, h);
+      this.canvas_num_pixels = w * h;
+      console.log("resize: " + w + "x" + h + ", " + this.canvas_num_pixels + " pixels");
       this.graph_mandel_canvas.width = w;
       this.graph_mandel_canvas.height = h;
       this.graph_width = this.graph_mandel_canvas.width;
@@ -251,6 +292,9 @@
       this.graph_julia_canvas.style.height = hpx;
       this.graph_mandel_canvas.style.width = wpx;
       this.graph_mandel_canvas.style.height = hpx;
+      if (!((this.mandel_values != null) && this.mandel_values.length === this.canvas_num_pixels)) {
+        this.mandel_values = new Float64Array(this.canvas_num_pixels);
+      }
       if ((this.graph_width !== this.graph_ui_width) || (this.graph_height !== this.graph_ui_height)) {
         return this.debug('Canvas #graph is not the same size as canvas #graph_ui');
       }
@@ -585,23 +629,33 @@
     };
 
     MandelIter.prototype.render_mandelbrot = function(pixelsize, do_antialias) {
-      var j, k, l, o, px, py, ref, ref1, ref2, ref3, ref4, ref5, ref6, stopline, val, x, y;
+      var aamult, aastep, aax, aay, iter, j, k, l, o, px, py, q, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, stopline, val, x, y;
       this.mandel_maxiter = this.option.mandel_max_iterations.value;
       stopline = this.lines_finished + this.render_lines_per_pass;
       if (stopline >= this.graph_height) {
         stopline = this.graph_height;
       }
+      this.current_theme = this.current_mandel_theme();
+      this.current_image = this.render_mandel_img;
+      aamult = 2;
+      aastep = 1.0 / aamult;
       for (y = j = ref = this.lines_finished, ref1 = stopline, ref2 = pixelsize; ref2 > 0 ? j <= ref1 : j >= ref1; y = j += ref2) {
         for (x = k = 0, ref3 = this.graph_width, ref4 = pixelsize; ref4 > 0 ? k <= ref3 : k >= ref3; x = k += ref4) {
-          val = this.mandel_color_value(x, y);
+          val = 0;
           if (do_antialias) {
-            val += this.mandel_color_value(x + 0.5, y);
-            val += this.mandel_color_value(x, y + 0.5);
-            val += this.mandel_color_value(x + 0.5, y + 0.5);
-            val /= 4;
+            iter = 0;
+            for (aay = l = 0, ref5 = aamult, ref6 = aastep; ref6 > 0 ? l <= ref5 : l >= ref5; aay = l += ref6) {
+              for (aax = o = 0, ref7 = aamult, ref8 = aastep; ref8 > 0 ? o <= ref7 : o >= ref7; aax = o += ref8) {
+                val += this.mandel_color_value(x + aax, y + aay);
+                iter++;
+              }
+            }
+            val /= iter;
+          } else {
+            val = this.mandel_color_value(x, y);
           }
-          for (py = l = 0, ref5 = pixelsize; 0 <= ref5 ? l <= ref5 : l >= ref5; py = 0 <= ref5 ? ++l : --l) {
-            for (px = o = 0, ref6 = pixelsize; 0 <= ref6 ? o <= ref6 : o >= ref6; px = 0 <= ref6 ? ++o : --o) {
+          for (py = q = 0, ref9 = pixelsize; 0 <= ref9 ? q <= ref9 : q >= ref9; py = 0 <= ref9 ? ++q : --q) {
+            for (px = s = 0, ref10 = pixelsize; 0 <= ref10 ? s <= ref10 : s >= ref10; px = 0 <= ref10 ? ++s : --s) {
               this.render_pixel(x + px, y + py, val);
             }
           }
@@ -611,14 +665,43 @@
     };
 
     MandelIter.prototype.render_pixel = function(x, y, value) {
-      var pos;
+      var pos1x, pos4x;
       if (x < this.graph_width && y < this.graph_height) {
-        pos = 4 * (x + (y * this.graph_width));
-        value = Math.pow(value / this.mandel_maxiter, 0.5) * 255;
-        this.render_mandel_img.data[pos] = value;
-        this.render_mandel_img.data[pos + 1] = value;
-        return this.render_mandel_img.data[pos + 2] = value;
+        pos1x = x + (y * this.graph_width);
+        pos4x = 4 * pos1x;
+        value /= this.mandel_maxiter;
+        this.mandel_values[pos1x] = value;
+        return this.colorize_pixel(value, pos4x);
       }
+    };
+
+    MandelIter.prototype.colorize_pixel = function(value, offset) {
+      value = Math.pow(value, 0.5) * 255;
+      this.current_image.data[offset] = value * this.current_theme[0];
+      this.current_image.data[offset + 1] = value * this.current_theme[1];
+      return this.current_image.data[offset + 2] = value * this.current_theme[2];
+    };
+
+    MandelIter.prototype.repaint_canvas = function(ctx, values, theme) {
+      var j, k, pos1x, pos4x, ref, ref1, x, y;
+      if (!((ctx != null) && (values != null))) {
+        return;
+      }
+      this.current_image = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
+      this.current_theme = theme;
+      for (y = j = 0, ref = this.graph_height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
+        for (x = k = 0, ref1 = this.graph_width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
+          pos1x = x + (y * this.graph_width);
+          pos4x = 4 * pos1x;
+          this.colorize_pixel(this.mandel_values[pos1x], pos4x);
+          this.current_image.data[pos4x + 3] = 255;
+        }
+      }
+      return ctx.putImageData(this.current_image, 0, 0);
+    };
+
+    MandelIter.prototype.repaint_mandelbrot = function() {
+      return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.current_mandel_theme());
     };
 
     MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
@@ -879,13 +962,13 @@
     };
 
     MandelIter.prototype.draw_local_julia = function(c) {
-      var img, j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos, px, py, ref, ref1, ref2, ref3, ref4, ref5, val, value, x, y;
+      var j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos1x, pos4x, px, py, ref, ref1, ref2, ref3, ref4, ref5, val, x, y;
       if ((this.local_julia.width > 0) && (this.local_julia.height > 0)) {
         this.graph_julia_ctx.clearRect(this.local_julia.x, this.local_julia.y, this.local_julia.width, this.local_julia.height);
       }
       pixelsize = this.option.julia_local_pixel_size.value;
       this.julia_maxiter = this.option.julia_max_iterations.value;
-      opacity = Math.ceil(this.option.julia_local_opacity.value * 255);
+      opacity = Math.ceil(this.option.julia_local_opacity.value * 256);
       if (this.pause_mode && this.option.julia_more_when_paused.value) {
         this.local_julia.x = 0;
         this.local_julia.y = 0;
@@ -931,25 +1014,25 @@
           this.local_julia.y = maxy;
         }
       }
-      img = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
+      this.current_image = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
+      this.current_theme = this.current_julia_theme();
       for (y = j = 0, ref = this.local_julia.height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
         for (x = k = 0, ref2 = this.local_julia.width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
           px = x + this.local_julia.x;
           py = y + this.local_julia.y;
           val = this.julia_color_value(c, px, py);
+          val /= 255;
           for (py = l = 0, ref4 = pixelsize; 0 <= ref4 ? l <= ref4 : l >= ref4; py = 0 <= ref4 ? ++l : --l) {
             for (px = o = 0, ref5 = pixelsize; 0 <= ref5 ? o <= ref5 : o >= ref5; px = 0 <= ref5 ? ++o : --o) {
-              pos = 4 * ((x + px) + ((y + py) * img.width));
-              value = Math.pow(val / this.julia_maxiter, 0.5) * 255;
-              img.data[pos] = value * 2;
-              img.data[pos + 1] = value * 0.8;
-              img.data[pos + 2] = value * 2;
-              img.data[pos + 3] = opacity;
+              pos1x = (x + px) + ((y + py) * this.current_image.width);
+              pos4x = 4 * pos1x;
+              this.colorize_pixel(val, pos4x);
+              this.current_image.data[pos4x + 3] = opacity;
             }
           }
         }
       }
-      return this.graph_julia_ctx.putImageData(img, this.local_julia.x, this.local_julia.y);
+      return this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y);
     };
 
     MandelIter.prototype.draw_orbit_features = function(c) {
