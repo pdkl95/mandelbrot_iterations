@@ -55,12 +55,22 @@ undivert(`style.css')
           <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
           <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled" autocomplete="off" class="tt ttright" data-title="Changes the current position along the trace path.">
 
-          <label for="trace_path">
+          <label for="trace_path" class="hidden">
             <select name="trace_path" id="trace_path" autocomplete="off">
               <option value="main_cardioid" selected="selected">Main Cardioid</option>
               <option value="main_bulb">Main Bulb</option>
             </select>
           </label>
+        </div>
+
+        <div class="uioptbox buttonbox label">
+          <span class="title">Status</span>
+          <div id="status" class="loading">
+            <span class="statusmsg loading">Loading...</span>
+            <span class="statusmsg rendering">Rendering</span>
+            <span class="statusmsg normal">Ok</span>
+            <span class="statusmsg paused">Paused</span>
+          </div>
         </div>
 
         <div class="uioptbox buttonbox bbright">

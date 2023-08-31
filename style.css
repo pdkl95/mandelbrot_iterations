@@ -72,7 +72,6 @@ h1 {
 .center {
   text-align: center;
 }
-
 .right {
   text-align: right;
 }
@@ -346,4 +345,51 @@ td.slider > label {
   font-family: monospace;
   font-weight: bold;
   text-align: right;
+}
+
+#status {
+  color: black;
+  display: inline-block;
+  padding: 2px 4px ;
+  border-radius: 5px;
+  border: 1px inset #C0C0C0;
+  box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+  font-size: large;
+}
+
+#status.loading {
+  color: #6D6D6D;
+  border-color: #D4D690;
+  background-color: #DDDCC3;
+}
+
+#status.rendering {
+  color: #1F1515;
+  border-color: #A8625F;
+  background-color: #DCC2C2;
+}
+
+#status.normal {
+  color: #0D2F0C;
+  border-color: #6af215;
+  background-color: #C5D7C4;
+  text-shadow: 1px 1px 3px rgba(107,186,100,0.15);
+}
+
+#status.paused {
+  color: #000;
+  border-color: #2AADD5;
+  background-color: #BCD2D9;
+  text-shadow: 1px 1px 3px rgba(133,187,212,0.08);
+}
+
+.statusmsg {
+  display: none;
+}
+
+#status.loading   > .statusmsg.loading,
+#status.rendering > .statusmsg.rendering,
+#status.normal    > .statusmsg.normal,
+#status.paused    > .statusmsg.paused {
+  display: inline;
 }

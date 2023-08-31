@@ -31,9 +31,11 @@ class MandelIter
     fmtfloatopts['signDisplay'] = 'never'
     @fmtfloatnosign = new Intl.NumberFormat undefined, fmtfloatopts
 
-    @content_el       = @context.getElementById('content')
+    @content_el    = @context.getElementById('content')
+    @status        = @context.getElementById('status')
+    @status_current = 'loading'
 
-    @show_tooltips   = @context.getElementById('show_tooltips')
+    @show_tooltips = @context.getElementById('show_tooltips')
     @show_tooltips.addEventListener('change', @on_show_tooltips_change)
     @show_tooltips.checked = true
 
@@ -302,12 +304,20 @@ class MandelIter
         r: 1
         i: 1
 
+  set_status: (klass) ->
+    if @status_current?
+      @status.classList.remove(@status_current)
+    @status.classList.add(klass)
+    @status_current = klass
+
   pause_mode_on: ->
     @pause_mode = true
+    @set_status('paused')
 
   pause_mode_off: ->
     @pause_mode = false
     @schedule_ui_draw()
+    @set_status('normal')
 
   pause_mode_toggle: ->
     if @pause_mode
@@ -481,6 +491,8 @@ class MandelIter
     @rendering_note_progress.textContent = "#{perc}%"
 
   draw_background: ->
+    @set_status('rendering')
+
     @graph_julia_ctx.clearRect(0, 0, @graph_width, @graph_height)
 
     @graph_mandel_ctx.fillStyle = 'rgb(0,0,0)'
@@ -531,6 +543,7 @@ class MandelIter
     else
       console.log('finished rendering, @render_pixel_size = ' + @render_pixel_size)
       @hide_rendering_note()
+      @set_status('normal')
 
   render_mandelbrot: (pixelsize, do_antialias) ->
     @mandel_maxiter = @option.mandel_max_iterations.value

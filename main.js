@@ -54,6 +54,8 @@
       fmtfloatopts['signDisplay'] = 'never';
       this.fmtfloatnosign = new Intl.NumberFormat(void 0, fmtfloatopts);
       this.content_el = this.context.getElementById('content');
+      this.status = this.context.getElementById('status');
+      this.status_current = 'loading';
       this.show_tooltips = this.context.getElementById('show_tooltips');
       this.show_tooltips.addEventListener('change', this.on_show_tooltips_change);
       this.show_tooltips.checked = true;
@@ -338,13 +340,23 @@
       };
     };
 
+    MandelIter.prototype.set_status = function(klass) {
+      if (this.status_current != null) {
+        this.status.classList.remove(this.status_current);
+      }
+      this.status.classList.add(klass);
+      return this.status_current = klass;
+    };
+
     MandelIter.prototype.pause_mode_on = function() {
-      return this.pause_mode = true;
+      this.pause_mode = true;
+      return this.set_status('paused');
     };
 
     MandelIter.prototype.pause_mode_off = function() {
       this.pause_mode = false;
-      return this.schedule_ui_draw();
+      this.schedule_ui_draw();
+      return this.set_status('normal');
     };
 
     MandelIter.prototype.pause_mode_toggle = function() {
@@ -568,6 +580,7 @@
     };
 
     MandelIter.prototype.draw_background = function() {
+      this.set_status('rendering');
       this.graph_julia_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
       this.graph_mandel_ctx.fillStyle = 'rgb(0,0,0)';
       this.graph_mandel_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
@@ -624,7 +637,8 @@
         return this.schedule_background_render_pass();
       } else {
         console.log('finished rendering, @render_pixel_size = ' + this.render_pixel_size);
-        return this.hide_rendering_note();
+        this.hide_rendering_note();
+        return this.set_status('normal');
       }
     };
 
