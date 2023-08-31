@@ -44,8 +44,8 @@ all calculations.
 While I first leaened about the Mandelbrot Set _many_ years
 ago. Playing with
 [James Gleick's CHAOS: The Software](https://github.com/rudyrucker/chaos)
-on my IBM AT's 80286 CPU required a lot of patients just to see a tiny
-16 color image of a Julia or Mandelbrot. I thought I understood the iterative
+on my IBM AT's 80286 CPU required a lot of patience. just to see a tiny
+16 color image of a Julia or Mandelbrot[^1].  I thought I understood the iterative
 math underltying these fractals.
 
 This understanding was shaken when I saw
@@ -58,6 +58,20 @@ watching them.
 Whay was different about those videos that was missing from most of
 the articl4s/videos/etc I had seen before? These videos focus on the
 _orbits_. So I wrote this as a tool for exploring the orbits directly.
+
+While outside this project's tended scope, the [videos](https://www.youtube.com/playlist?list=PL9tHLTl03LqG4ajDvqyfCDMKSxmR_plJ3)
+by The Mathemagicians' Guild also describes other interesting
+properties of the Mandelbrot Set that I had never heard before:
+
+> At the center of every embedded Julia Set we find a "mini" Mandelrot.
+> The "mini" Mandelbrot is found at twice the depth as where we found\
+> the embedded Julia Set.
+
+> The Mandelbrot Set remembers where it came from.
+
+To understan what the latter stement means, I highly recommed reading
+the description for [this video by Maths Town](https://www.youtube.com/watch?v=CdSXlzqN7Og);
+the video itself is a really goods demonstrates the property.
 
 ## License
 
@@ -73,3 +87,6 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+[^1]: Today, with similar amounts of patience. clever xomputatiopn techniques, and modern hardware gives you an [amazing hour long journey](https://www.youtube.com/watch?v=uUiwddOhg4c) to a mini Mandelbrtot __10^-1524__ where the rendering requires **10 Trillion** iterations! (a [short 3 minute "highlights" version](https://www.youtube.com/watch?v=BsH8uiRvYJk))
+
