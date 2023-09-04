@@ -66,6 +66,7 @@ class MandelIter
     @zoom_amount.addEventListener('change', @on_zoom_amount_change)
 
     @option =
+      keyboard_step:            new UI.FloatOption('keyboard_step', 0.01)
       highlight_trace_path:     new UI.BoolOption('highlight_trace_path', false)
       highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
       trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance')
@@ -139,10 +140,15 @@ class MandelIter
     @reset_renderbox()
     @draw_ui_scheduled = false
 
+    @shift_step_accel = 0.333
+    @ctrl_step_accel  = 0.1
+    @alt_step_accel   = 0.01
+
+    @defer_highres_frames = 0
     @deferred_render_passes = 3
     @deferred_render_pass_scale = 3
     @initial_render_pixel_size = @deferred_render_pass_scale ** @deferred_render_passes
-    @render_lines_per_pass = 32
+    @render_lines_per_pass = 24
 
     @rendering_note          = @context.getElementById('rendering_note')
     @rendering_note_hdr      = @context.getElementById('rendering_note_hdr')
@@ -177,11 +183,28 @@ class MandelIter
 
 
   on_keydown: (event) =>
-    #console.log(event.code)
+    accel = 1.0
+    accel = @shift_step_accel if event.shiftKey
+    accel =  @ctrl_step_accel if event.ctrlKey
+    accel =   @alt_step_accel if event.altKey
+
     switch event.code
       when 'Space'
         @pause_mode_toggle()
         event.preventDefault()
+
+      when 'ArrowUp'    then @mouse_step_up(accel)
+      when 'ArrowDown'  then @mouse_step_down(accel)
+      when 'ArrowLeft'  then @mouse_step_left(accel)
+      when 'ArrowRight' then @mouse_step_right(accel)
+
+      else
+        # not our event
+        return
+
+    # it IS our event, so kill the event
+    #event.stopPropagation()
+    event.preventDefault()
 
   debug: (msg) ->
     unless @debugbox?
@@ -398,21 +421,56 @@ class MandelIter
       @renderbox.start = newstart
       @renderbox.end   = newend
       @zoom_mode = false
+      @option.julia_draw_local.set(false)
       @draw_background()
     else
       @pause_mode_toggle()
 
   on_mousemove: (event) =>
+    @set_mouse_position(event.layerX, event.layerY)
+
+  set_mouse_position: (newx, newy) ->
     oldx = @mouse.x
     oldy = @mouse.y
-    @mouse.x = event.layerX
-    @mouse.y = event.layerY
+    @mouse.x = newx
+    @mouse.y = newy
+
+    @mouse.x = 0 if @mouse.x < 0
+    @mouse.y = 0 if @mouse.y < 0
+    @mouse.x = @graph_width  if @mouse.x > @graph_width
+    @mouse.y = @graph_height if @mouse.y > @graph_height
+
     if (oldx != @mouse.x) or (oldy != @mouse.y)
       unless @pause_mode
         @orbit_mouse.x = @mouse.x
         @orbit_mouse.y = @mouse.y
       @mouse_active = true
       @schedule_ui_draw()
+
+  move_mouse_position: (dx, dy, accel = 1.0) ->
+    #accel = accel * 10
+    oldx = @orbit_mouse.x
+    oldy = @orbit_mouse.y
+    @set_mouse_position(@orbit_mouse.x + (dx * accel), @orbit_mouse.y + (dy * accel))
+    @orbit_mouse.x = @mouse.x
+    @orbit_mouse.y = @mouse.y
+    pos = @canvas_to_complex(@orbit_mouse.x, @orbit_mouse.y)
+    @loc_c.innerText = @complex_to_string(pos)
+
+    @defer_highres_frames = 1
+    #console.log('old', oldx, oldy, 'dx', dx, 'dy', dy, 'accel', accel, 'new', @orbit_mouse.x, @orbit_mouse.y)
+
+  mouse_step_up: (accel = 1.0) ->
+    @move_mouse_position(0, -@option.keyboard_step.value, accel)
+
+  mouse_step_down: (accel = 1.0) ->
+    @move_mouse_position(0,  @option.keyboard_step.value, accel)
+
+  mouse_step_left: (accel = 1.0) ->
+    @move_mouse_position(-@option.keyboard_step.value, 0, accel)
+
+  mouse_step_right: (accel = 1.0) ->
+    @move_mouse_position( @option.keyboard_step.value, 0, accel)
 
   on_mouseenter: (event) =>
     @mouse_active = true
@@ -884,7 +942,13 @@ class MandelIter
     @julia_maxiter = @option.julia_max_iterations.value
     opacity = Math.ceil(@option.julia_local_opacity.value * 256)
 
-    if @pause_mode and @option.julia_more_when_paused.value
+    highres = @pause_mode and @option.julia_more_when_paused.value
+    if @defer_highres_frames > 0
+      @defer_highres_frames = @defer_highres_frames - 1
+      highres = false
+      @schedule_ui_draw()
+
+    if highres
       @local_julia.x = 0
       @local_julia.y = 0
       @local_julia.width  = @graph_width
