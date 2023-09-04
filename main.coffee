@@ -511,17 +511,17 @@ class MandelIter
       r: 0
       i: 0
 
-    while (d <= 2) and (n < @mandel_maxiter)
+    while (d <= 4) and (n < @mandel_maxiter)
       p =
-        r: Math.pow(z.r, 2) - Math.pow(z.i, 2)
+        r: (z.r * z.r) - (z.i * z.i)
         i: 2 * z.r * z.i
       z =
         r: p.r + c.r
         i: p.i + c.i
-      d = Math.pow(z.r, 2) + Math.pow(z.i, 2)
+      d = (z.r * z.r) + (z.i * z.i)
       n += 1
 
-    [n, d <= 2]
+    [n, d <= 4]
 
   mandel_color_value: (x, y) ->
     c = @canvas_to_complex(x, y)
@@ -682,14 +682,14 @@ class MandelIter
 
     yield z: z, n: n
 
-    while (d <= 2) and (n < max_yield)
+    while (d <= 4) and (n < max_yield)
       p =
-        r: Math.pow(z.r, 2) - Math.pow(z.i, 2)
+        r: (z.r * z.r) - (z.i * z.i)
         i: 2 * z.r * z.i
       z =
         r: p.r + c.r
         i: p.i + c.i
-      d = Math.pow(z.r, 2) + Math.pow(z.i, 2)
+      d = (z.r * z.r) + (z.i * z.i)
       n += 1
 
       yield z: z, n: n
@@ -916,7 +916,7 @@ class MandelIter
     zr = z.r
     zi = z.i
 
-    while (d <= 2) and (n < @julia_maxiter)
+    while (d <= 4) and (n < @julia_maxiter)
       pr = (zr * zr) - (zi * zi)
       pi = 2 * zr * zi
       zr = pr + c.r
@@ -924,7 +924,7 @@ class MandelIter
       d = (zr * zr) + (zi * zi)
       n += 1
 
-    [n, d <= 2]
+    [n, d <= 4]
 
   julia_color_value: (c, x, y) ->
     p = @canvas_to_complex(x, y)

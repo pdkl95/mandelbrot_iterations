@@ -623,19 +623,19 @@
         r: 0,
         i: 0
       };
-      while ((d <= 2) && (n < this.mandel_maxiter)) {
+      while ((d <= 4) && (n < this.mandel_maxiter)) {
         p = {
-          r: Math.pow(z.r, 2) - Math.pow(z.i, 2),
+          r: (z.r * z.r) - (z.i * z.i),
           i: 2 * z.r * z.i
         };
         z = {
           r: p.r + c.r,
           i: p.i + c.i
         };
-        d = Math.pow(z.r, 2) + Math.pow(z.i, 2);
+        d = (z.r * z.r) + (z.i * z.i);
         n += 1;
       }
-      return [n, d <= 2];
+      return [n, d <= 4];
     };
 
     MandelIter.prototype.mandel_color_value = function(x, y) {
@@ -826,16 +826,16 @@
         n: n
       });
       results = [];
-      while ((d <= 2) && (n < max_yield)) {
+      while ((d <= 4) && (n < max_yield)) {
         p = {
-          r: Math.pow(z.r, 2) - Math.pow(z.i, 2),
+          r: (z.r * z.r) - (z.i * z.i),
           i: 2 * z.r * z.i
         };
         z = {
           r: p.r + c.r,
           i: p.i + c.i
         };
-        d = Math.pow(z.r, 2) + Math.pow(z.i, 2);
+        d = (z.r * z.r) + (z.i * z.i);
         n += 1;
         results.push((yield {
           z: z,
@@ -1045,7 +1045,7 @@
       d = 0;
       zr = z.r;
       zi = z.i;
-      while ((d <= 2) && (n < this.julia_maxiter)) {
+      while ((d <= 4) && (n < this.julia_maxiter)) {
         pr = (zr * zr) - (zi * zi);
         pi = 2 * zr * zi;
         zr = pr + c.r;
@@ -1053,7 +1053,7 @@
         d = (zr * zr) + (zi * zi);
         n += 1;
       }
-      return [n, d <= 2];
+      return [n, d <= 4];
     };
 
     MandelIter.prototype.julia_color_value = function(c, x, y) {
