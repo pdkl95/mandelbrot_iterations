@@ -505,23 +505,42 @@ class MandelIter
       y: ((z.i - @renderbox.start.i) / (@renderbox.end.i - @renderbox.start.i)) * @graph_height
 
   mandelbrot: (c) ->
+    cr = c.r
+    ci = c.i
     n = 0
     d = 0
-    z =
-      r: 0
-      i: 0
+    zr = 0
+    zi = 0
 
     while (d <= 4) and (n < @mandel_maxiter)
-      p =
-        r: (z.r * z.r) - (z.i * z.i)
-        i: 2 * z.r * z.i
-      z =
-        r: p.r + c.r
-        i: p.i + c.i
-      d = (z.r * z.r) + (z.i * z.i)
+      pr = (zr * zr) - (zi * zi)
+      pi = 2 * zr * zi
+      zr = pr + cr
+      zi = pi + ci
+      d  = (zr * zr) + (zi * zi)
       n += 1
 
     [n, d <= 4]
+
+  mandelbrot_orbit: (c, max_yield = @mandel_maxiter) ->
+    cr = c.r
+    ci = c.i
+    n = 0
+    d = 0
+    zr = 0
+    zi = 0
+
+    yield z: {r: zr, i: zi}, n: n
+
+    while (d <= 4) and (n < max_yield)
+      pr = (zr * zr) - (zi * zi)
+      pi = 2 * zr * zi
+      zr = pr + cr
+      zi = pi + ci
+      d  = (zr * zr) + (zi * zi)
+      n += 1
+
+      yield z: {r: zr, i: zi}, n: n
 
   mandel_color_value: (x, y) ->
     c = @canvas_to_complex(x, y)
@@ -672,27 +691,6 @@ class MandelIter
 
   repaint_mandelbrot: ->
     @repaint_canvas(@graph_mandel_ctx, @mandel_values, @current_mandel_theme())
-
-  mandelbrot_orbit: (c, max_yield = @mandel_maxiter) ->
-    n = 0
-    d = 0
-    z =
-      r: 0
-      i: 0
-
-    yield z: z, n: n
-
-    while (d <= 4) and (n < max_yield)
-      p =
-        r: (z.r * z.r) - (z.i * z.i)
-        i: 2 * z.r * z.i
-      z =
-        r: p.r + c.r
-        i: p.i + c.i
-      d = (z.r * z.r) + (z.i * z.i)
-      n += 1
-
-      yield z: z, n: n
 
   draw_orbit: (c) ->
     mx = c.x

@@ -616,26 +616,59 @@
     };
 
     MandelIter.prototype.mandelbrot = function(c) {
-      var d, n, p, z;
+      var ci, cr, d, n, pi, pr, zi, zr;
+      cr = c.r;
+      ci = c.i;
       n = 0;
       d = 0;
-      z = {
-        r: 0,
-        i: 0
-      };
+      zr = 0;
+      zi = 0;
       while ((d <= 4) && (n < this.mandel_maxiter)) {
-        p = {
-          r: (z.r * z.r) - (z.i * z.i),
-          i: 2 * z.r * z.i
-        };
-        z = {
-          r: p.r + c.r,
-          i: p.i + c.i
-        };
-        d = (z.r * z.r) + (z.i * z.i);
+        pr = (zr * zr) - (zi * zi);
+        pi = 2 * zr * zi;
+        zr = pr + cr;
+        zi = pi + ci;
+        d = (zr * zr) + (zi * zi);
         n += 1;
       }
       return [n, d <= 4];
+    };
+
+    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
+      var ci, cr, d, n, pi, pr, results, zi, zr;
+      if (max_yield == null) {
+        max_yield = this.mandel_maxiter;
+      }
+      cr = c.r;
+      ci = c.i;
+      n = 0;
+      d = 0;
+      zr = 0;
+      zi = 0;
+      yield ({
+        z: {
+          r: zr,
+          i: zi
+        },
+        n: n
+      });
+      results = [];
+      while ((d <= 4) && (n < max_yield)) {
+        pr = (zr * zr) - (zi * zi);
+        pi = 2 * zr * zi;
+        zr = pr + cr;
+        zi = pi + ci;
+        d = (zr * zr) + (zi * zi);
+        n += 1;
+        results.push((yield {
+          z: {
+            r: zr,
+            i: zi
+          },
+          n: n
+        }));
+      }
+      return results;
     };
 
     MandelIter.prototype.mandel_color_value = function(x, y) {
@@ -808,41 +841,6 @@
 
     MandelIter.prototype.repaint_mandelbrot = function() {
       return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.current_mandel_theme());
-    };
-
-    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
-      var d, n, p, results, z;
-      if (max_yield == null) {
-        max_yield = this.mandel_maxiter;
-      }
-      n = 0;
-      d = 0;
-      z = {
-        r: 0,
-        i: 0
-      };
-      yield ({
-        z: z,
-        n: n
-      });
-      results = [];
-      while ((d <= 4) && (n < max_yield)) {
-        p = {
-          r: (z.r * z.r) - (z.i * z.i),
-          i: 2 * z.r * z.i
-        };
-        z = {
-          r: p.r + c.r,
-          i: p.i + c.i
-        };
-        d = (z.r * z.r) + (z.i * z.i);
-        n += 1;
-        results.push((yield {
-          z: z,
-          n: n
-        }));
-      }
-      return results;
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
