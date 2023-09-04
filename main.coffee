@@ -507,6 +507,18 @@ class MandelIter
   mandelbrot: (c) ->
     cr = c.r
     ci = c.i
+
+    # cardioid quick test  (buggy?)
+    #cr4 = cr - 0.25
+    #q = cr4 + (ci * ci)
+    #if (q * (q + cr4)) <= (0.25 * ci * ci)
+    #  return [@mandel_maxiter, true]
+
+    # period 2 buln quick test
+    zr1 = zr + 1
+    if ((zr1 * zr1) + (zi * zi)) <= 0.0625
+      return [@mandel_maxiter, true]
+
     n = 0
     d = 0
     zr = 0

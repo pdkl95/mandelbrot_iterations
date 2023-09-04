@@ -616,9 +616,13 @@
     };
 
     MandelIter.prototype.mandelbrot = function(c) {
-      var ci, cr, d, n, pi, pr, zi, zr;
+      var ci, cr, d, n, pi, pr, zi, zr, zr1;
       cr = c.r;
       ci = c.i;
+      zr1 = zr + 1;
+      if (((zr1 * zr1) + (zi * zi)) <= 0.0625) {
+        return [this.mandel_maxiter, true];
+      }
       n = 0;
       d = 0;
       zr = 0;
