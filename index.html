@@ -577,6 +577,12 @@ td.slider > label {
   display: inline;
 }
 
+#set_c_imag_i {
+	padding-left: 0.3em;
+	font-style: italic;
+	font-family: Georgia, serif;
+}
+
     </style>
   </head>
   <body>
@@ -668,6 +674,23 @@ td.slider > label {
               <td><code id="loc_theta" class="numfloat"></code></td>
             </tr>
           </table>
+
+          <table>
+            <tr>
+              <th class="tt ttleft" data-title="Set the real part of the cursor position C.">Real</th>
+              <td><input id="set_c_real" value="0"></td>
+            </tr>
+            <tr>
+              <th class="tt ttleft" data-title="Set the imaginary part of the cursor position C. NOTE: the i axis is reversed from normal; the positive i direction is down.">Imag</th>
+              <td><input id="set_c_imag" value="0"><span id="set_c_imag_i">i</span></td>
+            </tr>
+            <tr>
+              <th></th>
+              <td><button id="set_c">Set C</button></td>
+            </tr>
+          </table> 
+
+          <h3>Highlights</h3>
         </div>
 
         <div id="orbit_options" class="optionbox obleft">
@@ -891,7 +914,7 @@ td.slider > label {
       }
       this.set(this["default"]);
       this.el.addEventListener('change', this.on_change);
-      this.el.addEventListener('input', this.on_change);
+      this.el.addEventListener('input', this.on_input);
     }
 
     Option.prototype.detect_default_value = function() {
@@ -947,14 +970,14 @@ td.slider > label {
 
     Option.prototype.on_change = function(event) {
       var base;
-      this.set(this.get(event.target));
+      this.set(this.get(event.target), false);
       return typeof (base = this.callback).on_change === "function" ? base.on_change(this.value) : void 0;
     };
 
     Option.prototype.on_input = function(event) {
       var base;
-      this.set(this.get(event.target));
-      return typeof (base = this.callback).on_change === "function" ? base.on_change(this.value) : void 0;
+      this.set(this.get(event.target), false);
+      return typeof (base = this.callback).on_input === "function" ? base.on_input(this.value) : void 0;
     };
 
     Option.prototype.enable = function() {
@@ -1003,8 +1026,11 @@ td.slider > label {
       return element.checked;
     };
 
-    BoolOption.prototype.set = function(bool_value) {
+    BoolOption.prototype.set = function(bool_value, update_element) {
       var base, base1, newvalue, oldvalue;
+      if (update_element == null) {
+        update_element = true;
+      }
       oldvalue = this.value;
       newvalue = (function() {
         switch (bool_value) {
@@ -1016,7 +1042,9 @@ td.slider > label {
             return !!bool_value;
         }
       })();
-      this.el.checked = newvalue;
+      if (update_element) {
+        this.el.checked = newvalue;
+      }
       this.set_value(newvalue);
       if (oldvalue !== newvalue) {
         if (newvalue) {
@@ -1058,9 +1086,14 @@ td.slider > label {
       return parseInt(element.value);
     };
 
-    IntOption.prototype.set = function(number_value) {
+    IntOption.prototype.set = function(number_value, update_element) {
+      if (update_element == null) {
+        update_element = true;
+      }
       this.set_value(parseInt(number_value));
-      return this.el.value = this.value;
+      if (update_element) {
+        return this.el.value = this.value;
+      }
     };
 
     return IntOption;
@@ -1094,9 +1127,14 @@ td.slider > label {
       return parseFloat(element.value);
     };
 
-    FloatOption.prototype.set = function(number_value) {
+    FloatOption.prototype.set = function(number_value, update_element) {
+      if (update_element == null) {
+        update_element = true;
+      }
       this.set_value(parseFloat(number_value));
-      return this.el.value = this.value;
+      if (update_element) {
+        return this.el.value = this.value;
+      }
     };
 
     return FloatOption;
@@ -1134,12 +1172,17 @@ td.slider > label {
       return element.options[element.selectedIndex].value;
     };
 
-    SelectOption.prototype.set = function(option_name) {
+    SelectOption.prototype.set = function(option_name, update_element) {
       var opt;
+      if (update_element == null) {
+        update_element = true;
+      }
       opt = this.option_with_name(option_name);
       if (opt != null) {
         this.set_value(opt.value);
-        return opt.selected = true;
+        if (update_element) {
+          return opt.selected = true;
+        }
       }
     };
 
@@ -1168,6 +1211,84 @@ td.slider > label {
 }).call(this);
 
 (function() {
+  var slice = [].slice;
+
+  window.Motion || (window.Motion = {});
+
+  Motion.Point = (function() {
+    function Point() {
+      var args;
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      switch (args.length) {
+        case 1:
+          this.x = args[0].x;
+          this.y = args[0].y;
+          break;
+        case 2:
+          this.x = args[0];
+          this.y = args[1];
+          break;
+        default:
+          APP.debug("new Highlight.Point() called with " + args.length + " args: " + (args.join(', ')));
+      }
+    }
+
+    Point.prototype.linear_interp_to = function(other, t) {
+      var inv_t;
+      inv_t = 1 - t;
+      return {
+        x: (this.x * inv_t) + (other.x * t),
+        y: (this.y * inv_t) + (other.y * t)
+      };
+    };
+
+    Point.prototype.ease_in_out_quart = function(t) {
+      if (t < 0.5) {
+        return 8 * t * t * t * t;
+      } else {
+        return 1 - Math.pow(-2 * t + 2, 4) / 2;
+      }
+    };
+
+    Point.prototype.ease_to = function(other, t) {
+      return this.linear_interp_to(other, this.ease_in_out_quart(t));
+    };
+
+    return Point;
+
+  })();
+
+  Motion.Anim = (function() {
+    function Anim(p_src, p_dst, steps) {
+      this.steps = steps;
+      this.src = new Motion.Point(p_src);
+      this.dst = new Motion.Point(p_dst);
+      this.steps = parseInt(this.steps);
+      this.step_size = 1.0 / this.steps;
+      this.current_step = 0;
+      this.t = 0;
+    }
+
+    Anim.prototype.next = function() {
+      if (this.finished()) {
+        return this.dst;
+      }
+      this.t += this.step_size;
+      this.current_step += 1;
+      return this.src.ease_to(this.dst, this.t);
+    };
+
+    Anim.prototype.finished = function() {
+      return this.current_step >= this.steps;
+    };
+
+    return Anim;
+
+  })();
+
+}).call(this);
+
+(function() {
   var MandelIter, TAU,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -1187,6 +1308,7 @@ td.slider > label {
       this.on_julia_draw_local_true = bind(this.on_julia_draw_local_true, this);
       this.on_mouseout = bind(this.on_mouseout, this);
       this.on_mouseenter = bind(this.on_mouseenter, this);
+      this.on_button_set_c_click = bind(this.on_button_set_c_click, this);
       this.on_mousemove = bind(this.on_mousemove, this);
       this.on_graph_click = bind(this.on_graph_click, this);
       this.on_zoom_amount_change = bind(this.on_zoom_amount_change, this);
@@ -1249,10 +1371,14 @@ td.slider > label {
       this.button_reset = this.context.getElementById('button_reset');
       this.button_zoom = this.context.getElementById('button_zoom');
       this.zoom_amount = this.context.getElementById('zoom_amount');
+      this.button_set_c = this.context.getElementById('set_c');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
+      this.button_set_c.addEventListener('click', this.on_button_set_c_click);
       this.option = {
+        set_c_real: new UI.FloatOption('set_c_real'),
+        set_c_imag: new UI.FloatOption('set_c_imag'),
         highlight_trace_path: new UI.BoolOption('highlight_trace_path', false),
         highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false),
         trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance'),
@@ -1322,6 +1448,7 @@ td.slider > label {
       this.graph_wrapper.addEventListener('mouseenter', this.on_mouseenter);
       this.graph_wrapper.addEventListener('mouseout', this.on_mouseout);
       this.graph_wrapper.addEventListener('click', this.on_graph_click);
+      this.pause_anim = null;
       this.defer_resize = false;
       this.pause_mode = false;
       this.zoon_mode = false;
@@ -1633,19 +1760,37 @@ td.slider > label {
       }
     };
 
-    MandelIter.prototype.on_mousemove = function(event) {
+    MandelIter.prototype.set_mouse_position = function(newx, newy, force) {
       var oldx, oldy;
+      if (force == null) {
+        force = false;
+      }
       oldx = this.mouse.x;
       oldy = this.mouse.y;
-      this.mouse.x = event.layerX;
-      this.mouse.y = event.layerY;
+      this.mouse.x = newx;
+      this.mouse.y = newy;
       if ((oldx !== this.mouse.x) || (oldy !== this.mouse.y)) {
-        if (!this.pause_mode) {
+        if (!this.pause_mode || force) {
           this.orbit_mouse.x = this.mouse.x;
           this.orbit_mouse.y = this.mouse.y;
         }
         this.mouse_active = true;
         return this.schedule_ui_draw();
+      }
+    };
+
+    MandelIter.prototype.on_mousemove = function(event) {
+      return this.set_mouse_position(event.layerX, event.layerY);
+    };
+
+    MandelIter.prototype.on_button_set_c_click = function(event) {
+      var z;
+      z = {
+        r: parseFloat(this.option.set_c_real.value),
+        i: parseFloat(this.option.set_c_imag.value)
+      };
+      if (!(isNaN(z.r) || isNaN(z.i))) {
+        return this.animate_to(this.complex_to_canvas(z));
       }
     };
 
@@ -2236,6 +2381,26 @@ td.slider > label {
       }
     };
 
+    MandelIter.prototype.animate_to = function(pos) {
+      this.pause_mode_on();
+      this.pause_anim = new Motion.Anim(this.orbit_mouse, pos, 32);
+      return this.update_pause_anim();
+    };
+
+    MandelIter.prototype.update_pause_anim = function() {
+      var pos;
+      if (this.pause_anim == null) {
+        return;
+      }
+      pos = this.pause_anim.next();
+      this.set_mouse_position(pos.x, pos.y, true);
+      if (this.pause_anim.finished()) {
+        return this.pause_anim = null;
+      } else {
+        return this.schedule_ui_draw();
+      }
+    };
+
     MandelIter.prototype.draw_zoom = function() {
       var region, w;
       this.graph_ui_ctx.save();
@@ -2287,15 +2452,18 @@ td.slider > label {
       }
       if (this.trace_animation_enabled) {
         return this.draw_trace_animation();
-      } else if (this.mouse_active) {
-        if (this.zoom_mode) {
-          return this.draw_zoom();
-        } else {
-          return this.draw_orbit_features(this.orbit_mouse);
-        }
       } else {
-        if (this.pause_mode) {
-          return this.draw_orbit_features(this.orbit_mouse);
+        this.update_pause_anim();
+        if (this.mouse_active) {
+          if (this.zoom_mode) {
+            return this.draw_zoom();
+          } else {
+            return this.draw_orbit_features(this.orbit_mouse);
+          }
+        } else {
+          if (this.pause_mode) {
+            return this.draw_orbit_features(this.orbit_mouse);
+          }
         }
       }
     };
