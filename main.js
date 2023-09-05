@@ -18,6 +18,7 @@
       this.on_julia_draw_local_true = bind(this.on_julia_draw_local_true, this);
       this.on_mouseout = bind(this.on_mouseout, this);
       this.on_mouseenter = bind(this.on_mouseenter, this);
+      this.on_button_set_c_click = bind(this.on_button_set_c_click, this);
       this.on_mousemove = bind(this.on_mousemove, this);
       this.on_graph_click = bind(this.on_graph_click, this);
       this.on_zoom_amount_change = bind(this.on_zoom_amount_change, this);
@@ -80,10 +81,14 @@
       this.button_reset = this.context.getElementById('button_reset');
       this.button_zoom = this.context.getElementById('button_zoom');
       this.zoom_amount = this.context.getElementById('zoom_amount');
+      this.button_set_c = this.context.getElementById('set_c');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
+      this.button_set_c.addEventListener('click', this.on_button_set_c_click);
       this.option = {
+        set_c_real: new UI.FloatOption('set_c_real'),
+        set_c_imag: new UI.FloatOption('set_c_imag'),
         highlight_trace_path: new UI.BoolOption('highlight_trace_path', false),
         highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false),
         trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance'),
@@ -153,6 +158,7 @@
       this.graph_wrapper.addEventListener('mouseenter', this.on_mouseenter);
       this.graph_wrapper.addEventListener('mouseout', this.on_mouseout);
       this.graph_wrapper.addEventListener('click', this.on_graph_click);
+      this.pause_anim = null;
       this.defer_resize = false;
       this.pause_mode = false;
       this.zoon_mode = false;
@@ -464,19 +470,37 @@
       }
     };
 
-    MandelIter.prototype.on_mousemove = function(event) {
+    MandelIter.prototype.set_mouse_position = function(newx, newy, force) {
       var oldx, oldy;
+      if (force == null) {
+        force = false;
+      }
       oldx = this.mouse.x;
       oldy = this.mouse.y;
-      this.mouse.x = event.layerX;
-      this.mouse.y = event.layerY;
+      this.mouse.x = newx;
+      this.mouse.y = newy;
       if ((oldx !== this.mouse.x) || (oldy !== this.mouse.y)) {
-        if (!this.pause_mode) {
+        if (!this.pause_mode || force) {
           this.orbit_mouse.x = this.mouse.x;
           this.orbit_mouse.y = this.mouse.y;
         }
         this.mouse_active = true;
         return this.schedule_ui_draw();
+      }
+    };
+
+    MandelIter.prototype.on_mousemove = function(event) {
+      return this.set_mouse_position(event.layerX, event.layerY);
+    };
+
+    MandelIter.prototype.on_button_set_c_click = function(event) {
+      var z;
+      z = {
+        r: parseFloat(this.option.set_c_real.value),
+        i: parseFloat(this.option.set_c_imag.value)
+      };
+      if (!(isNaN(z.r) || isNaN(z.i))) {
+        return this.animate_to(this.complex_to_canvas(z));
       }
     };
 
@@ -1067,6 +1091,26 @@
       }
     };
 
+    MandelIter.prototype.animate_to = function(pos) {
+      this.pause_mode_on();
+      this.pause_anim = new Motion.Anim(this.orbit_mouse, pos, 32);
+      return this.update_pause_anim();
+    };
+
+    MandelIter.prototype.update_pause_anim = function() {
+      var pos;
+      if (this.pause_anim == null) {
+        return;
+      }
+      pos = this.pause_anim.next();
+      this.set_mouse_position(pos.x, pos.y, true);
+      if (this.pause_anim.finished()) {
+        return this.pause_anim = null;
+      } else {
+        return this.schedule_ui_draw();
+      }
+    };
+
     MandelIter.prototype.draw_zoom = function() {
       var region, w;
       this.graph_ui_ctx.save();
@@ -1118,15 +1162,18 @@
       }
       if (this.trace_animation_enabled) {
         return this.draw_trace_animation();
-      } else if (this.mouse_active) {
-        if (this.zoom_mode) {
-          return this.draw_zoom();
-        } else {
-          return this.draw_orbit_features(this.orbit_mouse);
-        }
       } else {
-        if (this.pause_mode) {
-          return this.draw_orbit_features(this.orbit_mouse);
+        this.update_pause_anim();
+        if (this.mouse_active) {
+          if (this.zoom_mode) {
+            return this.draw_zoom();
+          } else {
+            return this.draw_orbit_features(this.orbit_mouse);
+          }
+        } else {
+          if (this.pause_mode) {
+            return this.draw_orbit_features(this.orbit_mouse);
+          }
         }
       }
     };

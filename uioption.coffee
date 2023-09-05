@@ -28,7 +28,7 @@ class UI.Option
     @set(@default)
 
     @el.addEventListener('change', @on_change)
-    @el.addEventListener('input', @on_change)
+    @el.addEventListener('input',  @on_input)
 
   detect_default_value: ->
     @get()
@@ -55,12 +55,12 @@ class UI.Option
     @set_value()
 
   on_change: (event) =>
-    @set(@get(event.target))
+    @set(@get(event.target), false)
     @callback.on_change?(@value)
 
   on_input: (event) =>
-    @set(@get(event.target))
-    @callback.on_change?(@value)
+    @set(@get(event.target), false)
+    @callback.on_input?(@value)
 
   enable: ->
     @el.disabled = false
@@ -81,14 +81,14 @@ class UI.BoolOption extends UI.Option
   get: (element = @el) ->
     element.checked
 
-  set: (bool_value) ->
+  set: (bool_value, update_element = true) ->
     oldvalue = @value
     newvalue = switch bool_value
       when 'true'  then true
       when 'false' then false
       else
         !!bool_value
-    @el.checked = newvalue
+    @el.checked = newvalue if update_element
 
     @set_value(newvalue)
     if oldvalue != newvalue
@@ -106,9 +106,9 @@ class UI.IntOption extends UI.Option
   get: (element = @el) ->
     parseInt(element.value)
 
-  set: (number_value) ->
+  set: (number_value, update_element = true) ->
     @set_value(parseInt(number_value))
-    @el.value = @value
+    @el.value = @value if update_element
 
 class UI.FloatOption extends UI.Option
   @create: (parent, @id, rest...) ->
@@ -119,9 +119,9 @@ class UI.FloatOption extends UI.Option
   get: (element = @el) ->
     parseFloat(element.value)
 
-  set: (number_value) ->
+  set: (number_value, update_element = true) ->
     @set_value(parseFloat(number_value))
-    @el.value = @value
+    @el.value = @value if update_element
 
 class UI.PercentOption extends UI.FloatOption
   label_text: ->
@@ -132,11 +132,11 @@ class UI.SelectOption extends UI.Option
   get: (element = @el) ->
     element.options[element.selectedIndex].value
 
-  set: (option_name) ->
+  set: (option_name, update_element = true) ->
     opt = @option_with_name(option_name)
     if opt?
       @set_value(opt.value)
-      opt.selected = true
+      opt.selected = true if update_element
 
   values: ->
     @el.options.map( (x) -> x.name )

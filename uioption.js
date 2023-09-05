@@ -52,7 +52,7 @@
       }
       this.set(this["default"]);
       this.el.addEventListener('change', this.on_change);
-      this.el.addEventListener('input', this.on_change);
+      this.el.addEventListener('input', this.on_input);
     }
 
     Option.prototype.detect_default_value = function() {
@@ -108,14 +108,14 @@
 
     Option.prototype.on_change = function(event) {
       var base;
-      this.set(this.get(event.target));
+      this.set(this.get(event.target), false);
       return typeof (base = this.callback).on_change === "function" ? base.on_change(this.value) : void 0;
     };
 
     Option.prototype.on_input = function(event) {
       var base;
-      this.set(this.get(event.target));
-      return typeof (base = this.callback).on_change === "function" ? base.on_change(this.value) : void 0;
+      this.set(this.get(event.target), false);
+      return typeof (base = this.callback).on_input === "function" ? base.on_input(this.value) : void 0;
     };
 
     Option.prototype.enable = function() {
@@ -164,8 +164,11 @@
       return element.checked;
     };
 
-    BoolOption.prototype.set = function(bool_value) {
+    BoolOption.prototype.set = function(bool_value, update_element) {
       var base, base1, newvalue, oldvalue;
+      if (update_element == null) {
+        update_element = true;
+      }
       oldvalue = this.value;
       newvalue = (function() {
         switch (bool_value) {
@@ -177,7 +180,9 @@
             return !!bool_value;
         }
       })();
-      this.el.checked = newvalue;
+      if (update_element) {
+        this.el.checked = newvalue;
+      }
       this.set_value(newvalue);
       if (oldvalue !== newvalue) {
         if (newvalue) {
@@ -219,9 +224,14 @@
       return parseInt(element.value);
     };
 
-    IntOption.prototype.set = function(number_value) {
+    IntOption.prototype.set = function(number_value, update_element) {
+      if (update_element == null) {
+        update_element = true;
+      }
       this.set_value(parseInt(number_value));
-      return this.el.value = this.value;
+      if (update_element) {
+        return this.el.value = this.value;
+      }
     };
 
     return IntOption;
@@ -255,9 +265,14 @@
       return parseFloat(element.value);
     };
 
-    FloatOption.prototype.set = function(number_value) {
+    FloatOption.prototype.set = function(number_value, update_element) {
+      if (update_element == null) {
+        update_element = true;
+      }
       this.set_value(parseFloat(number_value));
-      return this.el.value = this.value;
+      if (update_element) {
+        return this.el.value = this.value;
+      }
     };
 
     return FloatOption;
@@ -295,12 +310,17 @@
       return element.options[element.selectedIndex].value;
     };
 
-    SelectOption.prototype.set = function(option_name) {
+    SelectOption.prototype.set = function(option_name, update_element) {
       var opt;
+      if (update_element == null) {
+        update_element = true;
+      }
       opt = this.option_with_name(option_name);
       if (opt != null) {
         this.set_value(opt.value);
-        return opt.selected = true;
+        if (update_element) {
+          return opt.selected = true;
+        }
       }
     };
 

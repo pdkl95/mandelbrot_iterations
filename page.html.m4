@@ -99,6 +99,23 @@ undivert(`style.css')
               <td><code id="loc_theta" class="numfloat"></code></td>
             </tr>
           </table>
+
+          <table>
+            <tr>
+              <th class="tt ttleft" data-title="Set the real part of the cursor position C.">Real</th>
+              <td><input id="set_c_real" value="0"></td>
+            </tr>
+            <tr>
+              <th class="tt ttleft" data-title="Set the imaginary part of the cursor position C. NOTE: the i axis is reversed from normal; the positive i direction is down.">Imag</th>
+              <td><input id="set_c_imag" value="0"><span id="set_c_imag_i">i</span></td>
+            </tr>
+            <tr>
+              <th></th>
+              <td><button id="set_c">Set C</button></td>
+            </tr>
+          </table> 
+
+          <h3>Highlights</h3>
         </div>
 
         <div id="orbit_options" class="optionbox obleft">
@@ -269,6 +286,7 @@ undivert(`style.css')
 
     <script type="text/javascript">
 undivert(`uioption.js')
+undivert(`motion.js')
 undivert(`main.js')
     </script>
   </body>

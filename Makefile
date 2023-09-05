@@ -18,8 +18,9 @@ M4 ?= m4
 MAIN_TARGET = $(builddir)/mandel_iter.html
 MAIN_TARGET_SRC = $(srcdir)/page.html.m4
 MAIN_TARGET_DEPS = $(MAIN_TARGET_SRC) \
-        $(builddir)/main.js \
         $(builddir)/uioption.js \
+        $(builddir)/motion.js \
+        $(builddir)/main.js \
         $(srcdir)/basic.css \
         $(srcdir)/style.css
 

@@ -60,12 +60,16 @@ class MandelIter
     @button_reset = @context.getElementById('button_reset')
     @button_zoom  = @context.getElementById('button_zoom')
     @zoom_amount  = @context.getElementById('zoom_amount')
+    @button_set_c = @context.getElementById('set_c')
 
     @button_reset.addEventListener('click', @on_button_reset_click)
     @button_zoom.addEventListener( 'click', @on_button_zoom_click)
     @zoom_amount.addEventListener('change', @on_zoom_amount_change)
+    @button_set_c.addEventListener('click', @on_button_set_c_click)
 
     @option =
+      set_c_real:               new UI.FloatOption('set_c_real')
+      set_c_imag:               new UI.FloatOption('set_c_imag')
       highlight_trace_path:     new UI.BoolOption('highlight_trace_path', false)
       highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
       trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance')
@@ -132,6 +136,7 @@ class MandelIter
     @graph_wrapper.addEventListener('mouseout',   @on_mouseout)
     @graph_wrapper.addEventListener('click',      @on_graph_click)
 
+    @pause_anim = null
     @defer_resize = false
     @pause_mode = false
     @zoon_mode = false
@@ -402,17 +407,28 @@ class MandelIter
     else
       @pause_mode_toggle()
 
-  on_mousemove: (event) =>
+  set_mouse_position: (newx, newy, force = false) ->
     oldx = @mouse.x
     oldy = @mouse.y
-    @mouse.x = event.layerX
-    @mouse.y = event.layerY
+    @mouse.x = newx
+    @mouse.y = newy
     if (oldx != @mouse.x) or (oldy != @mouse.y)
-      unless @pause_mode
+      if !@pause_mode or force
         @orbit_mouse.x = @mouse.x
         @orbit_mouse.y = @mouse.y
       @mouse_active = true
       @schedule_ui_draw()
+
+  on_mousemove: (event) =>
+    @set_mouse_position(event.layerX, event.layerY)
+
+  on_button_set_c_click: (event) =>
+    z =
+      r: parseFloat(@option.set_c_real.value)
+      i: parseFloat(@option.set_c_imag.value)
+
+    unless isNaN(z.r) or isNaN(z.i)
+      @animate_to(@complex_to_canvas(z))
 
   on_mouseenter: (event) =>
     @mouse_active = true
@@ -946,6 +962,21 @@ class MandelIter
       @trace_angle = @trace_angle - TAU if @trace_angle >= TAU
       @trace_slider.value = @trace_angle
 
+  animate_to: (pos) ->
+    @pause_mode_on()
+    @pause_anim = new Motion.Anim(@orbit_mouse, pos, 32)
+    @update_pause_anim()
+
+  update_pause_anim: ->
+    return unless @pause_anim?
+ 
+    pos = @pause_anim.next()
+    @set_mouse_position(pos.x, pos.y, true)
+    if @pause_anim.finished()
+      @pause_anim = null
+    else
+      @schedule_ui_draw()
+
   draw_zoom: ->
     @graph_ui_ctx.save()
 
@@ -993,14 +1024,17 @@ class MandelIter
     if @trace_animation_enabled
       @draw_trace_animation()
 
-    else if @mouse_active
-      if @zoom_mode
-        @draw_zoom()
-      else
-        @draw_orbit_features(@orbit_mouse)
     else
-      if @pause_mode
-        @draw_orbit_features(@orbit_mouse)
+      @update_pause_anim()
+
+      if @mouse_active
+        if @zoom_mode
+          @draw_zoom()
+        else
+          @draw_orbit_features(@orbit_mouse)
+      else
+        if @pause_mode
+          @draw_orbit_features(@orbit_mouse)
 
   draw_ui_callback: =>
     APP.draw_ui()

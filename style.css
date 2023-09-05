@@ -393,3 +393,9 @@ td.slider > label {
 #status.paused    > .statusmsg.paused {
   display: inline;
 }
+
+#set_c_imag_i {
+	padding-left: 0.3em;
+	font-style: italic;
+	font-family: Georgia, serif;
+}
