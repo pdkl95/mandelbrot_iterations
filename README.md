@@ -35,7 +35,7 @@ iterations).
 
 While rendering the Mandelbrot Set usually unvolves large amounts of
 zooming (sometimes to
-[zoom factors with insane iteration requirements]()) this software
+zoom factors with insane iteration requirements[^1]) this software
 uses Javascript's native double precision (64 bit) floating point for
 all calculations.
 
@@ -88,5 +88,5 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-[^1]: Today, with similar amounts of patience. clever xomputatiopn techniques, and modern hardware gives you an [amazing hour long journey](https://www.youtube.com/watch?v=uUiwddOhg4c) to a mini Mandelbrtot __10^-1524__ where the rendering requires **10 Trillion** iterations! (a [short 3 minute "highlights" version](https://www.youtube.com/watch?v=BsH8uiRvYJk))
+[^1]: Today, with similar amounts of patience. clever computatiopn techniques, and modern hardware gives you an [amazing hour long journey](https://www.youtube.com/watch?v=uUiwddOhg4c) to a mini Mandelbrtot __10^-1524__ where the rendering requires **10 Trillion** iterations! (a [short 3 minute "highlights" version](https://www.youtube.com/watch?v=BsH8uiRvYJk))
 
