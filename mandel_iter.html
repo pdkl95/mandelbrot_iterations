@@ -650,6 +650,10 @@ td.slider > label {
 
         <div class="uioptbox buttonbox bbright">
           <span class="title">UI Options</span>
+          <label for="keyboard_step" class="tt ttleft hidden" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">
+            Step
+            <input id="keyboard_step" class="hidden" type="number" value="0.1" min="0.05" max="1.0" step="0.05">
+          </label>
           <label for="show_tooltips" class="tt ttleft" data-title="Enable/Disable tooltips similar to what you are reading right now.">
             Show Tooltips
             <input id="show_tooltips" type="checkbox" checked="checked">
@@ -673,6 +677,9 @@ td.slider > label {
               <th>&#952; =</th>
               <td><code id="loc_theta" class="numfloat"></code></td>
             </tr>
+            <tr>
+              <th></th>
+              <td><button id="copy_loc_to_set_c">&darr; Copy &darr;</button</td>
           </table>
 
           <table>
@@ -1308,6 +1315,7 @@ td.slider > label {
       this.on_julia_draw_local_true = bind(this.on_julia_draw_local_true, this);
       this.on_mouseout = bind(this.on_mouseout, this);
       this.on_mouseenter = bind(this.on_mouseenter, this);
+      this.on_copy_loc_to_set_c_click = bind(this.on_copy_loc_to_set_c_click, this);
       this.on_button_set_c_click = bind(this.on_button_set_c_click, this);
       this.on_mousemove = bind(this.on_mousemove, this);
       this.on_graph_click = bind(this.on_graph_click, this);
@@ -1372,13 +1380,16 @@ td.slider > label {
       this.button_zoom = this.context.getElementById('button_zoom');
       this.zoom_amount = this.context.getElementById('zoom_amount');
       this.button_set_c = this.context.getElementById('set_c');
+      this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
       this.button_set_c.addEventListener('click', this.on_button_set_c_click);
+      this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.option = {
         set_c_real: new UI.FloatOption('set_c_real'),
         set_c_imag: new UI.FloatOption('set_c_imag'),
+        keyboard_step: new UI.FloatOption('keyboard_step', 0.01),
         highlight_trace_path: new UI.BoolOption('highlight_trace_path', false),
         highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false),
         trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance'),
@@ -1455,10 +1466,14 @@ td.slider > label {
       this.antialias = true;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
+      this.shift_step_accel = 0.333;
+      this.ctrl_step_accel = 0.1;
+      this.alt_step_accel = 0.01;
+      this.defer_highres_frames = 0;
       this.deferred_render_passes = 3;
       this.deferred_render_pass_scale = 3;
       this.initial_render_pixel_size = Math.pow(this.deferred_render_pass_scale, this.deferred_render_passes);
-      this.render_lines_per_pass = 32;
+      this.render_lines_per_pass = 24;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
@@ -1490,11 +1505,38 @@ td.slider > label {
     };
 
     MandelIter.prototype.on_keydown = function(event) {
+      var accel;
+      accel = 1.0;
+      if (event.shiftKey) {
+        accel = this.shift_step_accel;
+      }
+      if (event.ctrlKey) {
+        accel = this.ctrl_step_accel;
+      }
+      if (event.altKey) {
+        accel = this.alt_step_accel;
+      }
       switch (event.code) {
         case 'Space':
           this.pause_mode_toggle();
-          return event.preventDefault();
+          event.preventDefault();
+          break;
+        case 'ArrowUp':
+          this.mouse_step_up(accel);
+          break;
+        case 'ArrowDown':
+          this.mouse_step_down(accel);
+          break;
+        case 'ArrowLeft':
+          this.mouse_step_left(accel);
+          break;
+        case 'ArrowRight':
+          this.mouse_step_right(accel);
+          break;
+        default:
+          return;
       }
+      return event.preventDefault();
     };
 
     MandelIter.prototype.debug = function(msg) {
@@ -1754,10 +1796,15 @@ td.slider > label {
         this.renderbox.start = newstart;
         this.renderbox.end = newend;
         this.zoom_mode = false;
+        this.option.julia_draw_local.set(false);
         return this.draw_background();
       } else {
         return this.pause_mode_toggle();
       }
+    };
+
+    MandelIter.prototype.on_mousemove = function(event) {
+      return this.set_mouse_position(event.layerX, event.layerY);
     };
 
     MandelIter.prototype.set_mouse_position = function(newx, newy, force) {
@@ -1769,6 +1816,18 @@ td.slider > label {
       oldy = this.mouse.y;
       this.mouse.x = newx;
       this.mouse.y = newy;
+      if (this.mouse.x < 0) {
+        this.mouse.x = 0;
+      }
+      if (this.mouse.y < 0) {
+        this.mouse.y = 0;
+      }
+      if (this.mouse.x > this.graph_width) {
+        this.mouse.x = this.graph_width;
+      }
+      if (this.mouse.y > this.graph_height) {
+        this.mouse.y = this.graph_height;
+      }
       if ((oldx !== this.mouse.x) || (oldy !== this.mouse.y)) {
         if (!this.pause_mode || force) {
           this.orbit_mouse.x = this.mouse.x;
@@ -1779,8 +1838,47 @@ td.slider > label {
       }
     };
 
-    MandelIter.prototype.on_mousemove = function(event) {
-      return this.set_mouse_position(event.layerX, event.layerY);
+    MandelIter.prototype.move_mouse_position = function(dx, dy, accel) {
+      var oldx, oldy, pos;
+      if (accel == null) {
+        accel = 1.0;
+      }
+      oldx = this.orbit_mouse.x;
+      oldy = this.orbit_mouse.y;
+      this.set_mouse_position(this.orbit_mouse.x + (dx * accel), this.orbit_mouse.y + (dy * accel));
+      this.orbit_mouse.x = this.mouse.x;
+      this.orbit_mouse.y = this.mouse.y;
+      pos = this.canvas_to_complex(this.orbit_mouse.x, this.orbit_mouse.y);
+      this.loc_c.innerText = this.complex_to_string(pos);
+      return this.defer_highres_frames = 1;
+    };
+
+    MandelIter.prototype.mouse_step_up = function(accel) {
+      if (accel == null) {
+        accel = 1.0;
+      }
+      return this.move_mouse_position(0, -this.option.keyboard_step.value, accel);
+    };
+
+    MandelIter.prototype.mouse_step_down = function(accel) {
+      if (accel == null) {
+        accel = 1.0;
+      }
+      return this.move_mouse_position(0, this.option.keyboard_step.value, accel);
+    };
+
+    MandelIter.prototype.mouse_step_left = function(accel) {
+      if (accel == null) {
+        accel = 1.0;
+      }
+      return this.move_mouse_position(-this.option.keyboard_step.value, 0, accel);
+    };
+
+    MandelIter.prototype.mouse_step_right = function(accel) {
+      if (accel == null) {
+        accel = 1.0;
+      }
+      return this.move_mouse_position(this.option.keyboard_step.value, 0, accel);
     };
 
     MandelIter.prototype.on_button_set_c_click = function(event) {
@@ -1792,6 +1890,13 @@ td.slider > label {
       if (!(isNaN(z.r) || isNaN(z.i))) {
         return this.animate_to(this.complex_to_canvas(z));
       }
+    };
+
+    MandelIter.prototype.on_copy_loc_to_set_c_click = function(event) {
+      var pos;
+      pos = this.canvas_to_complex(this.orbit_mouse.x, this.orbit_mouse.y);
+      this.option.set_c_real.set(pos.r);
+      return this.option.set_c_imag.set(pos.i);
     };
 
     MandelIter.prototype.on_mouseenter = function(event) {
@@ -1838,26 +1943,63 @@ td.slider > label {
     };
 
     MandelIter.prototype.mandelbrot = function(c) {
-      var d, n, p, z;
+      var ci, cr, d, n, pi, pr, zi, zr, zr1;
+      cr = c.r;
+      ci = c.i;
+      zr1 = zr + 1;
+      if (((zr1 * zr1) + (zi * zi)) <= 0.0625) {
+        return [this.mandel_maxiter, true];
+      }
       n = 0;
       d = 0;
-      z = {
-        r: 0,
-        i: 0
-      };
-      while ((d <= 2) && (n < this.mandel_maxiter)) {
-        p = {
-          r: Math.pow(z.r, 2) - Math.pow(z.i, 2),
-          i: 2 * z.r * z.i
-        };
-        z = {
-          r: p.r + c.r,
-          i: p.i + c.i
-        };
-        d = Math.pow(z.r, 2) + Math.pow(z.i, 2);
+      zr = 0;
+      zi = 0;
+      while ((d <= 4) && (n < this.mandel_maxiter)) {
+        pr = (zr * zr) - (zi * zi);
+        pi = 2 * zr * zi;
+        zr = pr + cr;
+        zi = pi + ci;
+        d = (zr * zr) + (zi * zi);
         n += 1;
       }
-      return [n, d <= 2];
+      return [n, d <= 4];
+    };
+
+    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
+      var ci, cr, d, n, pi, pr, results, zi, zr;
+      if (max_yield == null) {
+        max_yield = this.mandel_maxiter;
+      }
+      cr = c.r;
+      ci = c.i;
+      n = 0;
+      d = 0;
+      zr = 0;
+      zi = 0;
+      yield ({
+        z: {
+          r: zr,
+          i: zi
+        },
+        n: n
+      });
+      results = [];
+      while ((d <= 4) && (n < max_yield)) {
+        pr = (zr * zr) - (zi * zi);
+        pi = 2 * zr * zi;
+        zr = pr + cr;
+        zi = pi + ci;
+        d = (zr * zr) + (zi * zi);
+        n += 1;
+        results.push((yield {
+          z: {
+            r: zr,
+            i: zi
+          },
+          n: n
+        }));
+      }
+      return results;
     };
 
     MandelIter.prototype.mandel_color_value = function(x, y) {
@@ -2030,41 +2172,6 @@ td.slider > label {
 
     MandelIter.prototype.repaint_mandelbrot = function() {
       return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.current_mandel_theme());
-    };
-
-    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
-      var d, n, p, results, z;
-      if (max_yield == null) {
-        max_yield = this.mandel_maxiter;
-      }
-      n = 0;
-      d = 0;
-      z = {
-        r: 0,
-        i: 0
-      };
-      yield ({
-        z: z,
-        n: n
-      });
-      results = [];
-      while ((d <= 2) && (n < max_yield)) {
-        p = {
-          r: Math.pow(z.r, 2) - Math.pow(z.i, 2),
-          i: 2 * z.r * z.i
-        };
-        z = {
-          r: p.r + c.r,
-          i: p.i + c.i
-        };
-        d = Math.pow(z.r, 2) + Math.pow(z.i, 2);
-        n += 1;
-        results.push((yield {
-          z: z,
-          n: n
-        }));
-      }
-      return results;
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
@@ -2267,7 +2374,7 @@ td.slider > label {
       d = 0;
       zr = z.r;
       zi = z.i;
-      while ((d <= 2) && (n < this.julia_maxiter)) {
+      while ((d <= 4) && (n < this.julia_maxiter)) {
         pr = (zr * zr) - (zi * zi);
         pi = 2 * zr * zi;
         zr = pr + c.r;
@@ -2275,7 +2382,7 @@ td.slider > label {
         d = (zr * zr) + (zi * zi);
         n += 1;
       }
-      return [n, d <= 2];
+      return [n, d <= 4];
     };
 
     MandelIter.prototype.julia_color_value = function(c, x, y) {
@@ -2290,14 +2397,20 @@ td.slider > label {
     };
 
     MandelIter.prototype.draw_local_julia = function(c) {
-      var j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos1x, pos4x, px, py, ref, ref1, ref2, ref3, ref4, ref5, val, x, y;
+      var highres, j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos1x, pos4x, px, py, ref, ref1, ref2, ref3, ref4, ref5, val, x, y;
       if ((this.local_julia.width > 0) && (this.local_julia.height > 0)) {
         this.graph_julia_ctx.clearRect(this.local_julia.x, this.local_julia.y, this.local_julia.width, this.local_julia.height);
       }
       pixelsize = this.option.julia_local_pixel_size.value;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       opacity = Math.ceil(this.option.julia_local_opacity.value * 256);
-      if (this.pause_mode && this.option.julia_more_when_paused.value) {
+      highres = this.pause_mode && this.option.julia_more_when_paused.value;
+      if (this.defer_highres_frames > 0) {
+        this.defer_highres_frames = this.defer_highres_frames - 1;
+        highres = false;
+        this.schedule_ui_draw();
+      }
+      if (highres) {
         this.local_julia.x = 0;
         this.local_julia.y = 0;
         this.local_julia.width = this.graph_width;

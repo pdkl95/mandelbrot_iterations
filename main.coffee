@@ -61,15 +61,18 @@ class MandelIter
     @button_zoom  = @context.getElementById('button_zoom')
     @zoom_amount  = @context.getElementById('zoom_amount')
     @button_set_c = @context.getElementById('set_c')
+    @loc_to_set_c = @context.getElementById('copy_loc_to_set_c')
 
     @button_reset.addEventListener('click', @on_button_reset_click)
     @button_zoom.addEventListener( 'click', @on_button_zoom_click)
     @zoom_amount.addEventListener('change', @on_zoom_amount_change)
     @button_set_c.addEventListener('click', @on_button_set_c_click)
+    @loc_to_set_c.addEventListener('click', @on_copy_loc_to_set_c_click)
 
     @option =
       set_c_real:               new UI.FloatOption('set_c_real')
       set_c_imag:               new UI.FloatOption('set_c_imag')
+      keyboard_step:            new UI.FloatOption('keyboard_step', 0.01)
       highlight_trace_path:     new UI.BoolOption('highlight_trace_path', false)
       highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
       trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance')
@@ -144,10 +147,15 @@ class MandelIter
     @reset_renderbox()
     @draw_ui_scheduled = false
 
+    @shift_step_accel = 0.333
+    @ctrl_step_accel  = 0.1
+    @alt_step_accel   = 0.01
+
+    @defer_highres_frames = 0
     @deferred_render_passes = 3
     @deferred_render_pass_scale = 3
     @initial_render_pixel_size = @deferred_render_pass_scale ** @deferred_render_passes
-    @render_lines_per_pass = 32
+    @render_lines_per_pass = 24
 
     @rendering_note          = @context.getElementById('rendering_note')
     @rendering_note_hdr      = @context.getElementById('rendering_note_hdr')
@@ -182,11 +190,28 @@ class MandelIter
 
 
   on_keydown: (event) =>
-    #console.log(event.code)
+    accel = 1.0
+    accel = @shift_step_accel if event.shiftKey
+    accel =  @ctrl_step_accel if event.ctrlKey
+    accel =   @alt_step_accel if event.altKey
+
     switch event.code
       when 'Space'
         @pause_mode_toggle()
         event.preventDefault()
+
+      when 'ArrowUp'    then @mouse_step_up(accel)
+      when 'ArrowDown'  then @mouse_step_down(accel)
+      when 'ArrowLeft'  then @mouse_step_left(accel)
+      when 'ArrowRight' then @mouse_step_right(accel)
+
+      else
+        # not our event
+        return
+
+    # it IS our event, so kill the event
+    #event.stopPropagation()
+    event.preventDefault()
 
   debug: (msg) ->
     unless @debugbox?
@@ -403,15 +428,25 @@ class MandelIter
       @renderbox.start = newstart
       @renderbox.end   = newend
       @zoom_mode = false
+      @option.julia_draw_local.set(false)
       @draw_background()
     else
       @pause_mode_toggle()
+
+  on_mousemove: (event) =>
+    @set_mouse_position(event.layerX, event.layerY)
 
   set_mouse_position: (newx, newy, force = false) ->
     oldx = @mouse.x
     oldy = @mouse.y
     @mouse.x = newx
     @mouse.y = newy
+
+    @mouse.x = 0 if @mouse.x < 0
+    @mouse.y = 0 if @mouse.y < 0
+    @mouse.x = @graph_width  if @mouse.x > @graph_width
+    @mouse.y = @graph_height if @mouse.y > @graph_height
+
     if (oldx != @mouse.x) or (oldy != @mouse.y)
       if !@pause_mode or force
         @orbit_mouse.x = @mouse.x
@@ -419,8 +454,30 @@ class MandelIter
       @mouse_active = true
       @schedule_ui_draw()
 
-  on_mousemove: (event) =>
-    @set_mouse_position(event.layerX, event.layerY)
+  move_mouse_position: (dx, dy, accel = 1.0) ->
+    #accel = accel * 10
+    oldx = @orbit_mouse.x
+    oldy = @orbit_mouse.y
+    @set_mouse_position(@orbit_mouse.x + (dx * accel), @orbit_mouse.y + (dy * accel))
+    @orbit_mouse.x = @mouse.x
+    @orbit_mouse.y = @mouse.y
+    pos = @canvas_to_complex(@orbit_mouse.x, @orbit_mouse.y)
+    @loc_c.innerText = @complex_to_string(pos)
+
+    @defer_highres_frames = 1
+    #console.log('old', oldx, oldy, 'dx', dx, 'dy', dy, 'accel', accel, 'new', @orbit_mouse.x, @orbit_mouse.y)
+
+  mouse_step_up: (accel = 1.0) ->
+    @move_mouse_position(0, -@option.keyboard_step.value, accel)
+
+  mouse_step_down: (accel = 1.0) ->
+    @move_mouse_position(0,  @option.keyboard_step.value, accel)
+
+  mouse_step_left: (accel = 1.0) ->
+    @move_mouse_position(-@option.keyboard_step.value, 0, accel)
+
+  mouse_step_right: (accel = 1.0) ->
+    @move_mouse_position( @option.keyboard_step.value, 0, accel)
 
   on_button_set_c_click: (event) =>
     z =
@@ -429,6 +486,12 @@ class MandelIter
 
     unless isNaN(z.r) or isNaN(z.i)
       @animate_to(@complex_to_canvas(z))
+
+  on_copy_loc_to_set_c_click: (event) =>
+    pos = @canvas_to_complex(@orbit_mouse.x, @orbit_mouse.y)
+    @option.set_c_real.set(pos.r)
+    @option.set_c_imag.set(pos.i)
+
 
   on_mouseenter: (event) =>
     @mouse_active = true
@@ -463,23 +526,54 @@ class MandelIter
       y: ((z.i - @renderbox.start.i) / (@renderbox.end.i - @renderbox.start.i)) * @graph_height
 
   mandelbrot: (c) ->
+    cr = c.r
+    ci = c.i
+
+    # cardioid quick test  (buggy?)
+    #cr4 = cr - 0.25
+    #q = cr4 + (ci * ci)
+    #if (q * (q + cr4)) <= (0.25 * ci * ci)
+    #  return [@mandel_maxiter, true]
+
+    # period 2 buln quick test
+    zr1 = zr + 1
+    if ((zr1 * zr1) + (zi * zi)) <= 0.0625
+      return [@mandel_maxiter, true]
+
     n = 0
     d = 0
-    z =
-      r: 0
-      i: 0
+    zr = 0
+    zi = 0
 
-    while (d <= 2) and (n < @mandel_maxiter)
-      p =
-        r: Math.pow(z.r, 2) - Math.pow(z.i, 2)
-        i: 2 * z.r * z.i
-      z =
-        r: p.r + c.r
-        i: p.i + c.i
-      d = Math.pow(z.r, 2) + Math.pow(z.i, 2)
+    while (d <= 4) and (n < @mandel_maxiter)
+      pr = (zr * zr) - (zi * zi)
+      pi = 2 * zr * zi
+      zr = pr + cr
+      zi = pi + ci
+      d  = (zr * zr) + (zi * zi)
       n += 1
 
-    [n, d <= 2]
+    [n, d <= 4]
+
+  mandelbrot_orbit: (c, max_yield = @mandel_maxiter) ->
+    cr = c.r
+    ci = c.i
+    n = 0
+    d = 0
+    zr = 0
+    zi = 0
+
+    yield z: {r: zr, i: zi}, n: n
+
+    while (d <= 4) and (n < max_yield)
+      pr = (zr * zr) - (zi * zi)
+      pi = 2 * zr * zi
+      zr = pr + cr
+      zi = pi + ci
+      d  = (zr * zr) + (zi * zi)
+      n += 1
+
+      yield z: {r: zr, i: zi}, n: n
 
   mandel_color_value: (x, y) ->
     c = @canvas_to_complex(x, y)
@@ -630,27 +724,6 @@ class MandelIter
 
   repaint_mandelbrot: ->
     @repaint_canvas(@graph_mandel_ctx, @mandel_values, @current_mandel_theme())
-
-  mandelbrot_orbit: (c, max_yield = @mandel_maxiter) ->
-    n = 0
-    d = 0
-    z =
-      r: 0
-      i: 0
-
-    yield z: z, n: n
-
-    while (d <= 2) and (n < max_yield)
-      p =
-        r: Math.pow(z.r, 2) - Math.pow(z.i, 2)
-        i: 2 * z.r * z.i
-      z =
-        r: p.r + c.r
-        i: p.i + c.i
-      d = Math.pow(z.r, 2) + Math.pow(z.i, 2)
-      n += 1
-
-      yield z: z, n: n
 
   draw_orbit: (c) ->
     mx = c.x
@@ -874,7 +947,7 @@ class MandelIter
     zr = z.r
     zi = z.i
 
-    while (d <= 2) and (n < @julia_maxiter)
+    while (d <= 4) and (n < @julia_maxiter)
       pr = (zr * zr) - (zi * zi)
       pi = 2 * zr * zi
       zr = pr + c.r
@@ -882,7 +955,7 @@ class MandelIter
       d = (zr * zr) + (zi * zi)
       n += 1
 
-    [n, d <= 2]
+    [n, d <= 4]
 
   julia_color_value: (c, x, y) ->
     p = @canvas_to_complex(x, y)
@@ -900,7 +973,13 @@ class MandelIter
     @julia_maxiter = @option.julia_max_iterations.value
     opacity = Math.ceil(@option.julia_local_opacity.value * 256)
 
-    if @pause_mode and @option.julia_more_when_paused.value
+    highres = @pause_mode and @option.julia_more_when_paused.value
+    if @defer_highres_frames > 0
+      @defer_highres_frames = @defer_highres_frames - 1
+      highres = false
+      @schedule_ui_draw()
+
+    if highres
       @local_julia.x = 0
       @local_julia.y = 0
       @local_julia.width  = @graph_width

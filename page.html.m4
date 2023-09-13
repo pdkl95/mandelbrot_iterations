@@ -75,6 +75,10 @@ undivert(`style.css')
 
         <div class="uioptbox buttonbox bbright">
           <span class="title">UI Options</span>
+          <label for="keyboard_step" class="tt ttleft hidden" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">
+            Step
+            <input id="keyboard_step" class="hidden" type="number" value="0.1" min="0.05" max="1.0" step="0.05">
+          </label>
           <label for="show_tooltips" class="tt ttleft" data-title="Enable/Disable tooltips similar to what you are reading right now.">
             Show Tooltips
             <input id="show_tooltips" type="checkbox" checked="checked">
@@ -98,6 +102,9 @@ undivert(`style.css')
               <th>&#952; =</th>
               <td><code id="loc_theta" class="numfloat"></code></td>
             </tr>
+            <tr>
+              <th></th>
+              <td><button id="copy_loc_to_set_c">&darr; Copy &darr;</button</td>
           </table>
 
           <table>
