@@ -90,6 +90,8 @@ class MandelIter
       julia_local_pixel_size:   new UI.IntOption('julia_local_pixel_size', 3)
       julia_max_iter_paused:    new UI.IntOption('julia_max_iter_paused', 250)
       julia_max_iterations:     new UI.IntOption('julia_max_iterations', 100)
+      julia_antialias:          new UI.SelectOption('julia_antialias');
+      mandel_antialias:         new UI.SelectOption('mandel_antialias');
       mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 120)
       mandel_color_scale_r:     new UI.FloatOption('mandel_color_scale_r', @colorize_themes[@default_mandel_theme][0])
       mandel_color_scale_g:     new UI.FloatOption('mandel_color_scale_g', @colorize_themes[@default_mandel_theme][1])
@@ -665,8 +667,11 @@ class MandelIter
     @current_theme = @current_mandel_theme()
     @current_image = @render_mandel_img
 
-    aamult = 2
+    aamult = @option.mandel_antialias.value
     aastep = 1.0 / aamult
+
+    if aamult is 1
+      do_antialias = false
 
     for y in [@lines_finished..stopline] by pixelsize
       for x in [0..@graph_width] by pixelsize
@@ -972,6 +977,9 @@ class MandelIter
     pixelsize = @option.julia_local_pixel_size.value
     @julia_maxiter = @option.julia_max_iterations.value
     opacity = Math.ceil(@option.julia_local_opacity.value * 256)
+    do_antialias = false
+    aamult = 1
+    aastep = 1.0
 
     highres = @pause_mode and @option.julia_more_when_paused.value
     if @defer_highres_frames > 0
@@ -986,6 +994,11 @@ class MandelIter
       @local_julia.height = @graph_height
       pixelsize = 1
       @julia_maxiter = @option.julia_max_iter_paused.value
+      aamult = @option.julia_antialias.value
+      if aamult > 0
+        console.log('aamult', aamult)
+        aastep = 1.0 / aamult
+        do_antialias = true
 
     else
       orbit_cx = Math.floor((@orbit_bb.max_x + @orbit_bb.min_x) / 2)
@@ -1014,9 +1027,22 @@ class MandelIter
 
     for y in [0..@local_julia.height] by pixelsize
       for x in [0..@local_julia.width] by pixelsize
-        px = x + @local_julia.x
-        py = y + @local_julia.y
-        val = @julia_color_value(c, px, py)
+        xx = x + @local_julia.x
+        yy = y + @local_julia.y
+
+        val = 0
+
+        if do_antialias
+          iter = 0
+          for aay in [0..aamult] by aastep
+            for aax in [0..aamult] by aastep
+              val += @julia_color_value(c, xx + aax, yy + aay)
+              iter++
+          val /= iter
+
+        else
+          val = @julia_color_value(c, xx, yy)
+
         val /= 255
 
         for py in [0..pixelsize]

@@ -110,6 +110,8 @@
         julia_local_pixel_size: new UI.IntOption('julia_local_pixel_size', 3),
         julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 250),
         julia_max_iterations: new UI.IntOption('julia_max_iterations', 100),
+        julia_antialias: new UI.SelectOption('julia_antialias'),
+        mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
         mandel_color_scale_r: new UI.FloatOption('mandel_color_scale_r', this.colorize_themes[this.default_mandel_theme][0]),
         mandel_color_scale_g: new UI.FloatOption('mandel_color_scale_g', this.colorize_themes[this.default_mandel_theme][1]),
@@ -810,8 +812,11 @@
       }
       this.current_theme = this.current_mandel_theme();
       this.current_image = this.render_mandel_img;
-      aamult = 2;
+      aamult = this.option.mandel_antialias.value;
       aastep = 1.0 / aamult;
+      if (aamult === 1) {
+        do_antialias = false;
+      }
       for (y = j = ref = this.lines_finished, ref1 = stopline, ref2 = pixelsize; ref2 > 0 ? j <= ref1 : j >= ref1; y = j += ref2) {
         for (x = k = 0, ref3 = this.graph_width, ref4 = pixelsize; ref4 > 0 ? k <= ref3 : k >= ref3; x = k += ref4) {
           val = 0;
@@ -1100,13 +1105,16 @@
     };
 
     MandelIter.prototype.draw_local_julia = function(c) {
-      var highres, j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos1x, pos4x, px, py, ref, ref1, ref2, ref3, ref4, ref5, val, x, y;
+      var aamult, aastep, aax, aay, do_antialias, highres, iter, j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos1x, pos4x, px, py, q, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, val, x, xx, y, yy;
       if ((this.local_julia.width > 0) && (this.local_julia.height > 0)) {
         this.graph_julia_ctx.clearRect(this.local_julia.x, this.local_julia.y, this.local_julia.width, this.local_julia.height);
       }
       pixelsize = this.option.julia_local_pixel_size.value;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       opacity = Math.ceil(this.option.julia_local_opacity.value * 256);
+      do_antialias = false;
+      aamult = 1;
+      aastep = 1.0;
       highres = this.pause_mode && this.option.julia_more_when_paused.value;
       if (this.defer_highres_frames > 0) {
         this.defer_highres_frames = this.defer_highres_frames - 1;
@@ -1120,6 +1128,12 @@
         this.local_julia.height = this.graph_height;
         pixelsize = 1;
         this.julia_maxiter = this.option.julia_max_iter_paused.value;
+        aamult = this.option.julia_antialias.value;
+        if (aamult > 0) {
+          console.log('aamult', aamult);
+          aastep = 1.0 / aamult;
+          do_antialias = true;
+        }
       } else {
         orbit_cx = Math.floor((this.orbit_bb.max_x + this.orbit_bb.min_x) / 2);
         orbit_cy = Math.floor((this.orbit_bb.max_y + this.orbit_bb.min_y) / 2);
@@ -1162,12 +1176,24 @@
       this.current_theme = this.current_julia_theme();
       for (y = j = 0, ref = this.local_julia.height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
         for (x = k = 0, ref2 = this.local_julia.width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
-          px = x + this.local_julia.x;
-          py = y + this.local_julia.y;
-          val = this.julia_color_value(c, px, py);
+          xx = x + this.local_julia.x;
+          yy = y + this.local_julia.y;
+          val = 0;
+          if (do_antialias) {
+            iter = 0;
+            for (aay = l = 0, ref4 = aamult, ref5 = aastep; ref5 > 0 ? l <= ref4 : l >= ref4; aay = l += ref5) {
+              for (aax = o = 0, ref6 = aamult, ref7 = aastep; ref7 > 0 ? o <= ref6 : o >= ref6; aax = o += ref7) {
+                val += this.julia_color_value(c, xx + aax, yy + aay);
+                iter++;
+              }
+            }
+            val /= iter;
+          } else {
+            val = this.julia_color_value(c, xx, yy);
+          }
           val /= 255;
-          for (py = l = 0, ref4 = pixelsize; 0 <= ref4 ? l <= ref4 : l >= ref4; py = 0 <= ref4 ? ++l : --l) {
-            for (px = o = 0, ref5 = pixelsize; 0 <= ref5 ? o <= ref5 : o >= ref5; px = 0 <= ref5 ? ++o : --o) {
+          for (py = q = 0, ref8 = pixelsize; 0 <= ref8 ? q <= ref8 : q >= ref8; py = 0 <= ref8 ? ++q : --q) {
+            for (px = s = 0, ref9 = pixelsize; 0 <= ref9 ? s <= ref9 : s >= ref9; px = 0 <= ref9 ? ++s : --s) {
               pos1x = (x + px) + ((y + py) * this.current_image.width);
               pos4x = 4 * pos1x;
               this.colorize_pixel(val, pos4x);

@@ -207,6 +207,16 @@ undivert(`style.css')
               </td>
             </tr>
             <tr>
+              <th class="tt ttright" data-title="Antialias the Julia set rendering by oversampling each pixel. Only active in the higher resolution (paused) mode. WARNING: gets VERY expensive very quickly!">Antialias</th>
+              <td>
+                <select name="julia_antialias" id="julia_antialias" autocomplete="off">
+                  <option value="1" selected="selected">Disabled</option>
+                  <option value="2">2 x 2</option>
+                  <option value="3">3 x 3</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
               <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space)">Max Iter When Paused</th>
               <td class="slider">
                 <label for="julia_max_iter_paused" id="julia_max_iter_paused_label">200</label>
@@ -254,6 +264,16 @@ undivert(`style.css')
               <td class="slider">
                 <label for="mandel_max_iterations" id="mandel_max_iterations_label">60%</label>
                 <input id="mandel_max_iterations" type="range" value="120" min="20" max="1000" step="20" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Antialias the Mandelbrot set rendering by oversampling each pixel. Increases CPU cost to render the Mandelbrot (which only happens once).">Antialias</th>
+              <td>
+                <select name="mandel_antialias" id="mandel_antialias" autocomplete="off">
+                  <option value="1">Disabled</option>
+                  <option value="2" selected="selected">2 x 2</option>
+                  <option value="3">3 x 3</option>
+                </select>
               </td>
             </tr>
             <tr>
