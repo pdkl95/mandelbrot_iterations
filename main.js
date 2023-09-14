@@ -13,7 +13,10 @@
       this.context = context;
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
       this.draw_ui_callback = bind(this.draw_ui_callback, this);
+      this.on_julia_changed = bind(this.on_julia_changed, this);
       this.canvas_to_complex = bind(this.canvas_to_complex, this);
+      this.on_julia_more_when_paused_false = bind(this.on_julia_more_when_paused_false, this);
+      this.on_julia_more_when_paused_true = bind(this.on_julia_more_when_paused_true, this);
       this.on_julia_draw_local_false = bind(this.on_julia_draw_local_false, this);
       this.on_julia_draw_local_true = bind(this.on_julia_draw_local_true, this);
       this.on_mouseout = bind(this.on_mouseout, this);
@@ -121,6 +124,31 @@
         on_true: this.on_julia_draw_local_true,
         on_false: this.on_julia_draw_local_false
       });
+      this.option.julia_more_when_paused.register_callback({
+        on_true: this.on_julia_more_when_paused_true,
+        on_false: this.on_julia_more_when_paused_false
+      });
+      this.option.julia_local_margin.register_callback({
+        on_change: this.on_julia_changed
+      });
+      this.option.julia_local_max_size.register_callback({
+        on_change: this.on_julia_changed
+      });
+      this.option.julia_local_opacity.register_callback({
+        on_change: this.on_julia_changed
+      });
+      this.option.julia_local_pixel_size.register_callback({
+        on_change: this.on_julia_changed
+      });
+      this.option.julia_max_iter_paused.register_callback({
+        on_change: this.on_julia_changed
+      });
+      this.option.julia_max_iterations.register_callback({
+        on_change: this.on_julia_changed
+      });
+      this.option.julia_antialias.register_callback({
+        on_change: this.on_julia_changed
+      });
       this.option.julia_local_pixel_size.set_label_text_formater(function(value) {
         return value + "x";
       });
@@ -179,6 +207,7 @@
       this.deferred_render_pass_scale = 3;
       this.initial_render_pixel_size = Math.pow(this.deferred_render_pass_scale, this.deferred_render_passes);
       this.render_lines_per_pass = 24;
+      this.julia_max_rendertime = 250;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
@@ -205,6 +234,7 @@
         y: 0
       };
       document.addEventListener('keydown', this.on_keydown);
+      this.draw_local_julia_init();
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -393,11 +423,14 @@
 
     MandelIter.prototype.pause_mode_on = function() {
       this.pause_mode = true;
+      this.ljopt.changed = true;
       return this.set_status('paused');
     };
 
     MandelIter.prototype.pause_mode_off = function() {
       this.pause_mode = false;
+      this.ljopt.busy = false;
+      this.ljopt.changed = true;
       this.schedule_ui_draw();
       return this.set_status('normal');
     };
@@ -537,6 +570,7 @@
         if (!this.pause_mode || force) {
           this.orbit_mouse.x = this.mouse.x;
           this.orbit_mouse.y = this.mouse.y;
+          this.ljopt.changed = true;
         }
         this.mouse_active = true;
         return this.schedule_ui_draw();
@@ -615,11 +649,21 @@
     };
 
     MandelIter.prototype.on_julia_draw_local_true = function() {
-      return this.graph_julia_canvas.classList.remove('hidden');
+      this.graph_julia_canvas.classList.remove('hidden');
+      return this.reset_julia_rendering();
     };
 
     MandelIter.prototype.on_julia_draw_local_false = function() {
-      return this.graph_julia_canvas.classList.add('hidden');
+      this.graph_julia_canvas.classList.add('hidden');
+      return this.reset_julia_rendering();
+    };
+
+    MandelIter.prototype.on_julia_more_when_paused_true = function() {
+      return this.reset_julia_rendering();
+    };
+
+    MandelIter.prototype.on_julia_more_when_paused_false = function() {
+      return this.reset_julia_rendering();
     };
 
     MandelIter.prototype.rectangular_to_polar_angle = function(r, i) {
@@ -721,8 +765,7 @@
     MandelIter.prototype.set_rendering_note = function(text) {
       if (text != null) {
         this.rendering_note.classList.remove('hidden');
-        this.rendering_note_value.textContent = text;
-        return this.set_rendering_note_progress();
+        return this.rendering_note_value.textContent = text;
       } else {
         this.rendering_note.classList.add('hidden');
         return this.rendering_note_value.textContent = '';
@@ -733,9 +776,14 @@
       return this.set_rendering_note(null);
     };
 
-    MandelIter.prototype.set_rendering_note_progress = function() {
-      var perc;
-      perc = parseInt((this.lines_finished / this.graph_height) * 100);
+    MandelIter.prototype.set_rendering_note_progress = function(perc) {
+      if (perc == null) {
+        perc = null;
+      }
+      if (perc == null) {
+        perc = this.lines_finished / this.graph_height;
+      }
+      perc = parseInt(perc * 100);
       this.rendering_note_progress.value = perc;
       return this.rendering_note_progress.textContent = perc + "%";
     };
@@ -748,6 +796,7 @@
       this.render_pixel_size = this.initial_render_pixel_size;
       this.lines_finished = 0;
       this.set_rendering_note("...");
+      this.set_rendering_note_progress();
       return this.schedule_background_render_pass();
     };
 
@@ -763,7 +812,7 @@
         render_msg += " (antialias)";
       }
       this.set_rendering_note(render_msg);
-      console.log(render_msg);
+      this.set_rendering_note_progress();
       return setTimeout((function(_this) {
         return function() {
           return _this.deferred_background_render_callback();
@@ -797,7 +846,6 @@
         this.lines_finished = 0;
         return this.schedule_background_render_pass();
       } else {
-        console.log('finished rendering, @render_pixel_size = ' + this.render_pixel_size);
         this.hide_rendering_note();
         return this.set_status('normal');
       }
@@ -1104,35 +1152,65 @@
       }
     };
 
-    MandelIter.prototype.draw_local_julia = function(c) {
-      var aamult, aastep, aax, aay, do_antialias, highres, iter, j, k, l, margin2x, maxsize, maxx, maxy, o, opacity, orbit_cx, orbit_cy, pixelsize, pos1x, pos4x, px, py, q, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, val, x, xx, y, yy;
-      if ((this.local_julia.width > 0) && (this.local_julia.height > 0)) {
-        this.graph_julia_ctx.clearRect(this.local_julia.x, this.local_julia.y, this.local_julia.width, this.local_julia.height);
+    MandelIter.prototype.draw_local_julia_init = function() {
+      this.ljopt = {
+        busy: false,
+        ystart: 0,
+        c: null,
+        pixelsize: this.option.julia_local_pixel_size.value,
+        opacity: Math.ceil(this.option.julia_local_opacity.value * 256),
+        do_antialias: false,
+        aamult: 1,
+        aastep: 1.0,
+        highres: this.pause_mode && this.option.julia_more_when_paused.value
+      };
+      return this.old_local_julia = {
+        x: 0,
+        y: 0,
+        width: this.graph_width,
+        height: this.graph_height
+      };
+    };
+
+    MandelIter.prototype.draw_local_julia_setup = function(c) {
+      var margin2x, maxsize, maxx, maxy, orbit_cx, orbit_cy;
+      if (!this.ljopt.changed) {
+        return false;
       }
-      pixelsize = this.option.julia_local_pixel_size.value;
+      this.old_local_julia.x = this.local_julia.x;
+      this.old_local_julia.y = this.local_julia.y;
+      this.old_local_julia.width = this.local_julia.height;
+      this.old_local_julia.height = this.local_julia.height;
+      this.ljopt.c = c;
+      this.ljopt.pixelsize = this.option.julia_local_pixel_size.value;
+      this.ljopt.opacity = Math.ceil(this.option.julia_local_opacity.value * 256);
+      this.ljopt.do_antialias = false;
+      this.ljopt.aamult = 1;
+      this.ljopt.aastep = 1.0;
+      this.ljopt.highres = this.pause_mode && this.option.julia_more_when_paused.value;
       this.julia_maxiter = this.option.julia_max_iterations.value;
-      opacity = Math.ceil(this.option.julia_local_opacity.value * 256);
-      do_antialias = false;
-      aamult = 1;
-      aastep = 1.0;
-      highres = this.pause_mode && this.option.julia_more_when_paused.value;
       if (this.defer_highres_frames > 0) {
         this.defer_highres_frames = this.defer_highres_frames - 1;
-        highres = false;
+        this.ljopt.highres = false;
         this.schedule_ui_draw();
+        return false;
       }
-      if (highres) {
+      this.ljopt.busy = true;
+      this.ljopt.ystart = 0;
+      if (this.pause_anim != null) {
+        this.ljopt.highres = false;
+      }
+      if (this.ljopt.highres) {
         this.local_julia.x = 0;
         this.local_julia.y = 0;
         this.local_julia.width = this.graph_width;
         this.local_julia.height = this.graph_height;
-        pixelsize = 1;
+        this.ljopt.pixelsize = 1;
         this.julia_maxiter = this.option.julia_max_iter_paused.value;
-        aamult = this.option.julia_antialias.value;
-        if (aamult > 0) {
-          console.log('aamult', aamult);
-          aastep = 1.0 / aamult;
-          do_antialias = true;
+        this.ljopt.aamult = this.option.julia_antialias.value;
+        if (this.ljopt.aamult > 0) {
+          this.ljopt.aastep = 1.0 / this.ljopt.aamult;
+          this.ljopt.do_antialias = true;
         }
       } else {
         orbit_cx = Math.floor((this.orbit_bb.max_x + this.orbit_bb.min_x) / 2);
@@ -1174,41 +1252,87 @@
       }
       this.current_image = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
       this.current_theme = this.current_julia_theme();
-      for (y = j = 0, ref = this.local_julia.height, ref1 = pixelsize; ref1 > 0 ? j <= ref : j >= ref; y = j += ref1) {
-        for (x = k = 0, ref2 = this.local_julia.width, ref3 = pixelsize; ref3 > 0 ? k <= ref2 : k >= ref2; x = k += ref3) {
+      return true;
+    };
+
+    MandelIter.prototype.draw_local_julia = function(lj) {
+      var aax, aay, iter, j, k, l, o, pos1x, pos4x, px, py, q, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, start_time, val, x, xx, y, yy;
+      start_time = performance.now();
+      for (y = j = ref = this.ljopt.ystart, ref1 = this.local_julia.height, ref2 = this.ljopt.pixelsize; ref2 > 0 ? j <= ref1 : j >= ref1; y = j += ref2) {
+        for (x = k = 0, ref3 = this.local_julia.width, ref4 = this.ljopt.pixelsize; ref4 > 0 ? k <= ref3 : k >= ref3; x = k += ref4) {
           xx = x + this.local_julia.x;
           yy = y + this.local_julia.y;
           val = 0;
-          if (do_antialias) {
+          if (this.ljopt.do_antialias) {
             iter = 0;
-            for (aay = l = 0, ref4 = aamult, ref5 = aastep; ref5 > 0 ? l <= ref4 : l >= ref4; aay = l += ref5) {
-              for (aax = o = 0, ref6 = aamult, ref7 = aastep; ref7 > 0 ? o <= ref6 : o >= ref6; aax = o += ref7) {
-                val += this.julia_color_value(c, xx + aax, yy + aay);
+            for (aay = l = 0, ref5 = this.ljopt.aamult, ref6 = this.ljopt.aastep; ref6 > 0 ? l <= ref5 : l >= ref5; aay = l += ref6) {
+              for (aax = o = 0, ref7 = this.ljopt.aamult, ref8 = this.ljopt.aastep; ref8 > 0 ? o <= ref7 : o >= ref7; aax = o += ref8) {
+                val += this.julia_color_value(this.ljopt.c, xx + aax, yy + aay);
                 iter++;
               }
             }
             val /= iter;
           } else {
-            val = this.julia_color_value(c, xx, yy);
+            val = this.julia_color_value(this.ljopt.c, xx, yy);
           }
           val /= 255;
-          for (py = q = 0, ref8 = pixelsize; 0 <= ref8 ? q <= ref8 : q >= ref8; py = 0 <= ref8 ? ++q : --q) {
-            for (px = s = 0, ref9 = pixelsize; 0 <= ref9 ? s <= ref9 : s >= ref9; px = 0 <= ref9 ? ++s : --s) {
+          for (py = q = 0, ref9 = this.ljopt.pixelsize; 0 <= ref9 ? q <= ref9 : q >= ref9; py = 0 <= ref9 ? ++q : --q) {
+            for (px = s = 0, ref10 = this.ljopt.pixelsize; 0 <= ref10 ? s <= ref10 : s >= ref10; px = 0 <= ref10 ? ++s : --s) {
               pos1x = (x + px) + ((y + py) * this.current_image.width);
               pos4x = 4 * pos1x;
               this.colorize_pixel(val, pos4x);
-              this.current_image.data[pos4x + 3] = opacity;
+              this.current_image.data[pos4x + 3] = this.ljopt.opacity;
             }
           }
         }
+        if ((y % 10) === 0) {
+          if ((performance.now() - start_time) > this.julia_max_rendertime) {
+            this.ljopt.ystart = y + this.ljopt.pixelsize;
+            this.schedule_ui_draw();
+            this.set_status('rendering');
+            this.set_rendering_note(y + " / " + this.local_julia.height + " Julia lines");
+            this.set_rendering_note_progress(y / this.local_julia.height);
+            return;
+          }
+        }
       }
-      return this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y);
+      if ((this.old_local_julia.width > 0) && (this.old_local_julia.height > 0)) {
+        this.graph_julia_ctx.clearRect(this.old_local_julia.x, this.old_local_julia.y, this.old_local_julia.width, this.old_local_julia.height);
+      }
+      this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y);
+      return this.reset_julia_rendering(this.ljopt.highres && this.pause_mode);
+    };
+
+    MandelIter.prototype.reset_julia_rendering = function(stoprender) {
+      if (stoprender == null) {
+        stoprender = false;
+      }
+      this.ljopt.changed = !stoprender;
+      this.ljopt.busy = false;
+      this.hide_rendering_note();
+      if (this.pause_mode) {
+        this.set_status('paused');
+      } else {
+        this.set_status('normal');
+      }
+      return this.schedule_ui_draw();
+    };
+
+    MandelIter.prototype.on_julia_changed = function() {
+      this.ljopt.changed = true;
+      return this.schedule_ui_draw();
     };
 
     MandelIter.prototype.draw_orbit_features = function(c) {
       this.draw_orbit(c);
       if (this.option.julia_draw_local.value) {
-        return this.draw_local_julia(c);
+        if (this.ljopt.busy) {
+          return this.draw_local_julia();
+        } else {
+          if (this.draw_local_julia_setup(c)) {
+            return this.draw_local_julia();
+          }
+        }
       }
     };
 
@@ -1225,6 +1349,7 @@
 
     MandelIter.prototype.animate_to = function(pos) {
       this.pause_mode_on();
+      this.reset_julia_rendering();
       this.pause_anim = new Motion.Anim(this.orbit_mouse, pos, 32);
       return this.update_pause_anim();
     };

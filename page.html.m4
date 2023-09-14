@@ -217,10 +217,10 @@ undivert(`style.css')
               </td>
             </tr>
             <tr>
-              <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space)">Max Iter When Paused</th>
+              <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space) (anything over 500 is probably beyond the precision of Javascript double precision floating point math)">Max Iter When Paused</th>
               <td class="slider">
                 <label for="julia_max_iter_paused" id="julia_max_iter_paused_label">200</label>
-                <input id="julia_max_iter_paused" type="range" value="250" min="50" max="500" step="50" autocomplete="off">
+                <input id="julia_max_iter_paused" type="range" value="250" min="50" max="2500" step="50" autocomplete="off">
               </td>
             </tr>
             <tr>

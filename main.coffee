@@ -101,6 +101,18 @@ class MandelIter
       on_true:  @on_julia_draw_local_true
       on_false: @on_julia_draw_local_false
 
+    @option.julia_more_when_paused.register_callback
+      on_true:  @on_julia_more_when_paused_true
+      on_false: @on_julia_more_when_paused_false
+
+    @option.julia_local_margin.register_callback     on_change: @on_julia_changed
+    @option.julia_local_max_size.register_callback   on_change: @on_julia_changed
+    @option.julia_local_opacity.register_callback    on_change: @on_julia_changed
+    @option.julia_local_pixel_size.register_callback on_change: @on_julia_changed
+    @option.julia_max_iter_paused.register_callback  on_change: @on_julia_changed
+    @option.julia_max_iterations.register_callback   on_change: @on_julia_changed
+    @option.julia_antialias.register_callback        on_change: @on_julia_changed
+
     @option.julia_local_pixel_size.set_label_text_formater (value) -> "#{value}x"
 
     format_color_scale = (value) ->
@@ -158,6 +170,7 @@ class MandelIter
     @deferred_render_pass_scale = 3
     @initial_render_pixel_size = @deferred_render_pass_scale ** @deferred_render_passes
     @render_lines_per_pass = 24
+    @julia_max_rendertime = 250
 
     @rendering_note          = @context.getElementById('rendering_note')
     @rendering_note_hdr      = @context.getElementById('rendering_note_hdr')
@@ -185,6 +198,8 @@ class MandelIter
       y: 0
 
     document.addEventListener('keydown', @on_keydown)
+
+    @draw_local_julia_init()
 
     console.log('init() completed!')
 
@@ -344,10 +359,13 @@ class MandelIter
 
   pause_mode_on: ->
     @pause_mode = true
+    @ljopt.changed = true
     @set_status('paused')
 
   pause_mode_off: ->
     @pause_mode = false
+    @ljopt.busy = false
+    @ljopt.changed = true
     @schedule_ui_draw()
     @set_status('normal')
 
@@ -453,6 +471,7 @@ class MandelIter
       if !@pause_mode or force
         @orbit_mouse.x = @mouse.x
         @orbit_mouse.y = @mouse.y
+        @ljopt.changed = true
       @mouse_active = true
       @schedule_ui_draw()
 
@@ -505,9 +524,17 @@ class MandelIter
 
   on_julia_draw_local_true: =>
     @graph_julia_canvas.classList.remove('hidden')
+    @reset_julia_rendering()
 
   on_julia_draw_local_false: =>
     @graph_julia_canvas.classList.add('hidden')
+    @reset_julia_rendering()
+
+  on_julia_more_when_paused_true: =>
+    @reset_julia_rendering()
+
+  on_julia_more_when_paused_false: =>
+    @reset_julia_rendering()
 
   rectangular_to_polar_angle: (r, i) ->
     return Math.atan2(i, r)
@@ -589,7 +616,6 @@ class MandelIter
     if text?
       @rendering_note.classList.remove('hidden')
       @rendering_note_value.textContent = text
-      @set_rendering_note_progress()
     else
       @rendering_note.classList.add('hidden')
       @rendering_note_value.textContent = ''
@@ -597,8 +623,9 @@ class MandelIter
   hide_rendering_note: ->
     @set_rendering_note(null)
 
-  set_rendering_note_progress: ->
-    perc = parseInt(( @lines_finished / @graph_height) * 100)
+  set_rendering_note_progress: (perc = null) ->
+    perc ?= @lines_finished / @graph_height
+    perc = parseInt(perc * 100)
     @rendering_note_progress.value = perc
     @rendering_note_progress.textContent = "#{perc}%"
 
@@ -613,6 +640,7 @@ class MandelIter
     @render_pixel_size = @initial_render_pixel_size
     @lines_finished = 0
     @set_rendering_note("...")
+    @set_rendering_note_progress()
     @schedule_background_render_pass()
 
   do_antialias: ->
@@ -624,7 +652,7 @@ class MandelIter
     render_msg = "#{@render_pixel_size}x"
     render_msg += " (antialias)" if @do_antialias()
     @set_rendering_note(render_msg)
-    console.log(render_msg)
+    @set_rendering_note_progress()
 
     setTimeout =>
       @deferred_background_render_callback()
@@ -653,7 +681,6 @@ class MandelIter
       @lines_finished = 0
       @schedule_background_render_pass()
     else
-      console.log('finished rendering, @render_pixel_size = ' + @render_pixel_size)
       @hide_rendering_note()
       @set_status('normal')
 
@@ -970,35 +997,65 @@ class MandelIter
     else
       n
 
-  draw_local_julia: (c) ->
-    if (@local_julia.width > 0) and (@local_julia.height > 0)
-      @graph_julia_ctx.clearRect(@local_julia.x, @local_julia.y, @local_julia.width, @local_julia.height)
+  draw_local_julia_init: ->
+    @ljopt =
+      busy:         false
+      ystart:       0
+      c:            null
+      pixelsize:    @option.julia_local_pixel_size.value
+      opacity:      Math.ceil(@option.julia_local_opacity.value * 256)
+      do_antialias: false
+      aamult:       1
+      aastep:       1.0
+      highres:      @pause_mode and @option.julia_more_when_paused.value
 
-    pixelsize = @option.julia_local_pixel_size.value
+    @old_local_julia =
+      x: 0
+      y: 0
+      width:  @graph_width
+      height: @graph_height
+
+  draw_local_julia_setup: (c) ->
+    return false unless @ljopt.changed
+
+    @old_local_julia.x      = @local_julia.x
+    @old_local_julia.y      = @local_julia.y
+    @old_local_julia.width  = @local_julia.height
+    @old_local_julia.height = @local_julia.height
+
+    @ljopt.c            = c
+    @ljopt.pixelsize    = @option.julia_local_pixel_size.value
+    @ljopt.opacity      = Math.ceil(@option.julia_local_opacity.value * 256)
+    @ljopt.do_antialias = false
+    @ljopt.aamult       = 1
+    @ljopt.aastep       = 1.0
+    @ljopt.highres      = @pause_mode and @option.julia_more_when_paused.value
+
     @julia_maxiter = @option.julia_max_iterations.value
-    opacity = Math.ceil(@option.julia_local_opacity.value * 256)
-    do_antialias = false
-    aamult = 1
-    aastep = 1.0
 
-    highres = @pause_mode and @option.julia_more_when_paused.value
     if @defer_highres_frames > 0
       @defer_highres_frames = @defer_highres_frames - 1
-      highres = false
+      @ljopt.highres = false
       @schedule_ui_draw()
+      return false
 
-    if highres
+    @ljopt.busy   = true
+    @ljopt.ystart = 0
+
+    if @pause_anim?
+      @ljopt.highres = false
+
+    if @ljopt.highres
       @local_julia.x = 0
       @local_julia.y = 0
       @local_julia.width  = @graph_width
       @local_julia.height = @graph_height
-      pixelsize = 1
+      @ljopt.pixelsize = 1
       @julia_maxiter = @option.julia_max_iter_paused.value
-      aamult = @option.julia_antialias.value
-      if aamult > 0
-        console.log('aamult', aamult)
-        aastep = 1.0 / aamult
-        do_antialias = true
+      @ljopt.aamult = @option.julia_antialias.value
+      if @ljopt.aamult > 0
+        @ljopt.aastep = 1.0 / @ljopt.aamult
+        @ljopt.do_antialias = true
 
     else
       orbit_cx = Math.floor((@orbit_bb.max_x + @orbit_bb.min_x) / 2)
@@ -1025,39 +1082,76 @@ class MandelIter
     @current_image = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
     @current_theme = @current_julia_theme()
 
-    for y in [0..@local_julia.height] by pixelsize
-      for x in [0..@local_julia.width] by pixelsize
+    return true
+
+  draw_local_julia: (lj) ->
+    start_time = performance.now()
+
+    for y in [@ljopt.ystart..@local_julia.height] by @ljopt.pixelsize
+      for x in [0..@local_julia.width] by @ljopt.pixelsize
         xx = x + @local_julia.x
         yy = y + @local_julia.y
 
         val = 0
 
-        if do_antialias
+        if @ljopt.do_antialias
           iter = 0
-          for aay in [0..aamult] by aastep
-            for aax in [0..aamult] by aastep
-              val += @julia_color_value(c, xx + aax, yy + aay)
+          for aay in [0..@ljopt.aamult] by @ljopt.aastep
+            for aax in [0..@ljopt.aamult] by @ljopt.aastep
+              val += @julia_color_value(@ljopt.c, xx + aax, yy + aay)
               iter++
           val /= iter
 
         else
-          val = @julia_color_value(c, xx, yy)
+          val = @julia_color_value(@ljopt.c, xx, yy)
 
         val /= 255
 
-        for py in [0..pixelsize]
-          for px in [0..pixelsize]
+        for py in [0..@ljopt.pixelsize]
+          for px in [0..@ljopt.pixelsize]
             pos1x = (x + px) + ((y + py) * @current_image.width)
             pos4x = 4 * pos1x
             @colorize_pixel(val, pos4x)
-            @current_image.data[pos4x + 3] = opacity
+            @current_image.data[pos4x + 3] = @ljopt.opacity
 
+      if (y % 10) == 0
+        if (performance.now() - start_time) > @julia_max_rendertime
+          @ljopt.ystart = y + @ljopt.pixelsize
+          @schedule_ui_draw()
+          @set_status('rendering')
+          @set_rendering_note("#{y} / #{@local_julia.height} Julia lines")
+          @set_rendering_note_progress(y/@local_julia.height)
+          return
+
+    if (@old_local_julia.width > 0) and (@old_local_julia.height > 0)
+      @graph_julia_ctx.clearRect(@old_local_julia.x, @old_local_julia.y, @old_local_julia.width, @old_local_julia.height)
     @graph_julia_ctx.putImageData(@current_image, @local_julia.x, @local_julia.y)
+    @reset_julia_rendering(@ljopt.highres and @pause_mode)
+
+  reset_julia_rendering: (stoprender = false) ->
+    @ljopt.changed = !stoprender
+    @ljopt.busy = false
+
+    @hide_rendering_note()
+    if @pause_mode
+      @set_status('paused')
+    else
+      @set_status('normal')
+
+    @schedule_ui_draw()
+
+  on_julia_changed: =>
+    @ljopt.changed = true
+    @schedule_ui_draw()
 
   draw_orbit_features: (c) ->
     @draw_orbit(c)
     if @option.julia_draw_local.value
-      @draw_local_julia(c)
+      if @ljopt.busy
+        @draw_local_julia()
+      else
+        if @draw_local_julia_setup(c)
+          @draw_local_julia()
 
   draw_trace_animation: ->
     @draw_orbit_features(@current_trace_location)
@@ -1069,6 +1163,7 @@ class MandelIter
 
   animate_to: (pos) ->
     @pause_mode_on()
+    @reset_julia_rendering()
     @pause_anim = new Motion.Anim(@orbit_mouse, pos, 32)
     @update_pause_anim()
 

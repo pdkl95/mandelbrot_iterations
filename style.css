@@ -309,7 +309,7 @@ td.blank {
   float: left;
   position: absolute;
   top: 10em;
-  left: 10em;
+  left: 6em;
   padding: 1em;
   background-color: rgba(230, 215, 215, 0.88);
   border: 3px dashed rgba(255, 18, 18, 0.9);
