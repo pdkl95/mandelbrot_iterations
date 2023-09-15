@@ -244,6 +244,10 @@ h1 {
   display: none;
 }
 
+.invis {
+  visibility: hidden;
+}
+
 .clear_both {
   clear: both;
 }
@@ -583,6 +587,36 @@ td.slider > label {
 	font-family: Georgia, serif;
 }
 
+#highlight_list {
+  background-color: #e8e9eb;
+  border-radius: 5px;
+  border: 2px inset #C0C0C0;
+  box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+  padding: 0.6em;
+}
+
+.highlight_item {
+  border: 2px dotted #e0e0e0;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.highlight_item:hover {
+  border-color: #558AD9;
+  background-color: #E0E3EC;
+}
+
+.highlight_item.selected {
+  background-color: #99B0D1;
+  border-color: #99B0D1;
+  text-shadow: 1px 1px 1px rgba(242,242,242,0.35);
+  cursor: default;
+}
+
+.highlight_item.selected:hover {
+  border-color: #91A3BE;
+}
+
     </style>
   </head>
   <body>
@@ -701,16 +735,16 @@ td.slider > label {
           <table>
             <tr>
               <td>
-                <button id="highlight_prev">&larr;</button>
+                <button id="highlight_prev" class="invis">&larr;</button>
                 <select name="highlight_group" id="highlight_group" autocomplete="off">
                   <option value="0" selected="selected">&darr; Group &darr;</option>
                 </select>
-                <button id="highlight_next">&rarr;</button>
+                <button id="highlight_next" class="invis">&rarr;</button>
               </td>
             </tr>
             <tr>
               <td>
-                <ol id="highlight_list">
+                <ol id="highlight_list" class="invis">
                 </ol>
               </td>
             </tr>
@@ -1366,9 +1400,6 @@ td.slider > label {
       el = document.createElement('li');
       el.id = this.id;
       el.classList.add('highlight_item');
-      el.classList.add('tt');
-      el.classList.add('ttleft');
-      el.setAttribute('data-title', this.li_title());
       el.textContent = this.name;
       return el;
     };
@@ -1893,13 +1924,22 @@ td.slider > label {
     };
 
     MandelIter.prototype.current_highlight_group = function() {
+      if (this.option.highlight_group.value === 0) {
+        return null;
+      }
       return Highlight.sequences[this.option.highlight_group.value];
     };
 
     MandelIter.prototype.on_highlight_group_changed = function(event) {
       var g;
       g = this.current_highlight_group();
-      return g.select(this.highlight_list);
+      if (g != null) {
+        this.show_highlight_buttons();
+        return g.select(this.highlight_list);
+      } else {
+        this.hide_highlight_buttons();
+        return this.highlight_list.replaceChildren();
+      }
     };
 
     MandelIter.prototype.select_highlight_item = function(item) {
@@ -1912,13 +1952,17 @@ td.slider > label {
     MandelIter.prototype.highlight_prev_item = function() {
       var g;
       g = this.current_highlight_group();
-      return this.select_highlight_item(g.prev());
+      if (g != null) {
+        return this.select_highlight_item(g.prev());
+      }
     };
 
     MandelIter.prototype.highlight_next_item = function() {
       var g;
       g = this.current_highlight_group();
-      return this.select_highlight_item(g.next());
+      if (g != null) {
+        return this.select_highlight_item(g.next());
+      }
     };
 
     MandelIter.prototype.on_highlight_prev_click = function() {
@@ -1935,6 +1979,18 @@ td.slider > label {
       if ((t.tagName === "LI") && t.classList.contains('highlight_item')) {
         return this.select_highlight_item(Highlight.items[t.id]);
       }
+    };
+
+    MandelIter.prototype.hide_highlight_buttons = function() {
+      this.highlight_prev.classList.add('invis');
+      this.highlight_next.classList.add('invis');
+      return this.highlight_list.classList.add('invis');
+    };
+
+    MandelIter.prototype.show_highlight_buttons = function() {
+      this.highlight_prev.classList.remove('invis');
+      this.highlight_next.classList.remove('invis');
+      return this.highlight_list.classList.remove('invis');
     };
 
     MandelIter.prototype.resize_canvas = function(w, h) {
