@@ -126,16 +126,16 @@ undivert(`style.css')
           <table>
             <tr>
               <td>
-                <button id="highlight_prev">&larr;</button>
+                <button id="highlight_prev" class="invis">&larr;</button>
                 <select name="highlight_group" id="highlight_group" autocomplete="off">
                   <option value="0" selected="selected">&darr; Group &darr;</option>
                 </select>
-                <button id="highlight_next">&rarr;</button>
+                <button id="highlight_next" class="invis">&rarr;</button>
               </td>
             </tr>
             <tr>
               <td>
-                <ol id="highlight_list">
+                <ol id="highlight_list" class="invis">
                 </ol>
               </td>
             </tr>

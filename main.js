@@ -370,13 +370,22 @@
     };
 
     MandelIter.prototype.current_highlight_group = function() {
+      if (this.option.highlight_group.value === 0) {
+        return null;
+      }
       return Highlight.sequences[this.option.highlight_group.value];
     };
 
     MandelIter.prototype.on_highlight_group_changed = function(event) {
       var g;
       g = this.current_highlight_group();
-      return g.select(this.highlight_list);
+      if (g != null) {
+        this.show_highlight_buttons();
+        return g.select(this.highlight_list);
+      } else {
+        this.hide_highlight_buttons();
+        return this.highlight_list.replaceChildren();
+      }
     };
 
     MandelIter.prototype.select_highlight_item = function(item) {
@@ -389,13 +398,17 @@
     MandelIter.prototype.highlight_prev_item = function() {
       var g;
       g = this.current_highlight_group();
-      return this.select_highlight_item(g.prev());
+      if (g != null) {
+        return this.select_highlight_item(g.prev());
+      }
     };
 
     MandelIter.prototype.highlight_next_item = function() {
       var g;
       g = this.current_highlight_group();
-      return this.select_highlight_item(g.next());
+      if (g != null) {
+        return this.select_highlight_item(g.next());
+      }
     };
 
     MandelIter.prototype.on_highlight_prev_click = function() {
@@ -412,6 +425,18 @@
       if ((t.tagName === "LI") && t.classList.contains('highlight_item')) {
         return this.select_highlight_item(Highlight.items[t.id]);
       }
+    };
+
+    MandelIter.prototype.hide_highlight_buttons = function() {
+      this.highlight_prev.classList.add('invis');
+      this.highlight_next.classList.add('invis');
+      return this.highlight_list.classList.add('invis');
+    };
+
+    MandelIter.prototype.show_highlight_buttons = function() {
+      this.highlight_prev.classList.remove('invis');
+      this.highlight_next.classList.remove('invis');
+      return this.highlight_list.classList.remove('invis');
     };
 
     MandelIter.prototype.resize_canvas = function(w, h) {

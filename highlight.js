@@ -32,9 +32,6 @@
       el = document.createElement('li');
       el.id = this.id;
       el.classList.add('highlight_item');
-      el.classList.add('tt');
-      el.classList.add('ttleft');
-      el.setAttribute('data-title', this.li_title());
       el.textContent = this.name;
       return el;
     };

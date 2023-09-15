@@ -20,9 +20,9 @@ class Highlight.Item
     el = document.createElement('li')
     el.id = @id
     el.classList.add('highlight_item')
-    el.classList.add('tt')
-    el.classList.add('ttleft')
-    el.setAttribute('data-title', @li_title())
+    #el.classList.add('tt')
+    #el.classList.add('ttleft')
+    #el.setAttribute('data-title', @li_title())
     el.textContent = @name
     el
 

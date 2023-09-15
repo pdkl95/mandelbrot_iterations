@@ -61,6 +61,10 @@ h1 {
   display: none;
 }
 
+.invis {
+  visibility: hidden;
+}
+
 .clear_both {
   clear: both;
 }
@@ -398,4 +402,34 @@ td.slider > label {
 	padding-left: 0.3em;
 	font-style: italic;
 	font-family: Georgia, serif;
+}
+
+#highlight_list {
+  background-color: #e8e9eb;
+  border-radius: 5px;
+  border: 2px inset #C0C0C0;
+  box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+  padding: 0.6em;
+}
+
+.highlight_item {
+  border: 2px dotted #e0e0e0;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.highlight_item:hover {
+  border-color: #558AD9;
+  background-color: #E0E3EC;
+}
+
+.highlight_item.selected {
+  background-color: #99B0D1;
+  border-color: #99B0D1;
+  text-shadow: 1px 1px 1px rgba(242,242,242,0.35);
+  cursor: default;
+}
+
+.highlight_item.selected:hover {
+  border-color: #91A3BE;
 }

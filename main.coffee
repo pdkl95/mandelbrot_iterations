@@ -308,11 +308,17 @@ class MandelIter
       @content_el.classList.remove('show_tt')
 
   current_highlight_group: ->
+    return null if @option.highlight_group.value is 0
     Highlight.sequences[@option.highlight_group.value]
 
   on_highlight_group_changed: (event) =>
     g = @current_highlight_group()
-    g.select(@highlight_list)
+    if g?
+      @show_highlight_buttons()
+      g.select(@highlight_list)
+    else
+      @hide_highlight_buttons()
+      @highlight_list.replaceChildren()
 
   select_highlight_item: (item) ->
     if item?
@@ -321,11 +327,11 @@ class MandelIter
 
   highlight_prev_item: ->
     g = @current_highlight_group()
-    @select_highlight_item(g.prev())
+    @select_highlight_item(g.prev()) if g?
 
   highlight_next_item: ->
     g = @current_highlight_group()
-    @select_highlight_item(g.next())
+    @select_highlight_item(g.next()) if g?
 
   on_highlight_prev_click: =>
     @highlight_prev_item()
@@ -337,6 +343,16 @@ class MandelIter
     t = event.target
     if (t.tagName is "LI") and t.classList.contains('highlight_item')
       @select_highlight_item(Highlight.items[t.id])
+
+  hide_highlight_buttons: ->
+    @highlight_prev.classList.add('invis')
+    @highlight_next.classList.add('invis')
+    @highlight_list.classList.add('invis')
+
+  show_highlight_buttons: ->
+    @highlight_prev.classList.remove('invis')
+    @highlight_next.classList.remove('invis')
+    @highlight_list.classList.remove('invis')
 
   resize_canvas: (w, h) ->
     @canvas_num_pixels = w * h
