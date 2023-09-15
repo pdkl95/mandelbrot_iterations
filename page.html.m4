@@ -123,6 +123,23 @@ undivert(`style.css')
           </table> 
 
           <h3>Highlights</h3>
+          <table>
+            <tr>
+              <td>
+                <button id="highlight_prev">&larr;</button>
+                <select name="highlight_group" id="highlight_group" autocomplete="off">
+                  <option value="0" selected="selected">&darr; Group &darr;</option>
+                </select>
+                <button id="highlight_next">&rarr;</button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <ol id="highlight_list">
+                </ol>
+              </td>
+            </tr>
+          </table>
         </div>
 
         <div id="orbit_options" class="optionbox obleft">
@@ -314,6 +331,7 @@ undivert(`style.css')
     <script type="text/javascript">
 undivert(`uioption.js')
 undivert(`motion.js')
+undivert(`highlight.js')
 undivert(`main.js')
     </script>
   </body>

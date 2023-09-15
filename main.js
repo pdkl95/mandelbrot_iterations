@@ -32,13 +32,17 @@
       this.on_button_trace_cardioid_click = bind(this.on_button_trace_cardioid_click, this);
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
       this.deferred_fit_canvas_to_width = bind(this.deferred_fit_canvas_to_width, this);
+      this.on_highlight_list_click = bind(this.on_highlight_list_click, this);
+      this.on_highlight_next_click = bind(this.on_highlight_next_click, this);
+      this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
+      this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
       this.on_mandel_color_scale_change = bind(this.on_mandel_color_scale_change, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, format_color_scale;
+      var fmtfloatopts, format_color_scale, ref, seq, seq_id;
       console.log('Starting init()...');
       this.running = false;
       this.colorize_themes = {
@@ -118,7 +122,8 @@
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
         mandel_color_scale_r: new UI.FloatOption('mandel_color_scale_r', this.colorize_themes[this.default_mandel_theme][0]),
         mandel_color_scale_g: new UI.FloatOption('mandel_color_scale_g', this.colorize_themes[this.default_mandel_theme][1]),
-        mandel_color_scale_b: new UI.FloatOption('mandel_color_scale_b', this.colorize_themes[this.default_mandel_theme][2])
+        mandel_color_scale_b: new UI.FloatOption('mandel_color_scale_b', this.colorize_themes[this.default_mandel_theme][2]),
+        highlight_group: new UI.SelectOption('highlight_group')
       };
       this.option.julia_draw_local.register_callback({
         on_true: this.on_julia_draw_local_true,
@@ -167,6 +172,9 @@
       this.option.mandel_color_scale_b.register_callback({
         on_change: this.on_mandel_color_scale_change
       });
+      this.option.highlight_group.register_callback({
+        on_change: this.on_highlight_group_changed
+      });
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -212,6 +220,17 @@
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
       this.rendering_note_progress = this.context.getElementById('rendering_note_progress');
+      this.highlight_prev = this.context.getElementById('highlight_prev');
+      this.highlight_next = this.context.getElementById('highlight_next');
+      this.highlight_list = this.context.getElementById('highlight_list');
+      ref = Highlight.sequences;
+      for (seq_id in ref) {
+        seq = ref[seq_id];
+        seq.add_to_groups(this.option.highlight_group.el);
+      }
+      this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
+      this.highlight_next.addEventListener('click', this.on_highlight_next_click);
+      this.highlight_list.addEventListener('click', this.on_highlight_list_click);
       this.main_bulb_center = {
         r: -1,
         i: 0
@@ -252,6 +271,14 @@
         accel = this.alt_step_accel;
       }
       switch (event.code) {
+        case 'KeyP':
+        case 'Backspace':
+          this.highlight_prev_item();
+          break;
+        case 'KeyN':
+        case 'Enter':
+          this.highlight_next_item();
+          break;
         case 'Space':
           this.pause_mode_toggle();
           event.preventDefault();
@@ -339,6 +366,51 @@
         return this.content_el.classList.add('show_tt');
       } else {
         return this.content_el.classList.remove('show_tt');
+      }
+    };
+
+    MandelIter.prototype.current_highlight_group = function() {
+      return Highlight.sequences[this.option.highlight_group.value];
+    };
+
+    MandelIter.prototype.on_highlight_group_changed = function(event) {
+      var g;
+      g = this.current_highlight_group();
+      return g.select(this.highlight_list);
+    };
+
+    MandelIter.prototype.select_highlight_item = function(item) {
+      if (item != null) {
+        item.select();
+        return this.animate_to(this.complex_to_canvas(item));
+      }
+    };
+
+    MandelIter.prototype.highlight_prev_item = function() {
+      var g;
+      g = this.current_highlight_group();
+      return this.select_highlight_item(g.prev());
+    };
+
+    MandelIter.prototype.highlight_next_item = function() {
+      var g;
+      g = this.current_highlight_group();
+      return this.select_highlight_item(g.next());
+    };
+
+    MandelIter.prototype.on_highlight_prev_click = function() {
+      return this.highlight_prev_item();
+    };
+
+    MandelIter.prototype.on_highlight_next_click = function() {
+      return this.highlight_next_item();
+    };
+
+    MandelIter.prototype.on_highlight_list_click = function(event) {
+      var t;
+      t = event.target;
+      if ((t.tagName === "LI") && t.classList.contains('highlight_item')) {
+        return this.select_highlight_item(Highlight.items[t.id]);
       }
     };
 
@@ -632,8 +704,10 @@
     };
 
     MandelIter.prototype.on_copy_loc_to_set_c_click = function(event) {
-      var pos;
-      pos = this.canvas_to_complex(this.orbit_mouse.x, this.orbit_mouse.y);
+      var loc, pos;
+      this.update_current_trace_location();
+      loc = this.current_trace_location;
+      pos = this.canvas_to_complex(loc.x, loc.y);
       this.option.set_c_real.set(pos.r);
       return this.option.set_c_imag.set(pos.i);
     };
@@ -1383,15 +1457,9 @@
       return this.draw_orbit(this.orbit_mouse);
     };
 
-    MandelIter.prototype.draw_ui = function() {
-      this.draw_ui_scheduled = false;
-      this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
-      this.pointer_angle = this.pointer_angle + this.pointer_angle_step;
-      if (this.pointer_angle >= TAU) {
-        this.pointer_angle = this.pointer_angle - TAU;
-      }
+    MandelIter.prototype.update_current_trace_location = function() {
       if (this.trace_animation_enabled) {
-        this.current_trace_location = (function() {
+        return this.current_trace_location = (function() {
           switch (this.option.trace_path.value) {
             case 'main_cardioid':
               return this.cardioid(this.trace_angle);
@@ -1400,8 +1468,18 @@
           }
         }).call(this);
       } else {
-        this.current_trace_location = this.orbit_mouse;
+        return this.current_trace_location = this.orbit_mouse;
       }
+    };
+
+    MandelIter.prototype.draw_ui = function() {
+      this.draw_ui_scheduled = false;
+      this.graph_ui_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
+      this.pointer_angle = this.pointer_angle + this.pointer_angle_step;
+      if (this.pointer_angle >= TAU) {
+        this.pointer_angle = this.pointer_angle - TAU;
+      }
+      this.update_current_trace_location();
       if (this.option.highlight_trace_path.value) {
         switch (this.option.trace_path.value) {
           case 'main_cardioid':

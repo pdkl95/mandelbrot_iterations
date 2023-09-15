@@ -20,7 +20,8 @@ MAIN_TARGET_SRC = $(srcdir)/page.html.m4
 MAIN_TARGET_DEPS = $(MAIN_TARGET_SRC) \
         $(builddir)/uioption.js \
         $(builddir)/motion.js \
-        $(builddir)/main.js \
+	$(builddir)/highlight.js \
+	$(builddir)/main.js \
         $(srcdir)/basic.css \
         $(srcdir)/style.css
 

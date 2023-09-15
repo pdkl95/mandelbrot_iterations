@@ -96,6 +96,7 @@ class MandelIter
       mandel_color_scale_r:     new UI.FloatOption('mandel_color_scale_r', @colorize_themes[@default_mandel_theme][0])
       mandel_color_scale_g:     new UI.FloatOption('mandel_color_scale_g', @colorize_themes[@default_mandel_theme][1])
       mandel_color_scale_b:     new UI.FloatOption('mandel_color_scale_b', @colorize_themes[@default_mandel_theme][2])
+      highlight_group:          new UI.SelectOption('highlight_group');
 
     @option.julia_draw_local.register_callback
       on_true:  @on_julia_draw_local_true
@@ -123,6 +124,8 @@ class MandelIter
     @option.mandel_color_scale_r.register_callback on_change: @on_mandel_color_scale_change
     @option.mandel_color_scale_g.register_callback on_change: @on_mandel_color_scale_change
     @option.mandel_color_scale_b.register_callback on_change: @on_mandel_color_scale_change
+
+    @option.highlight_group.register_callback on_change: @on_highlight_group_changed
 
     @pointer_angle = 0
     @pointer_angle_step = TAU/96
@@ -177,6 +180,17 @@ class MandelIter
     @rendering_note_value    = @context.getElementById('rendering_note_value')
     @rendering_note_progress = @context.getElementById('rendering_note_progress')
 
+    @highlight_prev = @context.getElementById('highlight_prev')
+    @highlight_next = @context.getElementById('highlight_next')
+    @highlight_list = @context.getElementById('highlight_list')
+
+    for seq_id, seq of Highlight.sequences
+      seq.add_to_groups(@option.highlight_group.el)
+
+    @highlight_prev.addEventListener('click', @on_highlight_prev_click)
+    @highlight_next.addEventListener('click', @on_highlight_next_click)
+    @highlight_list.addEventListener('click', @on_highlight_list_click)
+
     @main_bulb_center =
       r: -1
       i:  0
@@ -213,6 +227,12 @@ class MandelIter
     accel =   @alt_step_accel if event.altKey
 
     switch event.code
+      when 'KeyP', 'Backspace'
+        @highlight_prev_item()
+
+      when 'KeyN', 'Enter'
+        @highlight_next_item()
+
       when 'Space'
         @pause_mode_toggle()
         event.preventDefault()
@@ -286,6 +306,37 @@ class MandelIter
       @content_el.classList.add('show_tt')
     else
       @content_el.classList.remove('show_tt')
+
+  current_highlight_group: ->
+    Highlight.sequences[@option.highlight_group.value]
+
+  on_highlight_group_changed: (event) =>
+    g = @current_highlight_group()
+    g.select(@highlight_list)
+
+  select_highlight_item: (item) ->
+    if item?
+      item.select()
+      @animate_to(@complex_to_canvas(item))
+
+  highlight_prev_item: ->
+    g = @current_highlight_group()
+    @select_highlight_item(g.prev())
+
+  highlight_next_item: ->
+    g = @current_highlight_group()
+    @select_highlight_item(g.next())
+
+  on_highlight_prev_click: =>
+    @highlight_prev_item()
+
+  on_highlight_next_click: =>
+    @highlight_next_item()
+
+  on_highlight_list_click: (event) =>
+    t = event.target
+    if (t.tagName is "LI") and t.classList.contains('highlight_item')
+      @select_highlight_item(Highlight.items[t.id])
 
   resize_canvas: (w, h) ->
     @canvas_num_pixels = w * h
@@ -509,10 +560,11 @@ class MandelIter
       @animate_to(@complex_to_canvas(z))
 
   on_copy_loc_to_set_c_click: (event) =>
-    pos = @canvas_to_complex(@orbit_mouse.x, @orbit_mouse.y)
+    @update_current_trace_location()
+    loc = @current_trace_location
+    pos = @canvas_to_complex(loc.x, loc.y)
     @option.set_c_real.set(pos.r)
     @option.set_c_imag.set(pos.i)
-
 
   on_mouseenter: (event) =>
     @mouse_active = true
@@ -1194,6 +1246,15 @@ class MandelIter
     @orbit_mouse = @cardioid(@trace_angle)
     @draw_orbit(@orbit_mouse)
 
+  update_current_trace_location: ->
+    if @trace_animation_enabled
+      @current_trace_location =
+        switch @option.trace_path.value
+          when 'main_cardioid' then @cardioid(@trace_angle)
+          when 'main_bulb'     then @main_bulb(@trace_angle)
+    else
+      @current_trace_location = @orbit_mouse
+
   draw_ui: ->
     @draw_ui_scheduled = false
 
@@ -1202,13 +1263,7 @@ class MandelIter
     @pointer_angle = @pointer_angle + @pointer_angle_step
     @pointer_angle = @pointer_angle - TAU if @pointer_angle >= TAU
 
-    if @trace_animation_enabled
-      @current_trace_location =
-        switch @option.trace_path.value
-          when 'main_cardioid' then @cardioid(@trace_angle)
-          when 'main_bulb'     then @main_bulb(@trace_angle)
-    else
-      @current_trace_location = @orbit_mouse
+    @update_current_trace_location()
 
     if @option.highlight_trace_path.value
       switch @option.trace_path.value
