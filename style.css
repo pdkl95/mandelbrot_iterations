@@ -127,7 +127,7 @@ footer {
 }
 
 
-.ui.panel > .buttonbox {
+.ui.panel > .buttonbox:not(.hidden) {
   display: inline-block;
 }
 
@@ -432,4 +432,21 @@ td.slider > label {
 
 .highlight_item.selected:hover {
   border-color: #91A3BE;
+}
+
+#msg {
+  overflow: hidden;
+  max-width: 16rem;
+  background-color: #E0E3EC;
+  border-radius: 6px;
+  border: 2px inset rgba(202,222,244,0.7);
+  box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+  text-shadow: 1px 1px 1px rgba(28, 51, 74, 0.24);
+  padding: 3px 6px;
+}
+
+#msgbox {
+  margin-left: 2em;
+  position: relative;
+  top: -1px;
 }

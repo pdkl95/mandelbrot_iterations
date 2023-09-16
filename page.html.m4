@@ -54,13 +54,6 @@ undivert(`style.css')
           <span class="title">Trace Animation</span>
           <button id="button_trace_cardioid" class="tt ttright" data-title="Start/Stop animated tracing of the orbit pointer around the main cardioid">Start</button>
           <input id="trace_slider" type="range" min="0" max="6.283185" step="any" autocomplete="off" disabled="disabled" autocomplete="off" class="tt ttright" data-title="Changes the current position along the trace path.">
-
-          <label for="trace_path" class="hidden">
-            <select name="trace_path" id="trace_path" autocomplete="off">
-              <option value="main_cardioid" selected="selected">Main Cardioid</option>
-              <option value="main_bulb">Main Bulb</option>
-            </select>
-          </label>
         </div>
 
         <div class="uioptbox buttonbox label">
@@ -73,16 +66,8 @@ undivert(`style.css')
           </div>
         </div>
 
-        <div class="uioptbox buttonbox bbright">
-          <span class="title">UI Options</span>
-          <label for="keyboard_step" class="tt ttleft hidden" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">
-            Step
-            <input id="keyboard_step" class="hidden" type="number" value="0.1" min="0.05" max="1.0" step="0.05">
-          </label>
-          <label for="show_tooltips" class="tt ttleft" data-title="Enable/Disable tooltips similar to what you are reading right now.">
-            Show Tooltips
-            <input id="show_tooltips" type="checkbox" checked="checked">
-          </label>
+        <div id="msgbox" class="buttonbox label hidden">
+          <span id="msg"></span>
         </div>
 
         <hr class="clear_both"></hr>
@@ -205,6 +190,22 @@ undivert(`style.css')
               </td>
             </tr>
           </table>
+
+          <h3>UI Options</h3>
+          <table>
+            <tr>
+              <th class="tt ttright" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">Step</th>
+              <td>
+                <input id="keyboard_step" class="hidden" type="number" value="0.1" min="0.05" max="1.0" step="0.05">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Enable/Disable tooltips similar to what you are reading right now.">Show Tooltips</th>
+              <td>
+                <input id="show_tooltips" type="checkbox" checked="checked">
+              </td>
+            </tr>
+          </table>>
         </div>
 
         <div id="julia_options" class="optionbox obleft">

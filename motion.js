@@ -70,6 +70,16 @@
       return this.current_step >= this.steps;
     };
 
+    Anim.prototype.remaining = function() {
+      return 1.0 - (this.current_step / this.steps);
+    };
+
+    Anim.prototype.highlight_color = function() {
+      var channel;
+      channel = 255 * this.remaining();
+      return "rgb(" + channel + "," + channel + ",0)";
+    };
+
     return Anim;
 
   })();

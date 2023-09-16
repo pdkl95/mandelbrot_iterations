@@ -35,6 +35,10 @@ class MandelIter
     @status        = @context.getElementById('status')
     @status_current = 'loading'
 
+    @msgbox = @context.getElementById('msgbox')
+    @msg    = @context.getElementById('msg')
+    @msg_visible = false
+
     @show_tooltips = @context.getElementById('show_tooltips')
     @show_tooltips.addEventListener('change', @on_show_tooltips_change)
     @show_tooltips.checked = true
@@ -76,7 +80,6 @@ class MandelIter
       highlight_trace_path:     new UI.BoolOption('highlight_trace_path', false)
       highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false)
       trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance')
-      trace_path:               new UI.SelectOption('trace_path')
       trace_speed:              new UI.FloatOption('trace_speed')
       orbit_draw_length:        new UI.IntOption('orbit_draw_length')
       orbit_draw_lines:         new UI.BoolOption('orbit_draw_lines', true)
@@ -307,6 +310,17 @@ class MandelIter
     else
       @content_el.classList.remove('show_tt')
 
+  hide_highlight_msg: ->
+    if @msg_visible
+      @msg.textContent = ''
+      @msgbox.classList.add('hidden')
+      @msg_visible = false
+
+  set_highlight_msg: (text) ->
+    @msg.textContent = text
+    @msgbox.classList.remove('hidden')
+    @msg_visible = true
+
   current_highlight_group: ->
     return null if @option.highlight_group.value is 0
     Highlight.sequences[@option.highlight_group.value]
@@ -319,11 +333,13 @@ class MandelIter
     else
       @hide_highlight_buttons()
       @highlight_list.replaceChildren()
+      @hide_highlight_msg()
 
   select_highlight_item: (item) ->
     if item?
       item.select()
       @animate_to(@complex_to_canvas(item))
+      @set_highlight_msg(item.name)
 
   highlight_prev_item: ->
     g = @current_highlight_group()
@@ -435,6 +451,7 @@ class MandelIter
     @ljopt.changed = true
     @schedule_ui_draw()
     @set_status('normal')
+    @hide_highlight_msg()
 
   pause_mode_toggle: ->
     if @pause_mode
@@ -461,6 +478,7 @@ class MandelIter
     @trace_slider.disabled = false
     @trace_slider.value = @trace_angle
     @trace_animation_enabled = true
+    @hide_highlight_msg()
 
   trace_cardioid_off: ->
     @button_trace_cardioid.textContent = 'Start'
@@ -1028,19 +1046,6 @@ class MandelIter
 
     @graph_ui_ctx.restore()
 
-  draw_main_bulb_trace_path: ->
-    center  = @complex_to_canvas(@main_bulb_center)
-    ztangent =
-      r: @main_bulb_tangent_point.r - @option.trace_path_edge_distance.value
-      i: @main_bulb_tangent_point.i
-    tangent = @complex_to_canvas(ztangent)
-    radius = tangent.x - center.x
-
-    @graph_ui_ctx.beginPath()
-    @graph_ui_ctx.arc(center.x, center.y, radius, 0, TAU, false)
-    @graph_ui_ctx.strokeStyle = '#00FF47'
-    @graph_ui_ctx.stroke()
-
   julia: (c, z) ->
     n = 0
     d = 0
@@ -1233,6 +1238,7 @@ class MandelIter
     @pause_mode_on()
     @reset_julia_rendering()
     @pause_anim = new Motion.Anim(@orbit_mouse, pos, 32)
+    @pause_anim.saved_color = @msg.style.color
     @update_pause_anim()
 
   update_pause_anim: ->
@@ -1241,8 +1247,10 @@ class MandelIter
     pos = @pause_anim.next()
     @set_mouse_position(pos.x, pos.y, true)
     if @pause_anim.finished()
+      @msg.style.color = @pause_anim.saved_color
       @pause_anim = null
     else
+      @msg.style.color = @pause_anim.highlight_color()
       @schedule_ui_draw()
 
   draw_zoom: ->
@@ -1264,10 +1272,7 @@ class MandelIter
 
   update_current_trace_location: ->
     if @trace_animation_enabled
-      @current_trace_location =
-        switch @option.trace_path.value
-          when 'main_cardioid' then @cardioid(@trace_angle)
-          when 'main_bulb'     then @main_bulb(@trace_angle)
+      @current_trace_location = @cardioid(@trace_angle)
     else
       @current_trace_location = @orbit_mouse
 
@@ -1282,13 +1287,10 @@ class MandelIter
     @update_current_trace_location()
 
     if @option.highlight_trace_path.value
-      switch @option.trace_path.value
-        when 'main_cardioid' then @draw_cardioid_trace_path()
-        when 'main_bulb'     then @draw_main_bulb_trace_path()
+      @draw_cardioid_trace_path()
 
     if @option.highlight_internal_angle.value
-      switch @option.trace_path.value
-        when 'main_cardioid' then @draw_cardioid_internal_angle()
+      @draw_cardioid_internal_angle()
 
     # exclusive modes
 

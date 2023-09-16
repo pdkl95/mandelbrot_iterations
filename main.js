@@ -65,6 +65,9 @@
       this.content_el = this.context.getElementById('content');
       this.status = this.context.getElementById('status');
       this.status_current = 'loading';
+      this.msgbox = this.context.getElementById('msgbox');
+      this.msg = this.context.getElementById('msg');
+      this.msg_visible = false;
       this.show_tooltips = this.context.getElementById('show_tooltips');
       this.show_tooltips.addEventListener('change', this.on_show_tooltips_change);
       this.show_tooltips.checked = true;
@@ -103,7 +106,6 @@
         highlight_trace_path: new UI.BoolOption('highlight_trace_path', false),
         highlight_internal_angle: new UI.BoolOption('highlight_internal_angle', false),
         trace_path_edge_distance: new UI.FloatOption('trace_path_edge_distance'),
-        trace_path: new UI.SelectOption('trace_path'),
         trace_speed: new UI.FloatOption('trace_speed'),
         orbit_draw_length: new UI.IntOption('orbit_draw_length'),
         orbit_draw_lines: new UI.BoolOption('orbit_draw_lines', true),
@@ -369,6 +371,20 @@
       }
     };
 
+    MandelIter.prototype.hide_highlight_msg = function() {
+      if (this.msg_visible) {
+        this.msg.textContent = '';
+        this.msgbox.classList.add('hidden');
+        return this.msg_visible = false;
+      }
+    };
+
+    MandelIter.prototype.set_highlight_msg = function(text) {
+      this.msg.textContent = text;
+      this.msgbox.classList.remove('hidden');
+      return this.msg_visible = true;
+    };
+
     MandelIter.prototype.current_highlight_group = function() {
       if (this.option.highlight_group.value === 0) {
         return null;
@@ -384,14 +400,16 @@
         return g.select(this.highlight_list);
       } else {
         this.hide_highlight_buttons();
-        return this.highlight_list.replaceChildren();
+        this.highlight_list.replaceChildren();
+        return this.hide_highlight_msg();
       }
     };
 
     MandelIter.prototype.select_highlight_item = function(item) {
       if (item != null) {
         item.select();
-        return this.animate_to(this.complex_to_canvas(item));
+        this.animate_to(this.complex_to_canvas(item));
+        return this.set_highlight_msg(item.name);
       }
     };
 
@@ -529,7 +547,8 @@
       this.ljopt.busy = false;
       this.ljopt.changed = true;
       this.schedule_ui_draw();
-      return this.set_status('normal');
+      this.set_status('normal');
+      return this.hide_highlight_msg();
     };
 
     MandelIter.prototype.pause_mode_toggle = function() {
@@ -562,7 +581,8 @@
       this.button_trace_cardioid.classList.add('enabled');
       this.trace_slider.disabled = false;
       this.trace_slider.value = this.trace_angle;
-      return this.trace_animation_enabled = true;
+      this.trace_animation_enabled = true;
+      return this.hide_highlight_msg();
     };
 
     MandelIter.prototype.trace_cardioid_off = function() {
@@ -1208,21 +1228,6 @@
       return this.graph_ui_ctx.restore();
     };
 
-    MandelIter.prototype.draw_main_bulb_trace_path = function() {
-      var center, radius, tangent, ztangent;
-      center = this.complex_to_canvas(this.main_bulb_center);
-      ztangent = {
-        r: this.main_bulb_tangent_point.r - this.option.trace_path_edge_distance.value,
-        i: this.main_bulb_tangent_point.i
-      };
-      tangent = this.complex_to_canvas(ztangent);
-      radius = tangent.x - center.x;
-      this.graph_ui_ctx.beginPath();
-      this.graph_ui_ctx.arc(center.x, center.y, radius, 0, TAU, false);
-      this.graph_ui_ctx.strokeStyle = '#00FF47';
-      return this.graph_ui_ctx.stroke();
-    };
-
     MandelIter.prototype.julia = function(c, z) {
       var d, n, pi, pr, zi, zr;
       n = 0;
@@ -1450,6 +1455,7 @@
       this.pause_mode_on();
       this.reset_julia_rendering();
       this.pause_anim = new Motion.Anim(this.orbit_mouse, pos, 32);
+      this.pause_anim.saved_color = this.msg.style.color;
       return this.update_pause_anim();
     };
 
@@ -1461,8 +1467,10 @@
       pos = this.pause_anim.next();
       this.set_mouse_position(pos.x, pos.y, true);
       if (this.pause_anim.finished()) {
+        this.msg.style.color = this.pause_anim.saved_color;
         return this.pause_anim = null;
       } else {
+        this.msg.style.color = this.pause_anim.highlight_color();
         return this.schedule_ui_draw();
       }
     };
@@ -1484,14 +1492,7 @@
 
     MandelIter.prototype.update_current_trace_location = function() {
       if (this.trace_animation_enabled) {
-        return this.current_trace_location = (function() {
-          switch (this.option.trace_path.value) {
-            case 'main_cardioid':
-              return this.cardioid(this.trace_angle);
-            case 'main_bulb':
-              return this.main_bulb(this.trace_angle);
-          }
-        }).call(this);
+        return this.current_trace_location = this.cardioid(this.trace_angle);
       } else {
         return this.current_trace_location = this.orbit_mouse;
       }
@@ -1506,19 +1507,10 @@
       }
       this.update_current_trace_location();
       if (this.option.highlight_trace_path.value) {
-        switch (this.option.trace_path.value) {
-          case 'main_cardioid':
-            this.draw_cardioid_trace_path();
-            break;
-          case 'main_bulb':
-            this.draw_main_bulb_trace_path();
-        }
+        this.draw_cardioid_trace_path();
       }
       if (this.option.highlight_internal_angle.value) {
-        switch (this.option.trace_path.value) {
-          case 'main_cardioid':
-            this.draw_cardioid_internal_angle();
-        }
+        this.draw_cardioid_internal_angle();
       }
       if (this.trace_animation_enabled) {
         return this.draw_trace_animation();

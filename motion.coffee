@@ -48,3 +48,11 @@ class Motion.Anim
 
   finished: ->
     @current_step >= @steps
+
+  remaining: ->
+    1.0 - (@current_step / @steps)
+
+  highlight_color: ->
+    channel = 255 * @remaining()
+
+    "rgb(#{channel},#{channel},0)"
