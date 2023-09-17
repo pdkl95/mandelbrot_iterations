@@ -309,6 +309,62 @@ td.blank {
   display: block;
 }
 
+.tabheader {
+  width: 100%;
+}
+
+.tabbutton {
+  min-width: 9em;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  cursor: pointer;
+  border: none;
+  padding: 3px 7px;
+  background-color: #aaa;
+  text-shadow: 1px 1px 1px rgba(242,242,242,0.35);
+  font-weight: bold;
+}
+
+.tabbutton + .tabbutton {
+  border-top-left-radius: 0;
+}
+
+.tabbutton + .tabbutton:last-child {
+  border-top-right-radius: 8px;
+}
+
+.tabbutton:hover {
+  background-color: #bbb;
+}
+
+.tabbutton:active {
+  background-color: #eee;
+}
+
+.tabbutton.active {
+  background-color: #e0e0e0;
+  border-top: 1px outset #ccc;
+  border-left: 1px outset #ccc;
+  border-right: 1px outset #ccc;
+  border-bottom: none;
+}
+
+.tabpanel {
+  display: none;
+  padding: 0.8em;
+  background-color: #e0e0e0;
+  border-left: 1px outset #ccc;
+  border-right: 1px outset #ccc;
+  border-bottom: 1px outset #ccc;
+  box-shadow: 1px 1px 2px rgba(120,120,120,0.6);
+}
+
+.tabpanel.active {
+  display: block;
+}
+
 #rendering_note {
   float: left;
   position: absolute;
@@ -405,7 +461,7 @@ td.slider > label {
 }
 
 #highlight_list {
-  background-color: #e8e9eb;
+  background-color: #f0f2f3;
   border-radius: 5px;
   border: 2px inset #C0C0C0;
   box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);

@@ -59,6 +59,9 @@ class MandelIter
 
     #window.addEventListener('resize', @on_content_wrapper_resize)
 
+    for tabbutton in @context.querySelectorAll('.tabbutton')
+      tabbutton.addEventListener('click', @on_tabbutton_click)
+
     @loc_c      = @context.getElementById('loc_c')
     @loc_radius = @context.getElementById('loc_radius')
     @loc_theta  = @context.getElementById('loc_theta')
@@ -280,6 +283,15 @@ class MandelIter
     timestamp = new Date()
     @debugbox_hdr.textContent = timestamp.toISOString()
     @debugbox_msg.textContent = '' + msg
+
+  on_tabbutton_click: (event) =>
+    btn = event.target
+    panel = @context.getElementById(btn.id.replace(/_button$/, ''))
+    for el in document.querySelectorAll('.tabbutton.active, .tabpanel.active')
+      el.classList.remove('active')
+
+    btn.classList.add('active')
+    panel.classList.add('active')
 
   storage_key: (key) ->
     "#{@constructor.storage_prefix}-#{key}"

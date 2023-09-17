@@ -107,24 +107,28 @@ undivert(`style.css')
             </tr>
           </table> 
 
-          <h3>Highlights</h3>
-          <table>
-            <tr>
-              <td>
+          <div class="tabs">
+            <div class="tabheader">
+              <button id="highlights_tab_button" class="tabbutton active">Highlights</label>
+              <button id="saved_locations_tab_button" class="tabbutton">Saved Locations</label>
+            </div>
+
+            <div id="highlights_tab" class="tabpanel active">
+              <div id="highlight_header">
                 <button id="highlight_prev" class="invis">&larr;</button>
                 <select name="highlight_group" id="highlight_group" autocomplete="off">
                   <option value="0" selected="selected">&darr; Group &darr;</option>
                 </select>
                 <button id="highlight_next" class="invis">&rarr;</button>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <ol id="highlight_list" class="invis">
-                </ol>
-              </td>
-            </tr>
-          </table>
+              </div>
+              <ol id="highlight_list" class="invis">
+              </ol>
+            </div>
+
+            <div id="saved_locations_tab" class="tabpanel">
+              Save stuff...
+            </div>
+          </div>
         </div>
 
         <div id="orbit_options" class="optionbox obleft">

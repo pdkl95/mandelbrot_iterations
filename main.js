@@ -41,11 +41,12 @@
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
       this.on_mandel_color_scale_change = bind(this.on_mandel_color_scale_change, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
+      this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, format_color_scale, ref, seq, seq_id, stored_x, stored_y;
+      var fmtfloatopts, format_color_scale, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
       this.colorize_themes = {
@@ -89,6 +90,11 @@
       });
       this.resize_canvas(900, 600);
       this.fit_canvas_to_width();
+      ref = this.context.querySelectorAll('.tabbutton');
+      for (j = 0, len = ref.length; j < len; j++) {
+        tabbutton = ref[j];
+        tabbutton.addEventListener('click', this.on_tabbutton_click);
+      }
       this.loc_c = this.context.getElementById('loc_c');
       this.loc_radius = this.context.getElementById('loc_radius');
       this.loc_theta = this.context.getElementById('loc_theta');
@@ -232,9 +238,9 @@
       this.highlight_prev = this.context.getElementById('highlight_prev');
       this.highlight_next = this.context.getElementById('highlight_next');
       this.highlight_list = this.context.getElementById('highlight_list');
-      ref = Highlight.sequences;
-      for (seq_id in ref) {
-        seq = ref[seq_id];
+      ref1 = Highlight.sequences;
+      for (seq_id in ref1) {
+        seq = ref1[seq_id];
         seq.add_to_groups(this.option.highlight_group.el);
       }
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
@@ -331,6 +337,19 @@
       timestamp = new Date();
       this.debugbox_hdr.textContent = timestamp.toISOString();
       return this.debugbox_msg.textContent = '' + msg;
+    };
+
+    MandelIter.prototype.on_tabbutton_click = function(event) {
+      var btn, el, j, len, panel, ref;
+      btn = event.target;
+      panel = this.context.getElementById(btn.id.replace(/_button$/, ''));
+      ref = document.querySelectorAll('.tabbutton.active, .tabpanel.active');
+      for (j = 0, len = ref.length; j < len; j++) {
+        el = ref[j];
+        el.classList.remove('active');
+      }
+      btn.classList.add('active');
+      return panel.classList.add('active');
     };
 
     MandelIter.prototype.storage_key = function(key) {
