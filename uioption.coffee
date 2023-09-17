@@ -15,6 +15,8 @@ class UI.Option
       unless @el?
         console.log("ERROR - could not find element with id=\"#{@id}\"")
 
+    @persist = true
+    @storage_id = "ui_option-#{@id}"
     @label_id = "#{@id}_label"
     @label_el = window.APP.context.getElementById(@label_id)
 
@@ -25,13 +27,21 @@ class UI.Option
     else
       @default = @detect_default_value()
 
-    @set(@default)
+    stored_value = APP.storage_get(@storage_id)
+    if stored_value?
+      @set(stored_value)
+    else
+      @set(@default)
 
     @el.addEventListener('change', @on_change)
     @el.addEventListener('input',  @on_input)
 
   detect_default_value: ->
     @get()
+
+  reset: ->
+    APP.storage_remove(@storage_id)
+    @set(@default)
 
   register_callback: (opt = {}) ->
     for name, func of opt
@@ -43,6 +53,9 @@ class UI.Option
   set_value: (new_value = null) ->
     @value = new_value if new_value?
     @label_el.innerText = @label_text() if @label_el?
+
+    if @persist and @value != @default
+      APP.storage_set(@storage_id, @value)
  
   default_label_text_formater: (value) ->
     "#{value}"

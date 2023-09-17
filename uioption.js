@@ -26,6 +26,7 @@
     };
 
     function Option(id1, default_value, callback) {
+      var stored_value;
       this.id = id1;
       if (default_value == null) {
         default_value = null;
@@ -42,6 +43,8 @@
           console.log("ERROR - could not find element with id=\"" + this.id + "\"");
         }
       }
+      this.persist = true;
+      this.storage_id = "ui_option-" + this.id;
       this.label_id = this.id + "_label";
       this.label_el = window.APP.context.getElementById(this.label_id);
       this.label_text_formater = this.default_label_text_formater;
@@ -50,13 +53,23 @@
       } else {
         this["default"] = this.detect_default_value();
       }
-      this.set(this["default"]);
+      stored_value = APP.storage_get(this.storage_id);
+      if (stored_value != null) {
+        this.set(stored_value);
+      } else {
+        this.set(this["default"]);
+      }
       this.el.addEventListener('change', this.on_change);
       this.el.addEventListener('input', this.on_input);
     }
 
     Option.prototype.detect_default_value = function() {
       return this.get();
+    };
+
+    Option.prototype.reset = function() {
+      APP.storage_remove(this.storage_id);
+      return this.set(this["default"]);
     };
 
     Option.prototype.register_callback = function(opt) {
@@ -89,7 +102,10 @@
         this.value = new_value;
       }
       if (this.label_el != null) {
-        return this.label_el.innerText = this.label_text();
+        this.label_el.innerText = this.label_text();
+      }
+      if (this.persist && this.value !== this["default"]) {
+        return APP.storage_set(this.storage_id, this.value);
       }
     };
 

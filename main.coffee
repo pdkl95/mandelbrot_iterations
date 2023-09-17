@@ -5,6 +5,8 @@ TAU = 2 * Math.PI
 class MandelIter
   @deferred_background_render_callback = null
 
+  @storage_prefix = "mandel_iter"
+
   constructor: (@context) ->
 
   init: () ->
@@ -61,19 +63,22 @@ class MandelIter
     @loc_radius = @context.getElementById('loc_radius')
     @loc_theta  = @context.getElementById('loc_theta')
 
-    @button_reset = @context.getElementById('button_reset')
-    @button_zoom  = @context.getElementById('button_zoom')
-    @zoom_amount  = @context.getElementById('zoom_amount')
-    @button_set_c = @context.getElementById('set_c')
-    @loc_to_set_c = @context.getElementById('copy_loc_to_set_c')
+    @button_reset  = @context.getElementById('button_reset')
+    @button_zoom   = @context.getElementById('button_zoom')
+    @zoom_amount   = @context.getElementById('zoom_amount')
+    @button_set_c  = @context.getElementById('set_c')
+    @loc_to_set_c  = @context.getElementById('copy_loc_to_set_c')
+    @reset_storage = @context.getElementById('reset_all_storage')
 
     @button_reset.addEventListener('click', @on_button_reset_click)
     @button_zoom.addEventListener( 'click', @on_button_zoom_click)
     @zoom_amount.addEventListener('change', @on_zoom_amount_change)
     @button_set_c.addEventListener('click', @on_button_set_c_click)
     @loc_to_set_c.addEventListener('click', @on_copy_loc_to_set_c_click)
+    @reset_storage.addEventListener('click', @on_reset_storage_click)
 
     @option =
+      show_tooltips:            new UI.BoolOption('show_tooltips', true)
       set_c_real:               new UI.FloatOption('set_c_real')
       set_c_imag:               new UI.FloatOption('set_c_imag')
       keyboard_step:            new UI.FloatOption('keyboard_step', 0.01)
@@ -100,6 +105,8 @@ class MandelIter
       mandel_color_scale_g:     new UI.FloatOption('mandel_color_scale_g', @colorize_themes[@default_mandel_theme][1])
       mandel_color_scale_b:     new UI.FloatOption('mandel_color_scale_b', @colorize_themes[@default_mandel_theme][2])
       highlight_group:          new UI.SelectOption('highlight_group');
+
+    @option.julia_draw_local.persist = false
 
     @option.julia_draw_local.register_callback
       on_true:  @on_julia_draw_local_true
@@ -218,6 +225,16 @@ class MandelIter
 
     @draw_local_julia_init()
 
+    @on_highlight_group_changed()
+
+    if @storage_get('pause_mode')
+      stored_x = @storage_get_float('orbit_mouse_x')
+      stored_y = @storage_get_float('orbit_mouse_y')
+      if stored_x? and stored_y?
+        @pause_mode_on(false)
+        @set_mouse_position(stored_x, stored_y, true)
+        @reset_julia_rendering()
+
     console.log('init() completed!')
 
     @draw_background()
@@ -263,6 +280,33 @@ class MandelIter
     timestamp = new Date()
     @debugbox_hdr.textContent = timestamp.toISOString()
     @debugbox_msg.textContent = '' + msg
+
+  storage_key: (key) ->
+    "#{@constructor.storage_prefix}-#{key}"
+
+  storage_set: (key, value) ->
+    localStorage.setItem(@storage_key(key), value)
+
+  storage_get: (key) ->
+    localStorage.getItem(@storage_key(key))
+
+  storage_get_int: (key) ->
+    parseInt(@storage_get(key))
+
+  storage_get_float: (key) ->
+    parseFloat(@storage_get(key))
+
+  storage_remove: (key) ->
+    localStorage.removeItem(@storage_key(key))
+
+  on_reset_storage_click: =>
+    return unless window.confirm("Remove ALL persistent storage and reset ALL values back to defaults?")
+    @storage_remove('pause_mode')
+    @storage_remove('orbit_mouse_x')
+    @storage_remove('orbit_mouse_y')
+
+    for name, opt of @option
+      opt.reset()
 
   current_mandel_theme: ->
     if @option.mandel_color_scale_r? and @option.mandel_color_scale_g? and @option.mandel_color_scale_r?
@@ -325,7 +369,7 @@ class MandelIter
     return null if @option.highlight_group.value is 0
     Highlight.sequences[@option.highlight_group.value]
 
-  on_highlight_group_changed: (event) =>
+  on_highlight_group_changed: =>
     g = @current_highlight_group()
     if g?
       @show_highlight_buttons()
@@ -440,10 +484,20 @@ class MandelIter
     @status.classList.add(klass)
     @status_current = klass
 
-  pause_mode_on: ->
+  restore_normal_status: ->
+    if @pause_mode
+      @set_status('paused')
+    else
+      @set_status('normal')
+
+  pause_mode_on: (persist = true) ->
     @pause_mode = true
     @ljopt.changed = true
     @set_status('paused')
+    if persist
+      @storage_set('pause_mode', @pause_mode)
+      @storage_set('orbit_mouse_x', @orbit_mouse.x)
+      @storage_set('orbit_mouse_y', @orbit_mouse.y)
 
   pause_mode_off: ->
     @pause_mode = false
@@ -452,6 +506,9 @@ class MandelIter
     @schedule_ui_draw()
     @set_status('normal')
     @hide_highlight_msg()
+    @storage_remove('pause_mode')
+    @storage_remove('orbit_mouse_x')
+    @storage_remove('orbit_mouse_y')
 
   pause_mode_toggle: ->
     if @pause_mode
@@ -768,7 +825,7 @@ class MandelIter
       @schedule_background_render_pass()
     else
       @hide_rendering_note()
-      @set_status('normal')
+      @restore_normal_status()
 
   render_mandelbrot: (pixelsize, do_antialias) ->
     @mandel_maxiter = @option.mandel_max_iterations.value
@@ -1206,10 +1263,7 @@ class MandelIter
     @ljopt.busy = false
 
     @hide_rendering_note()
-    if @pause_mode
-      @set_status('paused')
-    else
-      @set_status('normal')
+    @restore_normal_status()
 
     @schedule_ui_draw()
 

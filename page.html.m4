@@ -89,7 +89,7 @@ undivert(`style.css')
             </tr>
             <tr>
               <th></th>
-              <td><button id="copy_loc_to_set_c">&darr; Copy &darr;</button</td>
+              <td><button id="copy_loc_to_set_c">&darr; Copy To Set C &darr;</button></td>
           </table>
 
           <table>
@@ -205,7 +205,7 @@ undivert(`style.css')
                 <input id="show_tooltips" type="checkbox" checked="checked">
               </td>
             </tr>
-          </table>>
+          </table>
         </div>
 
         <div id="julia_options" class="optionbox obleft">
@@ -323,6 +323,21 @@ undivert(`style.css')
             </tr>
           </table>
         </div>
+
+        <hr class="clear_both"></hr>
+
+        <div id="orbit_options" class="optionbox obleft">
+          <h3>Miscellaneous</h3>
+          <table>
+            <tr>
+              <th class="tt ttright" data-title="Clears all localStorage data and resets the values back to their default values.">Clear Persistant Storage</th>
+              <td>
+                <button id="reset_all_storage">Reset ALL Storage</button>
+              </td>
+            </tr>
+          </table>
+        </div>
+
         <div class="clear_both"></div>
       </div>
     </div>

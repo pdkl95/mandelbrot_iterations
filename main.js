@@ -9,6 +9,8 @@
   MandelIter = (function() {
     MandelIter.deferred_background_render_callback = null;
 
+    MandelIter.storage_prefix = "mandel_iter";
+
     function MandelIter(context) {
       this.context = context;
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
@@ -38,11 +40,12 @@
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
       this.on_mandel_color_scale_change = bind(this.on_mandel_color_scale_change, this);
+      this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, format_color_scale, ref, seq, seq_id;
+      var fmtfloatopts, format_color_scale, ref, seq, seq_id, stored_x, stored_y;
       console.log('Starting init()...');
       this.running = false;
       this.colorize_themes = {
@@ -94,12 +97,15 @@
       this.zoom_amount = this.context.getElementById('zoom_amount');
       this.button_set_c = this.context.getElementById('set_c');
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
+      this.reset_storage = this.context.getElementById('reset_all_storage');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
       this.button_set_c.addEventListener('click', this.on_button_set_c_click);
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
+      this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.option = {
+        show_tooltips: new UI.BoolOption('show_tooltips', true),
         set_c_real: new UI.FloatOption('set_c_real'),
         set_c_imag: new UI.FloatOption('set_c_imag'),
         keyboard_step: new UI.FloatOption('keyboard_step', 0.01),
@@ -127,6 +133,7 @@
         mandel_color_scale_b: new UI.FloatOption('mandel_color_scale_b', this.colorize_themes[this.default_mandel_theme][2]),
         highlight_group: new UI.SelectOption('highlight_group')
       };
+      this.option.julia_draw_local.persist = false;
       this.option.julia_draw_local.register_callback({
         on_true: this.on_julia_draw_local_true,
         on_false: this.on_julia_draw_local_false
@@ -256,6 +263,16 @@
       };
       document.addEventListener('keydown', this.on_keydown);
       this.draw_local_julia_init();
+      this.on_highlight_group_changed();
+      if (this.storage_get('pause_mode')) {
+        stored_x = this.storage_get_float('orbit_mouse_x');
+        stored_y = this.storage_get_float('orbit_mouse_y');
+        if ((stored_x != null) && (stored_y != null)) {
+          this.pause_mode_on(false);
+          this.set_mouse_position(stored_x, stored_y, true);
+          this.reset_julia_rendering();
+        }
+      }
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -314,6 +331,47 @@
       timestamp = new Date();
       this.debugbox_hdr.textContent = timestamp.toISOString();
       return this.debugbox_msg.textContent = '' + msg;
+    };
+
+    MandelIter.prototype.storage_key = function(key) {
+      return this.constructor.storage_prefix + "-" + key;
+    };
+
+    MandelIter.prototype.storage_set = function(key, value) {
+      return localStorage.setItem(this.storage_key(key), value);
+    };
+
+    MandelIter.prototype.storage_get = function(key) {
+      return localStorage.getItem(this.storage_key(key));
+    };
+
+    MandelIter.prototype.storage_get_int = function(key) {
+      return parseInt(this.storage_get(key));
+    };
+
+    MandelIter.prototype.storage_get_float = function(key) {
+      return parseFloat(this.storage_get(key));
+    };
+
+    MandelIter.prototype.storage_remove = function(key) {
+      return localStorage.removeItem(this.storage_key(key));
+    };
+
+    MandelIter.prototype.on_reset_storage_click = function() {
+      var name, opt, ref, results;
+      if (!window.confirm("Remove ALL persistent storage and reset ALL values back to defaults?")) {
+        return;
+      }
+      this.storage_remove('pause_mode');
+      this.storage_remove('orbit_mouse_x');
+      this.storage_remove('orbit_mouse_y');
+      ref = this.option;
+      results = [];
+      for (name in ref) {
+        opt = ref[name];
+        results.push(opt.reset());
+      }
+      return results;
     };
 
     MandelIter.prototype.current_mandel_theme = function() {
@@ -392,7 +450,7 @@
       return Highlight.sequences[this.option.highlight_group.value];
     };
 
-    MandelIter.prototype.on_highlight_group_changed = function(event) {
+    MandelIter.prototype.on_highlight_group_changed = function() {
       var g;
       g = this.current_highlight_group();
       if (g != null) {
@@ -536,10 +594,26 @@
       return this.status_current = klass;
     };
 
-    MandelIter.prototype.pause_mode_on = function() {
+    MandelIter.prototype.restore_normal_status = function() {
+      if (this.pause_mode) {
+        return this.set_status('paused');
+      } else {
+        return this.set_status('normal');
+      }
+    };
+
+    MandelIter.prototype.pause_mode_on = function(persist) {
+      if (persist == null) {
+        persist = true;
+      }
       this.pause_mode = true;
       this.ljopt.changed = true;
-      return this.set_status('paused');
+      this.set_status('paused');
+      if (persist) {
+        this.storage_set('pause_mode', this.pause_mode);
+        this.storage_set('orbit_mouse_x', this.orbit_mouse.x);
+        return this.storage_set('orbit_mouse_y', this.orbit_mouse.y);
+      }
     };
 
     MandelIter.prototype.pause_mode_off = function() {
@@ -548,7 +622,10 @@
       this.ljopt.changed = true;
       this.schedule_ui_draw();
       this.set_status('normal');
-      return this.hide_highlight_msg();
+      this.hide_highlight_msg();
+      this.storage_remove('pause_mode');
+      this.storage_remove('orbit_mouse_x');
+      return this.storage_remove('orbit_mouse_y');
     };
 
     MandelIter.prototype.pause_mode_toggle = function() {
@@ -966,7 +1043,7 @@
         return this.schedule_background_render_pass();
       } else {
         this.hide_rendering_note();
-        return this.set_status('normal');
+        return this.restore_normal_status();
       }
     };
 
@@ -1414,11 +1491,7 @@
       this.ljopt.changed = !stoprender;
       this.ljopt.busy = false;
       this.hide_rendering_note();
-      if (this.pause_mode) {
-        this.set_status('paused');
-      } else {
-        this.set_status('normal');
-      }
+      this.restore_normal_status();
       return this.schedule_ui_draw();
     };
 
