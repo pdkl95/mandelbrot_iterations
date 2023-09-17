@@ -787,7 +787,7 @@ class MandelIter
     @schedule_background_render_pass()
 
   do_antialias: ->
-    @antialias and @render_pixel_size <= 1
+    @option.mandel_antialias.value > 1 and @render_pixel_size <= 1
 
   schedule_background_render_pass: ->
     @render_mandel_img = @graph_mandel_ctx.getImageData(0, 0, @graph_width, @graph_height)

@@ -997,7 +997,7 @@
     };
 
     MandelIter.prototype.do_antialias = function() {
-      return this.antialias && this.render_pixel_size <= 1;
+      return this.option.mandel_antialias.value > 1 && this.render_pixel_size <= 1;
     };
 
     MandelIter.prototype.schedule_background_render_pass = function() {
