@@ -43,6 +43,7 @@
       var args, parent_collection;
       parent_collection = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
       this.parent_collection = parent_collection;
+      this.on_name_cell_input = bind(this.on_name_cell_input, this);
       this.on_set_c_button_click = bind(this.on_set_c_button_click, this);
       this.on_delete_button_click = bind(this.on_delete_button_click, this);
       SavedItem.__super__.constructor.apply(this, args);
@@ -73,6 +74,9 @@
       this.imag_cell = this.tr_el.insertCell(2);
       this.btn_cell = this.tr_el.insertCell(3);
       this.name_cell.innerText = this.name;
+      this.name_cell.classList.add('name');
+      this.name_cell.contentEditable = true;
+      this.name_cell.addEventListener('input', this.on_name_cell_input);
       this.real_cell.append(this.create_set_c_button(this.r));
       this.imag_cell.append(this.create_set_c_button(this.i));
       this.delete_button = document.createElement('button');
@@ -92,8 +96,16 @@
     };
 
     SavedItem.prototype.save = function(idx) {
-      this.save_idx = idx;
-      return APP.storage_set(Highlight.SavedItem.storage_id(idx), this.serialize());
+      if (idx == null) {
+        idx = this.save_idx;
+      }
+      if (idx != null) {
+        this.save_idx = idx;
+        console.log('save', Highlight.SavedItem.storage_id(idx), this.serialize());
+        return APP.storage_set(Highlight.SavedItem.storage_id(idx), this.serialize());
+      } else {
+        return APP.warn("Saving location \"" + this.name + "\" failed!");
+      }
     };
 
     SavedItem.prototype.remove_storage = function() {
@@ -135,6 +147,18 @@
 
     SavedItem.prototype.set_c = function(item) {
       return APP.animate_to(APP.complex_to_canvas(item));
+    };
+
+    SavedItem.prototype.on_name_cell_input = function(event) {
+      var loc, row;
+      row = event.target.parentElement;
+      if (row != null) {
+        loc = Highlight.saved_locations[row.id];
+        if (loc != null) {
+          loc.name = event.target.innerText;
+          return this.save();
+        }
+      }
     };
 
     return SavedItem;
@@ -251,18 +275,15 @@
     };
 
     SavedLocations.prototype.load_storage = function() {
-      var idx, item, j, n, ref, results;
+      var idx, item, j, n, ref;
       n = APP.storage_get_int('num_saved_locations');
-      results = [];
       for (idx = j = 0, ref = n; 0 <= ref ? j <= ref : j >= ref; idx = 0 <= ref ? ++j : --j) {
         item = this.load_item_from_storage(idx);
         if (item != null) {
-          results.push(this.append(item));
-        } else {
-          results.push(void 0);
+          this.append(item);
         }
       }
-      return results;
+      return n;
     };
 
     return SavedLocations;

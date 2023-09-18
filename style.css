@@ -512,6 +512,7 @@ td.slider > label {
   overflow-y: scroll;
 }
 
+
 button.delete {
   font-siZe: large;
   margin-left: 1em;
@@ -535,4 +536,20 @@ button.delete {
   border: 1px intset #bbb;
   box-shadow: 1px 1px 3px -1px rgba(0,0,0,0.4) inset;
 
+}
+
+td.name[contenteditable=true] {
+  cursor: pointer;
+  padding: 2px 5px;
+  border: 1px solid #e0e0e0;
+}
+
+td.name[contenteditable=true]:hover {
+  background-color: #eee;
+  border: 1px solid #888;
+}
+
+td.name[contenteditable=true]:focus {
+  background-color: #fff;
+  border: 1px solid #4A90D9;
 }

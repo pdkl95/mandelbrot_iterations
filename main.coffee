@@ -210,7 +210,8 @@ class MandelIter
 
     @saved_locations = new Highlight.SavedLocations('saved_locations')
     @saved_locations_tab_button = @context.getElementById('saved_locations_tab_button')
-    @saved_locations.load_storage()
+    if @saved_locations.load_storage() > 0
+      @show_saved_locations()
 
     @main_bulb_center =
       r: -1
@@ -291,6 +292,9 @@ class MandelIter
     timestamp = new Date()
     @debugbox_hdr.textContent = timestamp.toISOString()
     @debugbox_msg.textContent = '' + msg
+
+  warn: (msg) ->
+    @set_highlight_msg("WARNING: #{msg}")
 
   on_tabbutton_click: (event) =>
     @tabbutton_activate(event.target)

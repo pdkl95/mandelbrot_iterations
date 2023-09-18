@@ -212,7 +212,7 @@ undivert(`style.css')
 
           <h3>UI Options</h3>
           <table>
-            <tr>
+            <tr class="hidden">
               <th class="tt ttright" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">Step</th>
               <td>
                 <input id="keyboard_step" class="hidden" type="number" value="0.1" min="0.05" max="1.0" step="0.05">

@@ -695,6 +695,7 @@ td.slider > label {
   overflow-y: scroll;
 }
 
+
 button.delete {
   font-siZe: large;
   margin-left: 1em;
@@ -713,11 +714,27 @@ button.delete {
   text-shadow: 1px 1px 2px rgba(255,255,255,0.7);
 }
 
-.set_c_button:active { 
+.set_c_button:active {
   background-color: #eee;
   border: 1px intset #bbb;
   box-shadow: 1px 1px 3px -1px rgba(0,0,0,0.4) inset;
 
+}
+
+td.name[contenteditable=true] {
+  cursor: pointer;
+  padding: 2px 5px;
+  border: 1px solid #e0e0e0;
+}
+
+td.name[contenteditable=true]:hover {
+  background-color: #eee;
+  border: 1px solid #888;
+}
+
+td.name[contenteditable=true]:focus {
+  background-color: #fff;
+  border: 1px solid #4A90D9;
 }
 
     </style>
@@ -924,7 +941,7 @@ button.delete {
 
           <h3>UI Options</h3>
           <table>
-            <tr>
+            <tr class="hidden">
               <th class="tt ttright" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">Step</th>
               <td>
                 <input id="keyboard_step" class="hidden" type="number" value="0.1" min="0.05" max="1.0" step="0.05">
@@ -1575,6 +1592,7 @@ button.delete {
       var args, parent_collection;
       parent_collection = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
       this.parent_collection = parent_collection;
+      this.on_name_cell_input = bind(this.on_name_cell_input, this);
       this.on_set_c_button_click = bind(this.on_set_c_button_click, this);
       this.on_delete_button_click = bind(this.on_delete_button_click, this);
       SavedItem.__super__.constructor.apply(this, args);
@@ -1605,6 +1623,9 @@ button.delete {
       this.imag_cell = this.tr_el.insertCell(2);
       this.btn_cell = this.tr_el.insertCell(3);
       this.name_cell.innerText = this.name;
+      this.name_cell.classList.add('name');
+      this.name_cell.contentEditable = true;
+      this.name_cell.addEventListener('input', this.on_name_cell_input);
       this.real_cell.append(this.create_set_c_button(this.r));
       this.imag_cell.append(this.create_set_c_button(this.i));
       this.delete_button = document.createElement('button');
@@ -1624,8 +1645,16 @@ button.delete {
     };
 
     SavedItem.prototype.save = function(idx) {
-      this.save_idx = idx;
-      return APP.storage_set(Highlight.SavedItem.storage_id(idx), this.serialize());
+      if (idx == null) {
+        idx = this.save_idx;
+      }
+      if (idx != null) {
+        this.save_idx = idx;
+        console.log('save', Highlight.SavedItem.storage_id(idx), this.serialize());
+        return APP.storage_set(Highlight.SavedItem.storage_id(idx), this.serialize());
+      } else {
+        return APP.warn("Saving location \"" + this.name + "\" failed!");
+      }
     };
 
     SavedItem.prototype.remove_storage = function() {
@@ -1667,6 +1696,18 @@ button.delete {
 
     SavedItem.prototype.set_c = function(item) {
       return APP.animate_to(APP.complex_to_canvas(item));
+    };
+
+    SavedItem.prototype.on_name_cell_input = function(event) {
+      var loc, row;
+      row = event.target.parentElement;
+      if (row != null) {
+        loc = Highlight.saved_locations[row.id];
+        if (loc != null) {
+          loc.name = event.target.innerText;
+          return this.save();
+        }
+      }
     };
 
     return SavedItem;
@@ -1783,18 +1824,15 @@ button.delete {
     };
 
     SavedLocations.prototype.load_storage = function() {
-      var idx, item, j, n, ref, results;
+      var idx, item, j, n, ref;
       n = APP.storage_get_int('num_saved_locations');
-      results = [];
       for (idx = j = 0, ref = n; 0 <= ref ? j <= ref : j >= ref; idx = 0 <= ref ? ++j : --j) {
         item = this.load_item_from_storage(idx);
         if (item != null) {
-          results.push(this.append(item));
-        } else {
-          results.push(void 0);
+          this.append(item);
         }
       }
-      return results;
+      return n;
     };
 
     return SavedLocations;
@@ -2189,7 +2227,9 @@ button.delete {
       this.highlight_list.addEventListener('click', this.on_highlight_list_click);
       this.saved_locations = new Highlight.SavedLocations('saved_locations');
       this.saved_locations_tab_button = this.context.getElementById('saved_locations_tab_button');
-      this.saved_locations.load_storage();
+      if (this.saved_locations.load_storage() > 0) {
+        this.show_saved_locations();
+      }
       this.main_bulb_center = {
         r: -1,
         i: 0
@@ -2281,6 +2321,10 @@ button.delete {
       timestamp = new Date();
       this.debugbox_hdr.textContent = timestamp.toISOString();
       return this.debugbox_msg.textContent = '' + msg;
+    };
+
+    MandelIter.prototype.warn = function(msg) {
+      return this.set_highlight_msg("WARNING: " + msg);
     };
 
     MandelIter.prototype.on_tabbutton_click = function(event) {

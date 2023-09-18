@@ -254,7 +254,9 @@
       this.highlight_list.addEventListener('click', this.on_highlight_list_click);
       this.saved_locations = new Highlight.SavedLocations('saved_locations');
       this.saved_locations_tab_button = this.context.getElementById('saved_locations_tab_button');
-      this.saved_locations.load_storage();
+      if (this.saved_locations.load_storage() > 0) {
+        this.show_saved_locations();
+      }
       this.main_bulb_center = {
         r: -1,
         i: 0
@@ -346,6 +348,10 @@
       timestamp = new Date();
       this.debugbox_hdr.textContent = timestamp.toISOString();
       return this.debugbox_msg.textContent = '' + msg;
+    };
+
+    MandelIter.prototype.warn = function(msg) {
+      return this.set_highlight_msg("WARNING: " + msg);
     };
 
     MandelIter.prototype.on_tabbutton_click = function(event) {

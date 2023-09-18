@@ -43,8 +43,10 @@ class Highlight.SavedItem extends Highlight.Item
     @imag_cell = @tr_el.insertCell(2)
     @btn_cell  = @tr_el.insertCell(3)
 
-    #@name_cell.contentEditable = 'plaintext-only'
     @name_cell.innerText = @name
+    @name_cell.classList.add('name')
+    @name_cell.contentEditable = true
+    @name_cell.addEventListener('input', @on_name_cell_input)
     @real_cell.append(@create_set_c_button(@r))
     @imag_cell.append(@create_set_c_button(@i))
 
@@ -62,9 +64,13 @@ class Highlight.SavedItem extends Highlight.Item
     else
       "#{@r}|#{@i}"
 
-  save: (idx) ->
-    @save_idx = idx
-    APP.storage_set(Highlight.SavedItem.storage_id(idx), @serialize())
+  save: (idx = @save_idx) ->
+    if idx?
+      @save_idx = idx
+      console.log('save', Highlight.SavedItem.storage_id(idx), @serialize())
+      APP.storage_set(Highlight.SavedItem.storage_id(idx), @serialize())
+    else
+      APP.warn("Saving location \"#{@name}\" failed!")
 
   remove_storage: ->
     if @save_idx?
@@ -93,6 +99,14 @@ class Highlight.SavedItem extends Highlight.Item
 
   set_c: (item) ->
     APP.animate_to(APP.complex_to_canvas(item))
+
+  on_name_cell_input: (event) =>
+    row = event.target.parentElement
+    if row?
+      loc = Highlight.saved_locations[row.id]
+      if loc?
+        loc.name = event.target.innerText
+        @save()
 
 class Highlight.SequenceItem
   li_title: ->
@@ -165,6 +179,7 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
     for idx in [0..n]
       item = @load_item_from_storage(idx)
       @append(item) if item?
+    n
 
 class Highlight.Sequence extends Highlight.ItemCollection
   @next_serialnum: ->
