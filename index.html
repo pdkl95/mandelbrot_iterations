@@ -492,6 +492,62 @@ td.blank {
   display: block;
 }
 
+.tabheader {
+  width: 100%;
+}
+
+.tabbutton {
+  min-width: 9em;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  cursor: pointer;
+  border: none;
+  padding: 3px 7px;
+  background-color: #aaa;
+  text-shadow: 1px 1px 1px rgba(242,242,242,0.35);
+  font-weight: bold;
+}
+
+.tabbutton + .tabbutton {
+  border-top-left-radius: 0;
+}
+
+.tabbutton + .tabbutton:last-child {
+  border-top-right-radius: 8px;
+}
+
+.tabbutton:hover {
+  background-color: #bbb;
+}
+
+.tabbutton:active {
+  background-color: #eee;
+}
+
+.tabbutton.active {
+  background-color: #e0e0e0;
+  border-top: 1px outset #ccc;
+  border-left: 1px outset #ccc;
+  border-right: 1px outset #ccc;
+  border-bottom: none;
+}
+
+.tabpanel {
+  display: none;
+  padding: 0.8em;
+  background-color: #e0e0e0;
+  border-left: 1px outset #ccc;
+  border-right: 1px outset #ccc;
+  border-bottom: 1px outset #ccc;
+  box-shadow: 1px 1px 2px rgba(120,120,120,0.6);
+}
+
+.tabpanel.active {
+  display: block;
+}
+
 #rendering_note {
   float: left;
   position: absolute;
@@ -588,7 +644,7 @@ td.slider > label {
 }
 
 #highlight_list {
-  background-color: #e8e9eb;
+  background-color: #f0f2f3;
   border-radius: 5px;
   border: 2px inset #C0C0C0;
   box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
@@ -632,6 +688,53 @@ td.slider > label {
   margin-left: 2em;
   position: relative;
   top: -1px;
+}
+
+#saved_locations {
+  max-height: 16em;
+  overflow-y: scroll;
+}
+
+
+button.delete {
+  font-siZe: large;
+  margin-left: 1em;
+}
+
+.set_c_button {
+  display: inline-block;
+  cursor: pointer;
+  padding: 3px 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.set_c_button:hover {
+  background-color: #c0c0c0;
+  border: 1px outset #bbb;
+  text-shadow: 1px 1px 2px rgba(255,255,255,0.7);
+}
+
+.set_c_button:active {
+  background-color: #eee;
+  border: 1px intset #bbb;
+  box-shadow: 1px 1px 3px -1px rgba(0,0,0,0.4) inset;
+
+}
+
+td.name[contenteditable=true] {
+  cursor: pointer;
+  padding: 2px 5px;
+  border: 1px solid #e0e0e0;
+}
+
+td.name[contenteditable=true]:hover {
+  background-color: #eee;
+  border: 1px solid #888;
+}
+
+td.name[contenteditable=true]:focus {
+  background-color: #fff;
+  border: 1px solid #4A90D9;
 }
 
     </style>
@@ -715,7 +818,10 @@ td.slider > label {
             </tr>
             <tr>
               <th></th>
-              <td><button id="copy_loc_to_set_c">&darr; Copy To Set C &darr;</button></td>
+              <td>
+                <button id="copy_loc_to_set_c">&darr; Copy To Set C &darr;</button>
+                <button id="save_loc">Save &darr;</button>
+              </td>
           </table>
 
           <table>
@@ -729,28 +835,44 @@ td.slider > label {
             </tr>
             <tr>
               <th></th>
-              <td><button id="set_c">Set C</button></td>
+              <td>  
+                <button id="set_c">Set C</button>
+                <button id="save_c">Save &darr;</button>
+              </td>
             </tr>
           </table> 
 
-          <h3>Highlights</h3>
-          <table>
-            <tr>
-              <td>
+          <div class="tabs">
+            <div class="tabheader">
+              <button id="highlights_tab_button" class="tabbutton active">Highlights</label>
+              <button id="saved_locations_tab_button" class="tabbutton">Saved Locations</label>
+            </div>
+
+            <div id="highlights_tab" class="tabpanel active">
+              <div id="highlight_header">
                 <button id="highlight_prev" class="invis">&larr;</button>
                 <select name="highlight_group" id="highlight_group" autocomplete="off">
                   <option value="0" selected="selected">&darr; Group &darr;</option>
                 </select>
                 <button id="highlight_next" class="invis">&rarr;</button>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <ol id="highlight_list" class="invis">
-                </ol>
-              </td>
-            </tr>
-          </table>
+              </div>
+              <ol id="highlight_list" class="invis">
+              </ol>
+            </div>
+
+            <div id="saved_locations_tab" class="tabpanel">
+              <table id="saved_locations">
+                <thead>
+                  <th>Name</th>
+                  <th>Real</th>
+                  <th>Imag</th>
+                  <th></th>
+                </thead>
+                <tbody id="saved_locations_body">
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <div id="orbit_options" class="optionbox obleft">
@@ -819,7 +941,7 @@ td.slider > label {
 
           <h3>UI Options</h3>
           <table>
-            <tr>
+            <tr class="hidden">
               <th class="tt ttright" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">Step</th>
               <td>
                 <input id="keyboard_step" class="hidden" type="number" value="0.1" min="0.05" max="1.0" step="0.05">
@@ -1427,6 +1549,9 @@ td.slider > label {
 
 (function() {
   var natb, natt, step7,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty,
     slice = [].slice;
 
   window.Highlight || (window.Highlight = {});
@@ -1434,6 +1559,8 @@ td.slider > label {
   Highlight.items = {};
 
   Highlight.sequences = {};
+
+  Highlight.saved_locations = {};
 
   Highlight.Item = (function() {
     Item.next_serialnum = function() {
@@ -1444,17 +1571,157 @@ td.slider > label {
     function Item(r, i1, name) {
       this.r = r;
       this.i = i1;
-      this.name = name;
+      this.name = name != null ? name : null;
       this.serial = Highlight.Item.next_serialnum();
       this.id = "hl-item-" + this.serial;
       Highlight.items[this.id] = this;
     }
 
-    Item.prototype.li_title = function() {
+    return Item;
+
+  })();
+
+  Highlight.SavedItem = (function(superClass) {
+    extend(SavedItem, superClass);
+
+    SavedItem.storage_id = function(idx) {
+      return "saved_loc[" + idx + "]";
+    };
+
+    function SavedItem() {
+      var args, parent_collection;
+      parent_collection = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+      this.parent_collection = parent_collection;
+      this.on_name_cell_input = bind(this.on_name_cell_input, this);
+      this.on_set_c_button_click = bind(this.on_set_c_button_click, this);
+      this.on_delete_button_click = bind(this.on_delete_button_click, this);
+      SavedItem.__super__.constructor.apply(this, args);
+      this.serial = Highlight.Sequence.next_serialnum();
+      this.name || (this.name = "Save #" + this.serial);
+      this.row_id = "saved_item-row-" + this.serial;
+      Highlight.saved_locations[this.row_id] = this;
+    }
+
+    SavedItem.prototype.create_set_c_button = function(value) {
+      var el, text;
+      text = APP.fmtfloat.format(value);
+      el = document.createElement('a');
+      el.innerText = text;
+      el.classList.add('set_c_button');
+      el.addEventListener('click', this.on_set_c_button_click);
+      return el;
+    };
+
+    SavedItem.prototype.create_tr = function(parent) {
+      if (this.tr_el != null) {
+        return this.tr_el;
+      }
+      this.tr_el = parent.insertRow(-1);
+      this.tr_el.id = this.row_id;
+      this.name_cell = this.tr_el.insertCell(0);
+      this.real_cell = this.tr_el.insertCell(1);
+      this.imag_cell = this.tr_el.insertCell(2);
+      this.btn_cell = this.tr_el.insertCell(3);
+      this.name_cell.innerText = this.name;
+      this.name_cell.classList.add('name');
+      this.name_cell.contentEditable = true;
+      this.name_cell.addEventListener('input', this.on_name_cell_input);
+      this.real_cell.append(this.create_set_c_button(this.r));
+      this.imag_cell.append(this.create_set_c_button(this.i));
+      this.delete_button = document.createElement('button');
+      this.delete_button.classList.add('delete');
+      this.delete_button.innerHTML = '&times;';
+      this.delete_button.addEventListener('click', this.on_delete_button_click);
+      this.btn_cell.appendChild(this.delete_button);
+      return this.tr_el;
+    };
+
+    SavedItem.prototype.serialize = function() {
+      if (this.name != null) {
+        return this.r + "|" + this.i + "|" + this.name;
+      } else {
+        return this.r + "|" + this.i;
+      }
+    };
+
+    SavedItem.prototype.save = function(idx) {
+      if (idx == null) {
+        idx = this.save_idx;
+      }
+      if (idx != null) {
+        this.save_idx = idx;
+        console.log('save', Highlight.SavedItem.storage_id(idx), this.serialize());
+        return APP.storage_set(Highlight.SavedItem.storage_id(idx), this.serialize());
+      } else {
+        return APP.warn("Saving location \"" + this.name + "\" failed!");
+      }
+    };
+
+    SavedItem.prototype.remove_storage = function() {
+      if (this.save_idx != null) {
+        return APP.storage_remove(Highlight.SavedItem.storage_id(this.save_idx));
+      }
+    };
+
+    SavedItem.prototype.remove = function() {
+      var idx;
+      this.remove_storage();
+      this.tr_el.remove();
+      idx = this.parent_collection.items.indexOf(this);
+      this.parent_collection.items.splice(idx, 1);
+      return delete Highlight.saved_locations[this.row_id];
+    };
+
+    SavedItem.prototype.on_delete_button_click = function(event) {
+      var loc, row;
+      row = event.target.parentElement.parentElement;
+      if (row != null) {
+        loc = Highlight.saved_locations[row.id];
+        if (loc != null) {
+          return loc.remove();
+        }
+      }
+    };
+
+    SavedItem.prototype.on_set_c_button_click = function(event) {
+      var loc, row;
+      row = event.target.parentElement.parentElement;
+      if (row != null) {
+        loc = Highlight.saved_locations[row.id];
+        if (loc != null) {
+          return loc.set_c(this);
+        }
+      }
+    };
+
+    SavedItem.prototype.set_c = function(item) {
+      return APP.animate_to(APP.complex_to_canvas(item));
+    };
+
+    SavedItem.prototype.on_name_cell_input = function(event) {
+      var loc, row;
+      row = event.target.parentElement;
+      if (row != null) {
+        loc = Highlight.saved_locations[row.id];
+        if (loc != null) {
+          loc.name = event.target.innerText;
+          return this.save();
+        }
+      }
+    };
+
+    return SavedItem;
+
+  })(Highlight.Item);
+
+  Highlight.SequenceItem = (function() {
+    function SequenceItem() {}
+
+    SequenceItem.prototype.li_title = function() {
       return this.r + " + " + this.i + "i";
     };
 
-    Item.prototype.create_li = function() {
+    SequenceItem.prototype.create_li = function() {
       var el;
       el = document.createElement('li');
       el.id = this.id;
@@ -1463,11 +1730,11 @@ td.slider > label {
       return el;
     };
 
-    Item.prototype.li = function() {
+    SequenceItem.prototype.li = function() {
       return this.li_el || (this.li_el = this.create_li());
     };
 
-    Item.prototype.select = function() {
+    SequenceItem.prototype.select = function() {
       var el, j, len, ref;
       ref = document.querySelectorAll('#highlight_list .highlight_item.selected');
       for (j = 0, len = ref.length; j < len; j++) {
@@ -1477,11 +1744,104 @@ td.slider > label {
       return this.li_el.classList.add('selected');
     };
 
-    return Item;
+    return SequenceItem;
 
   })();
 
-  Highlight.Sequence = (function() {
+  Highlight.ItemCollection = (function() {
+    function ItemCollection() {
+      this.items = [];
+    }
+
+    return ItemCollection;
+
+  })();
+
+  Highlight.SavedLocations = (function(superClass) {
+    extend(SavedLocations, superClass);
+
+    SavedLocations.next_serialnum = function() {
+      this._serialnum || (this._serialnum = 0);
+      return this._serialnum++;
+    };
+
+    function SavedLocations(id) {
+      this.id = id;
+      SavedLocations.__super__.constructor.call(this);
+      this.tbody_id = this.id + "_body";
+      this.el = document.getElementById(this.id);
+      this.tbody_el = document.getElementById(this.tbody_id);
+    }
+
+    SavedLocations.prototype.create_new_saved_item = function() {
+      var args;
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      return (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(Highlight.SavedItem, [this].concat(slice.call(args)), function(){});
+    };
+
+    SavedLocations.prototype.append = function(item) {
+      item.create_tr(this.tbody_el);
+      return this.items.push(item);
+    };
+
+    SavedLocations.prototype.add = function(z) {
+      this.append(this.create_new_saved_item(z.r, z.i));
+      return this.save();
+    };
+
+    SavedLocations.prototype.save = function() {
+      var idx, item, j, len, ref;
+      ref = this.items;
+      for (idx = j = 0, len = ref.length; j < len; idx = ++j) {
+        item = ref[idx];
+        item.save(idx);
+      }
+      return APP.storage_set('num_saved_locations', this.items.length);
+    };
+
+    SavedLocations.prototype.deserialize = function(str) {
+      return (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(Highlight.SavedItem, [this].concat(slice.call(str.split('|'))), function(){});
+    };
+
+    SavedLocations.prototype.load_item_from_storage = function(idx) {
+      var item, str;
+      str = APP.storage_get(Highlight.SavedItem.storage_id(idx));
+      if (str != null) {
+        item = this.deserialize(str);
+        item.save_idx = idx;
+        return item;
+      } else {
+        return null;
+      }
+    };
+
+    SavedLocations.prototype.load_storage = function() {
+      var idx, item, j, n, ref;
+      n = APP.storage_get_int('num_saved_locations');
+      for (idx = j = 0, ref = n; 0 <= ref ? j <= ref : j >= ref; idx = 0 <= ref ? ++j : --j) {
+        item = this.load_item_from_storage(idx);
+        if (item != null) {
+          this.append(item);
+        }
+      }
+      return n;
+    };
+
+    return SavedLocations;
+
+  })(Highlight.ItemCollection);
+
+  Highlight.Sequence = (function(superClass) {
+    extend(Sequence, superClass);
+
     Sequence.next_serialnum = function() {
       this._serialnum || (this._serialnum = 0);
       return this._serialnum++;
@@ -1490,10 +1850,10 @@ td.slider > label {
     function Sequence(group_name, name) {
       this.group_name = group_name;
       this.name = name;
+      Sequence.__super__.constructor.call(this);
       this.serial = Highlight.Sequence.next_serialnum();
       this.id = "hl-seq-" + this.serial;
       Highlight.sequences[this.id] = this;
-      this.items = [];
     }
 
     Sequence.prototype.description = function() {
@@ -1507,7 +1867,7 @@ td.slider > label {
         ctor.prototype = func.prototype;
         var child = new ctor, result = func.apply(child, args);
         return Object(result) === result ? result : child;
-      })(Highlight.Item, item_args, function(){});
+      })(Highlight.SequenceItem, item_args, function(){});
       return this.items.push(item);
     };
 
@@ -1563,7 +1923,7 @@ td.slider > label {
 
     return Sequence;
 
-  })();
+  })(Highlight.ItemCollection);
 
   natb = new Highlight.Sequence("Natural Numbers", "Bulbs");
 
@@ -1636,7 +1996,9 @@ td.slider > label {
       this.on_julia_draw_local_true = bind(this.on_julia_draw_local_true, this);
       this.on_mouseout = bind(this.on_mouseout, this);
       this.on_mouseenter = bind(this.on_mouseenter, this);
+      this.on_btn_save_loc_click = bind(this.on_btn_save_loc_click, this);
       this.on_copy_loc_to_set_c_click = bind(this.on_copy_loc_to_set_c_click, this);
+      this.on_btn_save_c_click = bind(this.on_btn_save_c_click, this);
       this.on_button_set_c_click = bind(this.on_button_set_c_click, this);
       this.on_mousemove = bind(this.on_mousemove, this);
       this.on_graph_click = bind(this.on_graph_click, this);
@@ -1654,11 +2016,12 @@ td.slider > label {
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
       this.on_mandel_color_scale_change = bind(this.on_mandel_color_scale_change, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
+      this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, format_color_scale, ref, seq, seq_id, stored_x, stored_y;
+      var fmtfloatopts, format_color_scale, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
       this.colorize_themes = {
@@ -1702,18 +2065,27 @@ td.slider > label {
       });
       this.resize_canvas(900, 600);
       this.fit_canvas_to_width();
+      ref = this.context.querySelectorAll('.tabbutton');
+      for (j = 0, len = ref.length; j < len; j++) {
+        tabbutton = ref[j];
+        tabbutton.addEventListener('click', this.on_tabbutton_click);
+      }
       this.loc_c = this.context.getElementById('loc_c');
       this.loc_radius = this.context.getElementById('loc_radius');
       this.loc_theta = this.context.getElementById('loc_theta');
       this.button_reset = this.context.getElementById('button_reset');
       this.button_zoom = this.context.getElementById('button_zoom');
       this.zoom_amount = this.context.getElementById('zoom_amount');
+      this.btn_save_loc = this.context.getElementById('save_loc');
+      this.btn_save_c = this.context.getElementById('save_c');
       this.button_set_c = this.context.getElementById('set_c');
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
+      this.btn_save_loc.addEventListener('click', this.on_btn_save_loc_click);
+      this.btn_save_c.addEventListener('click', this.on_btn_save_c_click);
       this.button_set_c.addEventListener('click', this.on_button_set_c_click);
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
@@ -1845,14 +2217,19 @@ td.slider > label {
       this.highlight_prev = this.context.getElementById('highlight_prev');
       this.highlight_next = this.context.getElementById('highlight_next');
       this.highlight_list = this.context.getElementById('highlight_list');
-      ref = Highlight.sequences;
-      for (seq_id in ref) {
-        seq = ref[seq_id];
+      ref1 = Highlight.sequences;
+      for (seq_id in ref1) {
+        seq = ref1[seq_id];
         seq.add_to_groups(this.option.highlight_group.el);
       }
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
       this.highlight_next.addEventListener('click', this.on_highlight_next_click);
       this.highlight_list.addEventListener('click', this.on_highlight_list_click);
+      this.saved_locations = new Highlight.SavedLocations('saved_locations');
+      this.saved_locations_tab_button = this.context.getElementById('saved_locations_tab_button');
+      if (this.saved_locations.load_storage() > 0) {
+        this.show_saved_locations();
+      }
       this.main_bulb_center = {
         r: -1,
         i: 0
@@ -1891,7 +2268,15 @@ td.slider > label {
     };
 
     MandelIter.prototype.on_keydown = function(event) {
-      var accel;
+      var accel, j, len, ref, type;
+      ref = ['INPUT', 'TD'];
+      for (j = 0, len = ref.length; j < len; j++) {
+        type = ref[j];
+        if (event.target.nodeName === type) {
+          return;
+        }
+      }
+      console.log(event.target);
       accel = 1.0;
       if (event.shiftKey) {
         accel = this.shift_step_accel;
@@ -1944,6 +2329,30 @@ td.slider > label {
       timestamp = new Date();
       this.debugbox_hdr.textContent = timestamp.toISOString();
       return this.debugbox_msg.textContent = '' + msg;
+    };
+
+    MandelIter.prototype.warn = function(msg) {
+      return this.set_highlight_msg("WARNING: " + msg);
+    };
+
+    MandelIter.prototype.on_tabbutton_click = function(event) {
+      return this.tabbutton_activate(event.target);
+    };
+
+    MandelIter.prototype.tabbutton_activate = function(btn) {
+      var el, j, len, panel, ref;
+      panel = this.context.getElementById(btn.id.replace(/_button$/, ''));
+      ref = document.querySelectorAll('.tabbutton.active, .tabpanel.active');
+      for (j = 0, len = ref.length; j < len; j++) {
+        el = ref[j];
+        el.classList.remove('active');
+      }
+      btn.classList.add('active');
+      return panel.classList.add('active');
+    };
+
+    MandelIter.prototype.show_saved_locations = function() {
+      return this.tabbutton_activate(this.saved_locations_tab_button);
     };
 
     MandelIter.prototype.storage_key = function(key) {
@@ -2438,6 +2847,17 @@ td.slider > label {
       }
     };
 
+    MandelIter.prototype.on_btn_save_c_click = function(event) {
+      var z;
+      this.show_saved_locations();
+      z = {
+        r: parseFloat(this.option.set_c_real.value),
+        i: parseFloat(this.option.set_c_imag.value)
+      };
+      this.saved_locations.add(z);
+      return this.show_saved_locations();
+    };
+
     MandelIter.prototype.on_copy_loc_to_set_c_click = function(event) {
       var loc, pos;
       this.update_current_trace_location();
@@ -2445,6 +2865,15 @@ td.slider > label {
       pos = this.canvas_to_complex(loc.x, loc.y);
       this.option.set_c_real.set(pos.r);
       return this.option.set_c_imag.set(pos.i);
+    };
+
+    MandelIter.prototype.on_btn_save_loc_click = function(event) {
+      var loc, pos;
+      this.update_current_trace_location();
+      loc = this.current_trace_location;
+      pos = this.canvas_to_complex(loc.x, loc.y);
+      this.saved_locations.add(pos);
+      return this.show_saved_locations();
     };
 
     MandelIter.prototype.on_mouseenter = function(event) {
@@ -2610,7 +3039,7 @@ td.slider > label {
     };
 
     MandelIter.prototype.do_antialias = function() {
-      return this.antialias && this.render_pixel_size <= 1;
+      return this.option.mandel_antialias.value > 1 && this.render_pixel_size <= 1;
     };
 
     MandelIter.prototype.schedule_background_render_pass = function() {
