@@ -1,5 +1,8 @@
 (function() {
   var natb, natt, step7,
+    bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty,
     slice = [].slice;
 
   window.Highlight || (window.Highlight = {});
@@ -17,17 +20,94 @@
     function Item(r, i1, name) {
       this.r = r;
       this.i = i1;
-      this.name = name;
+      this.name = name != null ? name : null;
       this.serial = Highlight.Item.next_serialnum();
       this.id = "hl-item-" + this.serial;
       Highlight.items[this.id] = this;
     }
 
-    Item.prototype.li_title = function() {
+    return Item;
+
+  })();
+
+  Highlight.SavedItem = (function(superClass) {
+    extend(SavedItem, superClass);
+
+    SavedItem.storage_id = function(idx) {
+      return "saved_loc[" + idx + "]";
+    };
+
+    function SavedItem() {
+      var args, parent_collection;
+      parent_collection = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+      this.parent_collection = parent_collection;
+      this.on_delete_button_click = bind(this.on_delete_button_click, this);
+      console.log('args', args);
+      SavedItem.__super__.constructor.apply(this, args);
+      this.serial = Highlight.Sequence.next_serialnum();
+      this.name || (this.name = "Save #" + this.serial);
+      console.log("Created SavedItem(" + this.name + "," + this.r + "," + this.i + ")");
+    }
+
+    SavedItem.prototype.create_tr = function(parent) {
+      if (this.tr_el != null) {
+        return this.tr_el;
+      }
+      this.tr_el = parent.insertRow(-1);
+      this.name_cell = this.tr_el.insertCell(0);
+      this.real_cell = this.tr_el.insertCell(1);
+      this.imag_cell = this.tr_el.insertCell(2);
+      this.btn_cell = this.tr_el.insertCell(3);
+      this.name_cell.innerText = this.name;
+      this.real_cell.innerText = APP.fmtfloat.format(this.r);
+      this.imag_cell.innerText = APP.fmtfloat.format(this.i);
+      this.delete_button = document.createElement('button');
+      this.delete_button.classList.add('delete');
+      this.delete_button.addEventListener('click', this.on_delete_button_click);
+      this.btn_cell.appendChild(this.delete_button);
+      return this.tr_el;
+    };
+
+    SavedItem.prototype.serialize = function() {
+      if (this.name != null) {
+        return this.r + "|" + this.i + "|" + this.name;
+      } else {
+        return this.r + "|" + this.i;
+      }
+    };
+
+    SavedItem.prototype.save = function(idx) {
+      this.save_idx = idx;
+      return APP.storage_set(Highlight.SavedItem.storage_id(idx), this.serialize());
+    };
+
+    SavedItem.prototype.remove_storage = function() {
+      if (this.save_idx != null) {
+        return APP.storage_remove(Highlight.SavedItem.storage_id(this.save_idx));
+      }
+    };
+
+    SavedItem.prototype.remove = function() {
+      this.remove_storage();
+      return this.tr_el.remove();
+    };
+
+    SavedItem.prototype.on_delete_button_click = function(event) {
+      return console.log(event.target.parent.parent);
+    };
+
+    return SavedItem;
+
+  })(Highlight.Item);
+
+  Highlight.SequenceItem = (function() {
+    function SequenceItem() {}
+
+    SequenceItem.prototype.li_title = function() {
       return this.r + " + " + this.i + "i";
     };
 
-    Item.prototype.create_li = function() {
+    SequenceItem.prototype.create_li = function() {
       var el;
       el = document.createElement('li');
       el.id = this.id;
@@ -36,11 +116,11 @@
       return el;
     };
 
-    Item.prototype.li = function() {
+    SequenceItem.prototype.li = function() {
       return this.li_el || (this.li_el = this.create_li());
     };
 
-    Item.prototype.select = function() {
+    SequenceItem.prototype.select = function() {
       var el, j, len, ref;
       ref = document.querySelectorAll('#highlight_list .highlight_item.selected');
       for (j = 0, len = ref.length; j < len; j++) {
@@ -50,11 +130,106 @@
       return this.li_el.classList.add('selected');
     };
 
-    return Item;
+    return SequenceItem;
 
   })();
 
-  Highlight.Sequence = (function() {
+  Highlight.ItemCollection = (function() {
+    function ItemCollection() {
+      this.items = [];
+    }
+
+    return ItemCollection;
+
+  })();
+
+  Highlight.SavedLocations = (function(superClass) {
+    extend(SavedLocations, superClass);
+
+    SavedLocations.next_serialnum = function() {
+      this._serialnum || (this._serialnum = 0);
+      return this._serialnum++;
+    };
+
+    function SavedLocations(id) {
+      this.id = id;
+      SavedLocations.__super__.constructor.call(this);
+      this.tbody_id = this.id + "_body";
+      this.el = document.getElementById(this.id);
+      this.tbody_el = document.getElementById(this.tbody_id);
+      console.log(this.id, this.el, this.tbody_id, this.tbody_el);
+    }
+
+    SavedLocations.prototype.create_new_saved_item = function() {
+      var args;
+      args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      return (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(Highlight.SavedItem, [this].concat(slice.call(args)), function(){});
+    };
+
+    SavedLocations.prototype.append = function(item) {
+      item.create_tr(this.tbody_el);
+      return this.items.push(item);
+    };
+
+    SavedLocations.prototype.add = function(z) {
+      this.append(this.create_new_saved_item(z.r, z.i));
+      return this.save();
+    };
+
+    SavedLocations.prototype.save = function() {
+      var idx, item, j, len, ref;
+      ref = this.items;
+      for (idx = j = 0, len = ref.length; j < len; idx = ++j) {
+        item = ref[idx];
+        item.save(idx);
+      }
+      return APP.storage_set('num_saved_locations', this.items.length);
+    };
+
+    SavedLocations.prototype.deserialize = function(str) {
+      return (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(Highlight.SavedItem, [this].concat(slice.call(str.split('|'))), function(){});
+    };
+
+    SavedLocations.prototype.load_item_from_storage = function(idx) {
+      var str;
+      str = APP.storage_get(Highlight.SavedItem.storage_id(idx));
+      if (str != null) {
+        return this.deserialize(str);
+      } else {
+        return null;
+      }
+    };
+
+    SavedLocations.prototype.load_storage = function() {
+      var idx, item, j, n, ref, results;
+      n = APP.storage_get_int('num_saved_locations');
+      results = [];
+      for (idx = j = 0, ref = n; 0 <= ref ? j <= ref : j >= ref; idx = 0 <= ref ? ++j : --j) {
+        item = this.load_item_from_storage(idx);
+        if (item != null) {
+          results.push(this.append(item));
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
+
+    return SavedLocations;
+
+  })(Highlight.ItemCollection);
+
+  Highlight.Sequence = (function(superClass) {
+    extend(Sequence, superClass);
+
     Sequence.next_serialnum = function() {
       this._serialnum || (this._serialnum = 0);
       return this._serialnum++;
@@ -63,10 +238,10 @@
     function Sequence(group_name, name) {
       this.group_name = group_name;
       this.name = name;
+      Sequence.__super__.constructor.call(this);
       this.serial = Highlight.Sequence.next_serialnum();
       this.id = "hl-seq-" + this.serial;
       Highlight.sequences[this.id] = this;
-      this.items = [];
     }
 
     Sequence.prototype.description = function() {
@@ -80,7 +255,7 @@
         ctor.prototype = func.prototype;
         var child = new ctor, result = func.apply(child, args);
         return Object(result) === result ? result : child;
-      })(Highlight.Item, item_args, function(){});
+      })(Highlight.SequenceItem, item_args, function(){});
       return this.items.push(item);
     };
 
@@ -136,7 +311,7 @@
 
     return Sequence;
 
-  })();
+  })(Highlight.ItemCollection);
 
   natb = new Highlight.Sequence("Natural Numbers", "Bulbs");
 

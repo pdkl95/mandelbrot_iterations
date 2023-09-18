@@ -8,11 +8,65 @@ class Highlight.Item
     @_serialnum ||= 0
     @_serialnum++
 
-  constructor: (@r, @i, @name) ->
+  constructor: (@r, @i, @name = null) ->
     @serial = Highlight.Item.next_serialnum()
     @id = "hl-item-#{@serial}"
     Highlight.items[@id] = this
 
+class Highlight.SavedItem extends Highlight.Item
+  @storage_id: (idx) ->
+    "saved_loc[#{idx}]"
+
+  constructor: (@parent_collection, args...) ->
+    console.log('args', args)
+    super(args...)
+    @serial = Highlight.Sequence.next_serialnum()
+    @name ||= "Save ##{@serial}"
+    console.log("Created SavedItem(#{@name},#{@r},#{@i})")
+
+  create_tr: (parent) ->
+    return @tr_el if @tr_el?
+    @tr_el = parent.insertRow(-1)
+
+    @name_cell = @tr_el.insertCell(0)
+    @real_cell = @tr_el.insertCell(1)
+    @imag_cell = @tr_el.insertCell(2)
+    @btn_cell  = @tr_el.insertCell(3)
+
+    #@name_cell.contentEditable = 'plaintext-only'
+    @name_cell.innerText = @name
+    @real_cell.innerText = APP.fmtfloat.format(@r)
+    @imag_cell.innerText = APP.fmtfloat.format(@i)
+
+    @delete_button = document.createElement('button')
+    @delete_button.classList.add('delete')
+    @delete_button.addEventListener('click', @on_delete_button_click)
+    @btn_cell.appendChild(@delete_button)
+
+    @tr_el
+
+  serialize: ->
+    if @name?
+      "#{@r}|#{@i}|#{@name}"
+    else
+      "#{@r}|#{@i}"
+
+  save: (idx) ->
+    @save_idx = idx
+    APP.storage_set(Highlight.SavedItem.storage_id(idx), @serialize())
+
+  remove_storage: ->
+    if @save_idx?
+      APP.storage_remove(Highlight.SavedItem.storage_id(@save_idx))
+
+  remove: ->
+    @remove_storage()
+    @tr_el.remove()
+
+  on_delete_button_click: (event) =>
+    console.log(event.target.parent.parent)
+
+class Highlight.SequenceItem
   li_title: ->
     "#{@r} + #{@i}i"
 
@@ -34,22 +88,72 @@ class Highlight.Item
       el.classList.remove('selected')
     @li_el.classList.add('selected')
 
-class Highlight.Sequence
+class Highlight.ItemCollection
+  constructor: ->
+    @items = []
+
+class Highlight.SavedLocations extends Highlight.ItemCollection
+  @next_serialnum: ->
+    @_serialnum ||= 0
+    @_serialnum++
+
+  constructor: (@id) ->
+    super()
+
+    @tbody_id = "#{@id}_body"
+    @el       = document.getElementById(@id)
+    @tbody_el = document.getElementById(@tbody_id)
+
+    console.log(@id, @el, @tbody_id, @tbody_el)
+
+  create_new_saved_item: (args...) ->
+    new Highlight.SavedItem(this, args...)
+
+  append: (item) ->
+    item.create_tr(@tbody_el)
+    @items.push(item)
+
+  add: (z) ->
+    @append(@create_new_saved_item(z.r, z.i))
+    @save()
+
+  save: ->
+    for item, idx in @items
+      item.save(idx)
+    APP.storage_set('num_saved_locations', @items.length)
+
+  deserialize: (str) ->
+    new Highlight.SavedItem(this, str.split('|')...)
+
+  load_item_from_storage: (idx) ->
+    str = APP.storage_get(Highlight.SavedItem.storage_id(idx))
+    if str?
+      @deserialize(str)
+    else
+      null
+
+  load_storage: ->
+    n = APP.storage_get_int('num_saved_locations')
+    for idx in [0..n]
+      item = @load_item_from_storage(idx)
+      @append(item) if item?
+
+class Highlight.Sequence extends Highlight.ItemCollection
   @next_serialnum: ->
     @_serialnum ||= 0
     @_serialnum++
 
   constructor: (@group_name, @name) ->
+    super()
     @serial = Highlight.Sequence.next_serialnum()
-    @id = "hl-seq-#{@serial}"
+    @id = "hl-seq-#{@serial}" 
     Highlight.sequences[@id] = this
-    @items = []
 
   description: ->
     "#{@group_name} - #{@name}"
 
   add: (item_args...) ->
-    item = new Highlight.Item(item_args...)
+    item = new Highlight.SequenceItem(item_args...)
     @items.push(item)
 
   add_to_groups: (parent) ->

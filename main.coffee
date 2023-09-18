@@ -69,16 +69,20 @@ class MandelIter
     @button_reset  = @context.getElementById('button_reset')
     @button_zoom   = @context.getElementById('button_zoom')
     @zoom_amount   = @context.getElementById('zoom_amount')
+    @btn_save_loc  = @context.getElementById('save_loc')
+    @btn_save_c    = @context.getElementById('save_c')
     @button_set_c  = @context.getElementById('set_c')
     @loc_to_set_c  = @context.getElementById('copy_loc_to_set_c')
     @reset_storage = @context.getElementById('reset_all_storage')
 
-    @button_reset.addEventListener('click', @on_button_reset_click)
-    @button_zoom.addEventListener( 'click', @on_button_zoom_click)
-    @zoom_amount.addEventListener('change', @on_zoom_amount_change)
-    @button_set_c.addEventListener('click', @on_button_set_c_click)
-    @loc_to_set_c.addEventListener('click', @on_copy_loc_to_set_c_click)
-    @reset_storage.addEventListener('click', @on_reset_storage_click)
+    @button_reset.addEventListener( 'click',  @on_button_reset_click)
+    @button_zoom.addEventListener(  'click',  @on_button_zoom_click)
+    @zoom_amount.addEventListener(  'change', @on_zoom_amount_change)
+    @btn_save_loc.addEventListener( 'click',  @on_btn_save_loc_click)
+    @btn_save_c.addEventListener(   'click',  @on_btn_save_c_click)
+    @button_set_c.addEventListener( 'click',  @on_button_set_c_click)
+    @loc_to_set_c.addEventListener( 'click',  @on_copy_loc_to_set_c_click)
+    @reset_storage.addEventListener('click',  @on_reset_storage_click)
 
     @option =
       show_tooltips:            new UI.BoolOption('show_tooltips', true)
@@ -204,6 +208,10 @@ class MandelIter
     @highlight_next.addEventListener('click', @on_highlight_next_click)
     @highlight_list.addEventListener('click', @on_highlight_list_click)
 
+    @saved_locations = new Highlight.SavedLocations('saved_locations')
+    @saved_locations_tab_button = @context.getElementById('saved_locations_tab_button')
+    @saved_locations.load_storage()
+
     @main_bulb_center =
       r: -1
       i:  0
@@ -285,13 +293,18 @@ class MandelIter
     @debugbox_msg.textContent = '' + msg
 
   on_tabbutton_click: (event) =>
-    btn = event.target
+    @tabbutton_activate(event.target)
+
+  tabbutton_activate: (btn) ->
     panel = @context.getElementById(btn.id.replace(/_button$/, ''))
     for el in document.querySelectorAll('.tabbutton.active, .tabpanel.active')
       el.classList.remove('active')
 
     btn.classList.add('active')
     panel.classList.add('active')
+
+  show_saved_locations: ->
+    @tabbutton_activate(@saved_locations_tab_button)
 
   storage_key: (key) ->
     "#{@constructor.storage_prefix}-#{key}"
@@ -662,12 +675,27 @@ class MandelIter
     unless isNaN(z.r) or isNaN(z.i)
       @animate_to(@complex_to_canvas(z))
 
+  on_btn_save_c_click: (event) =>
+    @show_saved_locations()
+    z =
+      r: parseFloat(@option.set_c_real.value)
+      i: parseFloat(@option.set_c_imag.value)
+    @saved_locations.add(z)
+    @show_saved_locations()
+
   on_copy_loc_to_set_c_click: (event) =>
     @update_current_trace_location()
     loc = @current_trace_location
     pos = @canvas_to_complex(loc.x, loc.y)
     @option.set_c_real.set(pos.r)
     @option.set_c_imag.set(pos.i)
+
+  on_btn_save_loc_click: (event) =>
+    @update_current_trace_location()
+    loc = @current_trace_location
+    pos = @canvas_to_complex(loc.x, loc.y)
+    @saved_locations.add(pos)
+    @show_saved_locations()
 
   on_mouseenter: (event) =>
     @mouse_active = true

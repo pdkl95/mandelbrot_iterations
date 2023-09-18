@@ -89,7 +89,10 @@ undivert(`style.css')
             </tr>
             <tr>
               <th></th>
-              <td><button id="copy_loc_to_set_c">&darr; Copy To Set C &darr;</button></td>
+              <td>
+                <button id="copy_loc_to_set_c">&darr; Copy To Set C &darr;</button>
+                <button id="save_loc">Save &darr;</button>
+              </td>
           </table>
 
           <table>
@@ -103,7 +106,10 @@ undivert(`style.css')
             </tr>
             <tr>
               <th></th>
-              <td><button id="set_c">Set C</button></td>
+              <td>  
+                <button id="set_c">Set C</button>
+                <button id="save_c">Save &darr;</button>
+              </td>
             </tr>
           </table> 
 
@@ -126,7 +132,16 @@ undivert(`style.css')
             </div>
 
             <div id="saved_locations_tab" class="tabpanel">
-              Save stuff...
+              <table id="saved_locations">
+                <thead>
+                  <th>Name</th>
+                  <th>Real</th>
+                  <th>Imag</th>
+                  <th></th>
+                </thead>
+                <tbody id="saved_locations_body">
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

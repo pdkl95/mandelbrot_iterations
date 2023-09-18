@@ -23,7 +23,9 @@
       this.on_julia_draw_local_true = bind(this.on_julia_draw_local_true, this);
       this.on_mouseout = bind(this.on_mouseout, this);
       this.on_mouseenter = bind(this.on_mouseenter, this);
+      this.on_btn_save_loc_click = bind(this.on_btn_save_loc_click, this);
       this.on_copy_loc_to_set_c_click = bind(this.on_copy_loc_to_set_c_click, this);
+      this.on_btn_save_c_click = bind(this.on_btn_save_c_click, this);
       this.on_button_set_c_click = bind(this.on_button_set_c_click, this);
       this.on_mousemove = bind(this.on_mousemove, this);
       this.on_graph_click = bind(this.on_graph_click, this);
@@ -101,12 +103,16 @@
       this.button_reset = this.context.getElementById('button_reset');
       this.button_zoom = this.context.getElementById('button_zoom');
       this.zoom_amount = this.context.getElementById('zoom_amount');
+      this.btn_save_loc = this.context.getElementById('save_loc');
+      this.btn_save_c = this.context.getElementById('save_c');
       this.button_set_c = this.context.getElementById('set_c');
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
+      this.btn_save_loc.addEventListener('click', this.on_btn_save_loc_click);
+      this.btn_save_c.addEventListener('click', this.on_btn_save_c_click);
       this.button_set_c.addEventListener('click', this.on_button_set_c_click);
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
@@ -246,6 +252,9 @@
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
       this.highlight_next.addEventListener('click', this.on_highlight_next_click);
       this.highlight_list.addEventListener('click', this.on_highlight_list_click);
+      this.saved_locations = new Highlight.SavedLocations('saved_locations');
+      this.saved_locations_tab_button = this.context.getElementById('saved_locations_tab_button');
+      this.saved_locations.load_storage();
       this.main_bulb_center = {
         r: -1,
         i: 0
@@ -340,8 +349,11 @@
     };
 
     MandelIter.prototype.on_tabbutton_click = function(event) {
-      var btn, el, j, len, panel, ref;
-      btn = event.target;
+      return this.tabbutton_activate(event.target);
+    };
+
+    MandelIter.prototype.tabbutton_activate = function(btn) {
+      var el, j, len, panel, ref;
       panel = this.context.getElementById(btn.id.replace(/_button$/, ''));
       ref = document.querySelectorAll('.tabbutton.active, .tabpanel.active');
       for (j = 0, len = ref.length; j < len; j++) {
@@ -350,6 +362,10 @@
       }
       btn.classList.add('active');
       return panel.classList.add('active');
+    };
+
+    MandelIter.prototype.show_saved_locations = function() {
+      return this.tabbutton_activate(this.saved_locations_tab_button);
     };
 
     MandelIter.prototype.storage_key = function(key) {
@@ -844,6 +860,17 @@
       }
     };
 
+    MandelIter.prototype.on_btn_save_c_click = function(event) {
+      var z;
+      this.show_saved_locations();
+      z = {
+        r: parseFloat(this.option.set_c_real.value),
+        i: parseFloat(this.option.set_c_imag.value)
+      };
+      this.saved_locations.add(z);
+      return this.show_saved_locations();
+    };
+
     MandelIter.prototype.on_copy_loc_to_set_c_click = function(event) {
       var loc, pos;
       this.update_current_trace_location();
@@ -851,6 +878,15 @@
       pos = this.canvas_to_complex(loc.x, loc.y);
       this.option.set_c_real.set(pos.r);
       return this.option.set_c_imag.set(pos.i);
+    };
+
+    MandelIter.prototype.on_btn_save_loc_click = function(event) {
+      var loc, pos;
+      this.update_current_trace_location();
+      loc = this.current_trace_location;
+      pos = this.canvas_to_complex(loc.x, loc.y);
+      this.saved_locations.add(pos);
+      return this.show_saved_locations();
     };
 
     MandelIter.prototype.on_mouseenter = function(event) {
