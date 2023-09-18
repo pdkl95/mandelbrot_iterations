@@ -295,7 +295,15 @@
     };
 
     MandelIter.prototype.on_keydown = function(event) {
-      var accel;
+      var accel, j, len, ref, type;
+      ref = ['INPUT', 'TD'];
+      for (j = 0, len = ref.length; j < len; j++) {
+        type = ref[j];
+        if (event.target.nodeName === type) {
+          return;
+        }
+      }
+      console.log(event.target);
       accel = 1.0;
       if (event.shiftKey) {
         accel = this.shift_step_accel;

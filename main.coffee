@@ -253,6 +253,9 @@ class MandelIter
 
 
   on_keydown: (event) =>
+    for type in ['INPUT', 'TD']
+      return if event.target.nodeName is type
+
     accel = 1.0
     accel = @shift_step_accel if event.shiftKey
     accel =  @ctrl_step_accel if event.ctrlKey
