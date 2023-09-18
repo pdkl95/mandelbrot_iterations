@@ -11,6 +11,8 @@
 
   Highlight.sequences = {};
 
+  Highlight.saved_locations = {};
+
   Highlight.Item = (function() {
     Item.next_serialnum = function() {
       this._serialnum || (this._serialnum = 0);
@@ -41,28 +43,41 @@
       var args, parent_collection;
       parent_collection = arguments[0], args = 2 <= arguments.length ? slice.call(arguments, 1) : [];
       this.parent_collection = parent_collection;
+      this.on_set_c_button_click = bind(this.on_set_c_button_click, this);
       this.on_delete_button_click = bind(this.on_delete_button_click, this);
-      console.log('args', args);
       SavedItem.__super__.constructor.apply(this, args);
       this.serial = Highlight.Sequence.next_serialnum();
       this.name || (this.name = "Save #" + this.serial);
-      console.log("Created SavedItem(" + this.name + "," + this.r + "," + this.i + ")");
+      this.row_id = "saved_item-row-" + this.serial;
+      Highlight.saved_locations[this.row_id] = this;
     }
+
+    SavedItem.prototype.create_set_c_button = function(value) {
+      var el, text;
+      text = APP.fmtfloat.format(value);
+      el = document.createElement('a');
+      el.innerText = text;
+      el.classList.add('set_c_button');
+      el.addEventListener('xlixk', this.on_set_c_button_click);
+      return el;
+    };
 
     SavedItem.prototype.create_tr = function(parent) {
       if (this.tr_el != null) {
         return this.tr_el;
       }
       this.tr_el = parent.insertRow(-1);
+      this.tr_el.id = this.row_id;
       this.name_cell = this.tr_el.insertCell(0);
       this.real_cell = this.tr_el.insertCell(1);
       this.imag_cell = this.tr_el.insertCell(2);
       this.btn_cell = this.tr_el.insertCell(3);
       this.name_cell.innerText = this.name;
-      this.real_cell.innerText = APP.fmtfloat.format(this.r);
-      this.imag_cell.innerText = APP.fmtfloat.format(this.i);
+      this.real_cell.appendChild = this.create_set_c_button(this.r);
+      this.imag_cell.appendChild = this.create_set_c_button(this.i);
       this.delete_button = document.createElement('button');
       this.delete_button.classList.add('delete');
+      this.delete_button.innerHTML = '&times;';
       this.delete_button.addEventListener('click', this.on_delete_button_click);
       this.btn_cell.appendChild(this.delete_button);
       return this.tr_el;
@@ -88,12 +103,37 @@
     };
 
     SavedItem.prototype.remove = function() {
+      var idx;
       this.remove_storage();
-      return this.tr_el.remove();
+      this.tr_el.remove();
+      idx = this.parent_collection.items.indexOf(this);
+      this.parent_collection.items.splice(idx, 1);
+      return delete Highlight.saved_locations[this.row_id];
     };
 
     SavedItem.prototype.on_delete_button_click = function(event) {
-      return console.log(event.target.parent.parent);
+      var loc, row;
+      row = event.target.parentElement.parentElement;
+      if (row != null) {
+        loc = Highlight.saved_locations[row.id];
+        if (loc != null) {
+          return loc.remove();
+        }
+      }
+    };
+
+    SavedItem.prototype.on_set_c_button_click = function(event) {
+      var loc, row;
+      row = event.target.parent;
+      loc = Highlight.saved_locations[row.id];
+      console.log('set_c_button_click', 'row', row, 'loc', loc);
+      if (loc != null) {
+        return loc.set_c();
+      }
+    };
+
+    SavedItem.prototype.set_c = function() {
+      return APP.animate_to(this.complex_to_canvas(item));
     };
 
     return SavedItem;
@@ -157,7 +197,6 @@
       this.tbody_id = this.id + "_body";
       this.el = document.getElementById(this.id);
       this.tbody_el = document.getElementById(this.tbody_id);
-      console.log(this.id, this.el, this.tbody_id, this.tbody_el);
     }
 
     SavedLocations.prototype.create_new_saved_item = function() {
@@ -199,10 +238,12 @@
     };
 
     SavedLocations.prototype.load_item_from_storage = function(idx) {
-      var str;
+      var item, str;
       str = APP.storage_get(Highlight.SavedItem.storage_id(idx));
       if (str != null) {
-        return this.deserialize(str);
+        item = this.deserialize(str);
+        item.save_idx = idx;
+        return item;
       } else {
         return null;
       }

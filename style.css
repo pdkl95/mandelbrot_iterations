@@ -506,3 +506,7 @@ td.slider > label {
   position: relative;
   top: -1px;
 }
+
+button.delete {
+  font-siZe: large;
+}

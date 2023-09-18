@@ -2,6 +2,7 @@ window.Highlight or= {}
 
 Highlight.items = {}
 Highlight.sequences = {}
+Highlight.saved_locations = {}
 
 class Highlight.Item
   @next_serialnum: ->
@@ -18,15 +19,24 @@ class Highlight.SavedItem extends Highlight.Item
     "saved_loc[#{idx}]"
 
   constructor: (@parent_collection, args...) ->
-    console.log('args', args)
     super(args...)
     @serial = Highlight.Sequence.next_serialnum()
     @name ||= "Save ##{@serial}"
-    console.log("Created SavedItem(#{@name},#{@r},#{@i})")
+    @row_id = "saved_item-row-#{@serial}"
+    Highlight.saved_locations[@row_id] = this
+
+  create_set_c_button: (value) ->
+    text = APP.fmtfloat.format(value)
+    el = document.createElement('a')
+    el.innerText = text
+    el.classList.add('set_c_button')
+    el.addEventListener('xlixk', @on_set_c_button_click)
+    el
 
   create_tr: (parent) ->
     return @tr_el if @tr_el?
     @tr_el = parent.insertRow(-1)
+    @tr_el.id = @row_id
 
     @name_cell = @tr_el.insertCell(0)
     @real_cell = @tr_el.insertCell(1)
@@ -35,11 +45,12 @@ class Highlight.SavedItem extends Highlight.Item
 
     #@name_cell.contentEditable = 'plaintext-only'
     @name_cell.innerText = @name
-    @real_cell.innerText = APP.fmtfloat.format(@r)
-    @imag_cell.innerText = APP.fmtfloat.format(@i)
+    @real_cell.appendChild = @create_set_c_button(@r)
+    @imag_cell.appendChild = @create_set_c_button(@i)
 
     @delete_button = document.createElement('button')
     @delete_button.classList.add('delete')
+    @delete_button.innerHTML = '&times;'
     @delete_button.addEventListener('click', @on_delete_button_click)
     @btn_cell.appendChild(@delete_button)
 
@@ -62,9 +73,25 @@ class Highlight.SavedItem extends Highlight.Item
   remove: ->
     @remove_storage()
     @tr_el.remove()
+    idx = @parent_collection.items.indexOf(this)
+    @parent_collection.items.splice(idx, 1)
+    delete Highlight.saved_locations[@row_id]
 
   on_delete_button_click: (event) =>
-    console.log(event.target.parent.parent)
+    row = event.target.parentElement.parentElement
+    if row?
+      loc = Highlight.saved_locations[row.id]
+      if loc?
+        loc.remove()
+
+  on_set_c_button_click: (event) =>
+    row = event.target.parent
+    loc = Highlight.saved_locations[row.id]
+    console.log('set_c_button_click', 'row', row, 'loc', loc)
+    loc.set_c() if loc?
+
+  set_c: ->
+    APP.animate_to(@complex_to_canvas(item))
 
 class Highlight.SequenceItem
   li_title: ->
@@ -104,8 +131,6 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
     @el       = document.getElementById(@id)
     @tbody_el = document.getElementById(@tbody_id)
 
-    console.log(@id, @el, @tbody_id, @tbody_el)
-
   create_new_saved_item: (args...) ->
     new Highlight.SavedItem(this, args...)
 
@@ -128,7 +153,9 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
   load_item_from_storage: (idx) ->
     str = APP.storage_get(Highlight.SavedItem.storage_id(idx))
     if str?
-      @deserialize(str)
+      item = @deserialize(str)
+      item.save_idx = idx
+      item
     else
       null
 
