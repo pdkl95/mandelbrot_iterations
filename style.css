@@ -507,6 +507,32 @@ td.slider > label {
   top: -1px;
 }
 
+#saved_locations {
+  max-height: 16em;
+  overflow-y: scroll;
+}
+
 button.delete {
   font-siZe: large;
+  margin-left: 1em;
+}
+
+.set_c_button {
+  display: inline-block;
+  cursor: pointer;
+  padding: 3px 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.set_c_button:hover {
+  background-color: #c0c0c0;
+  border: 1px outset #bbb;
+  text-shadow: 1px 1px 2px rgba(255,255,255,0.7);
+}
+
+.set_c_button:active {
+  background-color: #eee;
+  border: 1px intset #bbb;
+  box-shadow: 1px 1px 3px -1px rgba(0,0,0,0.4) inset;
+
 }

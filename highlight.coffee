@@ -30,7 +30,7 @@ class Highlight.SavedItem extends Highlight.Item
     el = document.createElement('a')
     el.innerText = text
     el.classList.add('set_c_button')
-    el.addEventListener('xlixk', @on_set_c_button_click)
+    el.addEventListener('click', @on_set_c_button_click)
     el
 
   create_tr: (parent) ->
@@ -45,8 +45,8 @@ class Highlight.SavedItem extends Highlight.Item
 
     #@name_cell.contentEditable = 'plaintext-only'
     @name_cell.innerText = @name
-    @real_cell.appendChild = @create_set_c_button(@r)
-    @imag_cell.appendChild = @create_set_c_button(@i)
+    @real_cell.append(@create_set_c_button(@r))
+    @imag_cell.append(@create_set_c_button(@i))
 
     @delete_button = document.createElement('button')
     @delete_button.classList.add('delete')
@@ -85,13 +85,14 @@ class Highlight.SavedItem extends Highlight.Item
         loc.remove()
 
   on_set_c_button_click: (event) =>
-    row = event.target.parent
-    loc = Highlight.saved_locations[row.id]
-    console.log('set_c_button_click', 'row', row, 'loc', loc)
-    loc.set_c() if loc?
+    row = event.target.parentElement.parentElement
+    if row?
+      loc = Highlight.saved_locations[row.id]
+      if loc?
+        loc.set_c(this)
 
-  set_c: ->
-    APP.animate_to(@complex_to_canvas(item))
+  set_c: (item) ->
+    APP.animate_to(APP.complex_to_canvas(item))
 
 class Highlight.SequenceItem
   li_title: ->

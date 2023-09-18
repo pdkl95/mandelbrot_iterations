@@ -58,7 +58,7 @@
       el = document.createElement('a');
       el.innerText = text;
       el.classList.add('set_c_button');
-      el.addEventListener('xlixk', this.on_set_c_button_click);
+      el.addEventListener('click', this.on_set_c_button_click);
       return el;
     };
 
@@ -73,8 +73,8 @@
       this.imag_cell = this.tr_el.insertCell(2);
       this.btn_cell = this.tr_el.insertCell(3);
       this.name_cell.innerText = this.name;
-      this.real_cell.appendChild = this.create_set_c_button(this.r);
-      this.imag_cell.appendChild = this.create_set_c_button(this.i);
+      this.real_cell.append(this.create_set_c_button(this.r));
+      this.imag_cell.append(this.create_set_c_button(this.i));
       this.delete_button = document.createElement('button');
       this.delete_button.classList.add('delete');
       this.delete_button.innerHTML = '&times;';
@@ -124,16 +124,17 @@
 
     SavedItem.prototype.on_set_c_button_click = function(event) {
       var loc, row;
-      row = event.target.parent;
-      loc = Highlight.saved_locations[row.id];
-      console.log('set_c_button_click', 'row', row, 'loc', loc);
-      if (loc != null) {
-        return loc.set_c();
+      row = event.target.parentElement.parentElement;
+      if (row != null) {
+        loc = Highlight.saved_locations[row.id];
+        if (loc != null) {
+          return loc.set_c(this);
+        }
       }
     };
 
-    SavedItem.prototype.set_c = function() {
-      return APP.animate_to(this.complex_to_canvas(item));
+    SavedItem.prototype.set_c = function(item) {
+      return APP.animate_to(APP.complex_to_canvas(item));
     };
 
     return SavedItem;
