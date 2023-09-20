@@ -59,9 +59,13 @@
       } else {
         this.set(this["default"]);
       }
-      this.el.addEventListener('change', this.on_change);
-      this.el.addEventListener('input', this.on_input);
+      this.setup_listeners();
     }
+
+    Option.prototype.setup_listeners = function() {
+      this.el.addEventListener('change', this.on_change);
+      return this.el.addEventListener('input', this.on_input);
+    };
 
     Option.prototype.detect_default_value = function() {
       return this.get();
@@ -104,8 +108,8 @@
       if (this.label_el != null) {
         this.label_el.innerText = this.label_text();
       }
-      if (this.persist && this.value !== this["default"]) {
-        return APP.storage_set(this.storage_id, this.value);
+      if (this.persist) {
+        return APP.storage_set(this.storage_id, this.value, this["default"]);
       }
     };
 
@@ -318,6 +322,10 @@
     function SelectOption() {
       return SelectOption.__super__.constructor.apply(this, arguments);
     }
+
+    SelectOption.prototype.setup_listeners = function() {
+      return this.el.addEventListener('change', this.on_change);
+    };
 
     SelectOption.prototype.get = function(element) {
       if (element == null) {

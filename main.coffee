@@ -316,8 +316,11 @@ class MandelIter
   storage_key: (key) ->
     "#{@constructor.storage_prefix}-#{key}"
 
-  storage_set: (key, value) ->
-    localStorage.setItem(@storage_key(key), value)
+  storage_set: (key, value, default_value = null) ->
+    if default_value? and (default_value is value)
+      @storage_remove(key)
+    else
+      localStorage.setItem(@storage_key(key), value)
 
   storage_get: (key) ->
     localStorage.getItem(@storage_key(key))

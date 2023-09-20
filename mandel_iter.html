@@ -1154,9 +1154,13 @@ td.name[contenteditable=true]:focus {
       } else {
         this.set(this["default"]);
       }
-      this.el.addEventListener('change', this.on_change);
-      this.el.addEventListener('input', this.on_input);
+      this.setup_listeners();
     }
+
+    Option.prototype.setup_listeners = function() {
+      this.el.addEventListener('change', this.on_change);
+      return this.el.addEventListener('input', this.on_input);
+    };
 
     Option.prototype.detect_default_value = function() {
       return this.get();
@@ -1199,8 +1203,8 @@ td.name[contenteditable=true]:focus {
       if (this.label_el != null) {
         this.label_el.innerText = this.label_text();
       }
-      if (this.persist && this.value !== this["default"]) {
-        return APP.storage_set(this.storage_id, this.value);
+      if (this.persist) {
+        return APP.storage_set(this.storage_id, this.value, this["default"]);
       }
     };
 
@@ -1413,6 +1417,10 @@ td.name[contenteditable=true]:focus {
     function SelectOption() {
       return SelectOption.__super__.constructor.apply(this, arguments);
     }
+
+    SelectOption.prototype.setup_listeners = function() {
+      return this.el.addEventListener('change', this.on_change);
+    };
 
     SelectOption.prototype.get = function(element) {
       if (element == null) {
@@ -2276,7 +2284,6 @@ td.name[contenteditable=true]:focus {
           return;
         }
       }
-      console.log(event.target);
       accel = 1.0;
       if (event.shiftKey) {
         accel = this.shift_step_accel;
@@ -2359,8 +2366,15 @@ td.name[contenteditable=true]:focus {
       return this.constructor.storage_prefix + "-" + key;
     };
 
-    MandelIter.prototype.storage_set = function(key, value) {
-      return localStorage.setItem(this.storage_key(key), value);
+    MandelIter.prototype.storage_set = function(key, value, default_value) {
+      if (default_value == null) {
+        default_value = null;
+      }
+      if ((default_value != null) && (default_value === value)) {
+        return this.storage_remove(key);
+      } else {
+        return localStorage.setItem(this.storage_key(key), value);
+      }
     };
 
     MandelIter.prototype.storage_get = function(key) {

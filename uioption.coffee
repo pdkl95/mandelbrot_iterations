@@ -33,6 +33,9 @@ class UI.Option
     else
       @set(@default)
 
+    @setup_listeners()
+
+  setup_listeners: ->
     @el.addEventListener('change', @on_change)
     @el.addEventListener('input',  @on_input)
 
@@ -54,8 +57,8 @@ class UI.Option
     @value = new_value if new_value?
     @label_el.innerText = @label_text() if @label_el?
 
-    if @persist and @value != @default
-      APP.storage_set(@storage_id, @value)
+    if @persist
+      APP.storage_set(@storage_id, @value, @default)
  
   default_label_text_formater: (value) ->
     "#{value}"
@@ -142,6 +145,10 @@ class UI.PercentOption extends UI.FloatOption
     "#{perc}%"
 
 class UI.SelectOption extends UI.Option
+  setup_listeners: ->
+    @el.addEventListener('change', @on_change)
+    # skip input event
+
   get: (element = @el) ->
     element.options[element.selectedIndex].value
 

@@ -303,7 +303,6 @@
           return;
         }
       }
-      console.log(event.target);
       accel = 1.0;
       if (event.shiftKey) {
         accel = this.shift_step_accel;
@@ -386,8 +385,15 @@
       return this.constructor.storage_prefix + "-" + key;
     };
 
-    MandelIter.prototype.storage_set = function(key, value) {
-      return localStorage.setItem(this.storage_key(key), value);
+    MandelIter.prototype.storage_set = function(key, value, default_value) {
+      if (default_value == null) {
+        default_value = null;
+      }
+      if ((default_value != null) && (default_value === value)) {
+        return this.storage_remove(key);
+      } else {
+        return localStorage.setItem(this.storage_key(key), value);
+      }
     };
 
     MandelIter.prototype.storage_get = function(key) {
