@@ -100,11 +100,11 @@ class MandelIter
       julia_draw_local:         new UI.BoolOption('julia_draw_local', false)
       julia_more_when_paused:   new UI.BoolOption('julia_more_when_paused', true)
       julia_local_margin:       new UI.IntOption('julia_local_margin', 80)
-      julia_local_max_size:     new UI.IntOption('julia_local_max_size', 750)
+      julia_local_max_size:     new UI.IntOption('julia_local_max_size', 650)
       julia_local_opacity:      new UI.PercentOption('julia_local_opacity', 0.6)
       julia_local_pixel_size:   new UI.IntOption('julia_local_pixel_size', 3)
-      julia_max_iter_paused:    new UI.IntOption('julia_max_iter_paused', 250)
-      julia_max_iterations:     new UI.IntOption('julia_max_iterations', 100)
+      julia_max_iter_paused:    new UI.IntOption('julia_max_iter_paused', 350)
+      julia_max_iterations:     new UI.IntOption('julia_max_iterations', 80)
       julia_antialias:          new UI.SelectOption('julia_antialias');
       mandel_antialias:         new UI.SelectOption('mandel_antialias');
       mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 120)
@@ -1184,10 +1184,11 @@ class MandelIter
       c:            null
       pixelsize:    @option.julia_local_pixel_size.value
       opacity:      Math.ceil(@option.julia_local_opacity.value * 256)
-      do_antialias: false
-      aamult:       1
-      aastep:       1.0
-      highres:      @pause_mode and @option.julia_more_when_paused.value
+      do_antialias:  false
+      do_early_stop: false
+      aamult:        1
+      aastep:        1.0
+      highres:       @pause_mode and @option.julia_more_when_paused.value
 
     @old_local_julia =
       x: 0
@@ -1203,13 +1204,14 @@ class MandelIter
     @old_local_julia.width  = @local_julia.height
     @old_local_julia.height = @local_julia.height
 
-    @ljopt.c            = c
-    @ljopt.pixelsize    = @option.julia_local_pixel_size.value
-    @ljopt.opacity      = Math.ceil(@option.julia_local_opacity.value * 256)
-    @ljopt.do_antialias = false
-    @ljopt.aamult       = 1
-    @ljopt.aastep       = 1.0
-    @ljopt.highres      = @pause_mode and @option.julia_more_when_paused.value
+    @ljopt.c             = c
+    @ljopt.pixelsize     = @option.julia_local_pixel_size.value
+    @ljopt.opacity       = Math.ceil(@option.julia_local_opacity.value * 256)
+    @ljopt.do_antialias  = false
+    @ljopt.aamult        = 1
+    @ljopt.aastep        = 1.0
+    @ljopt.highres       = @pause_mode and @option.julia_more_when_paused.value
+    @ljopt.do_early_stop = @ljopt.highres
 
     @julia_maxiter = @option.julia_max_iterations.value
 
@@ -1294,14 +1296,15 @@ class MandelIter
             @colorize_pixel(val, pos4x)
             @current_image.data[pos4x + 3] = @ljopt.opacity
 
-      if (y % 10) == 0
-        if (performance.now() - start_time) > @julia_max_rendertime
-          @ljopt.ystart = y + @ljopt.pixelsize
-          @schedule_ui_draw()
-          @set_status('rendering')
-          @set_rendering_note("#{y} / #{@local_julia.height} Julia lines")
-          @set_rendering_note_progress(y/@local_julia.height)
-          return
+      if @ljopt.do_early_stop
+        if (y % 10) == 0
+          if (performance.now() - start_time) > @julia_max_rendertime
+            @ljopt.ystart = y + @ljopt.pixelsize
+            @schedule_ui_draw()
+            @set_status('rendering')
+            @set_rendering_note("#{y} / #{@local_julia.height} Julia lines")
+            @set_rendering_note_progress(y/@local_julia.height)
+            return
 
     if (@old_local_julia.width > 0) and (@old_local_julia.height > 0)
       @graph_julia_ctx.clearRect(@old_local_julia.x, @old_local_julia.y, @old_local_julia.width, @old_local_julia.height)

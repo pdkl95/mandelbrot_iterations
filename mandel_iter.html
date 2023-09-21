@@ -969,7 +969,7 @@ td.name[contenteditable=true]:focus {
               <th class="tt ttright" data-title="Maximum iterations when rendering the Julia overlay. WARNING: Higher values significantly increase Julia rendering time!">Max Iterations</th>
               <td class="slider">
                 <label for="julia_max_iterations" id="julia_max_iterations_label">120</label>
-                <input id="julia_max_iterations" type="range" value="100" min="20" max="250" step="10" autocomplete="off">
+                <input id="julia_max_iterations" type="range" value="80" min="20" max="250" step="10" autocomplete="off">
               </td>
             </tr>
             <tr>
@@ -986,7 +986,7 @@ td.name[contenteditable=true]:focus {
               <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space) (anything over 500 is probably beyond the precision of Javascript double precision floating point math)">Max Iter When Paused</th>
               <td class="slider">
                 <label for="julia_max_iter_paused" id="julia_max_iter_paused_label">200</label>
-                <input id="julia_max_iter_paused" type="range" value="250" min="50" max="2500" step="50" autocomplete="off">
+                <input id="julia_max_iter_paused" type="range" value="350" min="50" max="2500" step="50" autocomplete="off">
               </td>
             </tr>
             <tr>
@@ -1018,7 +1018,7 @@ td.name[contenteditable=true]:focus {
             <tr>
               <th class="tt ttright" data-title="Maximum size (in pixels) of the height & width of the Julia rendering box.">Max Julia Size</th>
               <td>
-                <input id="julia_local_max_size" type="number" value="750" min="50" max="1000" step="50" autocomplete="off">
+                <input id="julia_local_max_size" type="number" value="650" min="50" max="1000" step="50" autocomplete="off">
               </td>
             </tr>
           </table>
@@ -2113,11 +2113,11 @@ td.name[contenteditable=true]:focus {
         julia_draw_local: new UI.BoolOption('julia_draw_local', false),
         julia_more_when_paused: new UI.BoolOption('julia_more_when_paused', true),
         julia_local_margin: new UI.IntOption('julia_local_margin', 80),
-        julia_local_max_size: new UI.IntOption('julia_local_max_size', 750),
+        julia_local_max_size: new UI.IntOption('julia_local_max_size', 650),
         julia_local_opacity: new UI.PercentOption('julia_local_opacity', 0.6),
         julia_local_pixel_size: new UI.IntOption('julia_local_pixel_size', 3),
-        julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 250),
-        julia_max_iterations: new UI.IntOption('julia_max_iterations', 100),
+        julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 350),
+        julia_max_iterations: new UI.IntOption('julia_max_iterations', 80),
         julia_antialias: new UI.SelectOption('julia_antialias'),
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
@@ -3397,6 +3397,7 @@ td.name[contenteditable=true]:focus {
         pixelsize: this.option.julia_local_pixel_size.value,
         opacity: Math.ceil(this.option.julia_local_opacity.value * 256),
         do_antialias: false,
+        do_early_stop: false,
         aamult: 1,
         aastep: 1.0,
         highres: this.pause_mode && this.option.julia_more_when_paused.value
@@ -3425,6 +3426,7 @@ td.name[contenteditable=true]:focus {
       this.ljopt.aamult = 1;
       this.ljopt.aastep = 1.0;
       this.ljopt.highres = this.pause_mode && this.option.julia_more_when_paused.value;
+      this.ljopt.do_early_stop = this.ljopt.highres;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       if (this.defer_highres_frames > 0) {
         this.defer_highres_frames = this.defer_highres_frames - 1;
@@ -3522,14 +3524,16 @@ td.name[contenteditable=true]:focus {
             }
           }
         }
-        if ((y % 10) === 0) {
-          if ((performance.now() - start_time) > this.julia_max_rendertime) {
-            this.ljopt.ystart = y + this.ljopt.pixelsize;
-            this.schedule_ui_draw();
-            this.set_status('rendering');
-            this.set_rendering_note(y + " / " + this.local_julia.height + " Julia lines");
-            this.set_rendering_note_progress(y / this.local_julia.height);
-            return;
+        if (this.ljopt.do_early_stop) {
+          if ((y % 10) === 0) {
+            if ((performance.now() - start_time) > this.julia_max_rendertime) {
+              this.ljopt.ystart = y + this.ljopt.pixelsize;
+              this.schedule_ui_draw();
+              this.set_status('rendering');
+              this.set_rendering_note(y + " / " + this.local_julia.height + " Julia lines");
+              this.set_rendering_note_progress(y / this.local_julia.height);
+              return;
+            }
           }
         }
       }

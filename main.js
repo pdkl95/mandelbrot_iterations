@@ -132,11 +132,11 @@
         julia_draw_local: new UI.BoolOption('julia_draw_local', false),
         julia_more_when_paused: new UI.BoolOption('julia_more_when_paused', true),
         julia_local_margin: new UI.IntOption('julia_local_margin', 80),
-        julia_local_max_size: new UI.IntOption('julia_local_max_size', 750),
+        julia_local_max_size: new UI.IntOption('julia_local_max_size', 650),
         julia_local_opacity: new UI.PercentOption('julia_local_opacity', 0.6),
         julia_local_pixel_size: new UI.IntOption('julia_local_pixel_size', 3),
-        julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 250),
-        julia_max_iterations: new UI.IntOption('julia_max_iterations', 100),
+        julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 350),
+        julia_max_iterations: new UI.IntOption('julia_max_iterations', 80),
         julia_antialias: new UI.SelectOption('julia_antialias'),
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
@@ -1416,6 +1416,7 @@
         pixelsize: this.option.julia_local_pixel_size.value,
         opacity: Math.ceil(this.option.julia_local_opacity.value * 256),
         do_antialias: false,
+        do_early_stop: false,
         aamult: 1,
         aastep: 1.0,
         highres: this.pause_mode && this.option.julia_more_when_paused.value
@@ -1444,6 +1445,7 @@
       this.ljopt.aamult = 1;
       this.ljopt.aastep = 1.0;
       this.ljopt.highres = this.pause_mode && this.option.julia_more_when_paused.value;
+      this.ljopt.do_early_stop = this.ljopt.highres;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       if (this.defer_highres_frames > 0) {
         this.defer_highres_frames = this.defer_highres_frames - 1;
@@ -1541,14 +1543,16 @@
             }
           }
         }
-        if ((y % 10) === 0) {
-          if ((performance.now() - start_time) > this.julia_max_rendertime) {
-            this.ljopt.ystart = y + this.ljopt.pixelsize;
-            this.schedule_ui_draw();
-            this.set_status('rendering');
-            this.set_rendering_note(y + " / " + this.local_julia.height + " Julia lines");
-            this.set_rendering_note_progress(y / this.local_julia.height);
-            return;
+        if (this.ljopt.do_early_stop) {
+          if ((y % 10) === 0) {
+            if ((performance.now() - start_time) > this.julia_max_rendertime) {
+              this.ljopt.ystart = y + this.ljopt.pixelsize;
+              this.schedule_ui_draw();
+              this.set_status('rendering');
+              this.set_rendering_note(y + " / " + this.local_julia.height + " Julia lines");
+              this.set_rendering_note_progress(y / this.local_julia.height);
+              return;
+            }
           }
         }
       }

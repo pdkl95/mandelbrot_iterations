@@ -240,7 +240,7 @@ undivert(`style.css')
               <th class="tt ttright" data-title="Maximum iterations when rendering the Julia overlay. WARNING: Higher values significantly increase Julia rendering time!">Max Iterations</th>
               <td class="slider">
                 <label for="julia_max_iterations" id="julia_max_iterations_label">120</label>
-                <input id="julia_max_iterations" type="range" value="100" min="20" max="250" step="10" autocomplete="off">
+                <input id="julia_max_iterations" type="range" value="80" min="20" max="250" step="10" autocomplete="off">
               </td>
             </tr>
             <tr>
@@ -257,7 +257,7 @@ undivert(`style.css')
               <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space) (anything over 500 is probably beyond the precision of Javascript double precision floating point math)">Max Iter When Paused</th>
               <td class="slider">
                 <label for="julia_max_iter_paused" id="julia_max_iter_paused_label">200</label>
-                <input id="julia_max_iter_paused" type="range" value="250" min="50" max="2500" step="50" autocomplete="off">
+                <input id="julia_max_iter_paused" type="range" value="350" min="50" max="2500" step="50" autocomplete="off">
               </td>
             </tr>
             <tr>
@@ -289,7 +289,7 @@ undivert(`style.css')
             <tr>
               <th class="tt ttright" data-title="Maximum size (in pixels) of the height & width of the Julia rendering box.">Max Julia Size</th>
               <td>
-                <input id="julia_local_max_size" type="number" value="750" min="50" max="1000" step="50" autocomplete="off">
+                <input id="julia_local_max_size" type="number" value="650" min="50" max="1000" step="50" autocomplete="off">
               </td>
             </tr>
           </table>
