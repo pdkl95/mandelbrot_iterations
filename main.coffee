@@ -109,9 +109,9 @@ class MandelIter
       julia_antialias:          new UI.SelectOption('julia_antialias');
       mandel_antialias:         new UI.SelectOption('mandel_antialias');
       mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 120)
-      mandel_color_scale_r:     new UI.FloatOption('mandel_color_scale_r', @colorize_themes[@default_mandel_theme][0])
-      mandel_color_scale_g:     new UI.FloatOption('mandel_color_scale_g', @colorize_themes[@default_mandel_theme][1])
-      mandel_color_scale_b:     new UI.FloatOption('mandel_color_scale_b', @colorize_themes[@default_mandel_theme][2])
+      #mandel_color_scale_r:     new UI.FloatOption('mandel_color_scale_r', @colorize_themes[@default_mandel_theme][0])
+      #mandel_color_scale_g:     new UI.FloatOption('mandel_color_scale_g', @colorize_themes[@default_mandel_theme][1])
+      #mandel_color_scale_b:     new UI.FloatOption('mandel_color_scale_b', @colorize_themes[@default_mandel_theme][2])
       highlight_group:          new UI.SelectOption('highlight_group');
 
     @option.julia_draw_local.persist = false
@@ -134,14 +134,14 @@ class MandelIter
 
     @option.julia_local_pixel_size.set_label_text_formater (value) -> "#{value}x"
 
-    format_color_scale = (value) ->
-      parseFloat(value).toFixed(2)
-    @option.mandel_color_scale_r.set_label_text_formater(format_color_scale)
-    @option.mandel_color_scale_g.set_label_text_formater(format_color_scale)
-    @option.mandel_color_scale_b.set_label_text_formater(format_color_scale)
-    @option.mandel_color_scale_r.register_callback on_change: @on_mandel_color_scale_change
-    @option.mandel_color_scale_g.register_callback on_change: @on_mandel_color_scale_change
-    @option.mandel_color_scale_b.register_callback on_change: @on_mandel_color_scale_change
+    #format_color_scale = (value) ->
+    #  parseFloat(value).toFixed(2)
+    # @option.mandel_color_scale_r.set_label_text_formater(format_color_scale)
+    # @option.mandel_color_scale_g.set_label_text_formater(format_color_scale)
+    # @option.mandel_color_scale_b.set_label_text_formater(format_color_scale)
+    # @option.mandel_color_scale_r.register_callback on_change: @on_mandel_color_scale_change
+    # @option.mandel_color_scale_g.register_callback on_change: @on_mandel_color_scale_change
+    # @option.mandel_color_scale_b.register_callback on_change: @on_mandel_color_scale_change
 
     @option.highlight_group.register_callback on_change: @on_highlight_group_changed
 
@@ -345,16 +345,16 @@ class MandelIter
       opt.reset()
 
   current_mandel_theme: ->
-    if @option.mandel_color_scale_r? and @option.mandel_color_scale_g? and @option.mandel_color_scale_r?
-      [ @option.mandel_color_scale_r.value, @option.mandel_color_scale_g.value, @option.mandel_color_scale_b.value ]
-    else
-      @colorize_themes[@default_mandel_theme]
+    # if @option.mandel_color_scale_r? and @option.mandel_color_scale_g? and @option.mandel_color_scale_r?
+    #   [ @option.mandel_color_scale_r.value, @option.mandel_color_scale_g.value, @option.mandel_color_scale_b.value ]
+    # else
+    @colorize_themes[@default_mandel_theme]
 
   current_julia_theme: ->
     @colorize_themes[@default_julia_theme]
 
-  on_mandel_color_scale_change: =>
-    @repaint_mandelbrot()
+  #on_mandel_color_scale_change: =>
+  #  @repaint_mandelbrot()
 
   complex_to_string: (z) ->
     rstr = @fmtfloat.format(z.r)

@@ -41,14 +41,13 @@
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
-      this.on_mandel_color_scale_change = bind(this.on_mandel_color_scale_change, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
       this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, format_color_scale, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
+      var fmtfloatopts, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
       this.colorize_themes = {
@@ -141,9 +140,6 @@
         julia_antialias: new UI.SelectOption('julia_antialias'),
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
-        mandel_color_scale_r: new UI.FloatOption('mandel_color_scale_r', this.colorize_themes[this.default_mandel_theme][0]),
-        mandel_color_scale_g: new UI.FloatOption('mandel_color_scale_g', this.colorize_themes[this.default_mandel_theme][1]),
-        mandel_color_scale_b: new UI.FloatOption('mandel_color_scale_b', this.colorize_themes[this.default_mandel_theme][2]),
         highlight_group: new UI.SelectOption('highlight_group')
       };
       this.option.julia_draw_local.persist = false;
@@ -178,21 +174,6 @@
       });
       this.option.julia_local_pixel_size.set_label_text_formater(function(value) {
         return value + "x";
-      });
-      format_color_scale = function(value) {
-        return parseFloat(value).toFixed(2);
-      };
-      this.option.mandel_color_scale_r.set_label_text_formater(format_color_scale);
-      this.option.mandel_color_scale_g.set_label_text_formater(format_color_scale);
-      this.option.mandel_color_scale_b.set_label_text_formater(format_color_scale);
-      this.option.mandel_color_scale_r.register_callback({
-        on_change: this.on_mandel_color_scale_change
-      });
-      this.option.mandel_color_scale_g.register_callback({
-        on_change: this.on_mandel_color_scale_change
-      });
-      this.option.mandel_color_scale_b.register_callback({
-        on_change: this.on_mandel_color_scale_change
       });
       this.option.highlight_group.register_callback({
         on_change: this.on_highlight_group_changed
@@ -431,19 +412,11 @@
     };
 
     MandelIter.prototype.current_mandel_theme = function() {
-      if ((this.option.mandel_color_scale_r != null) && (this.option.mandel_color_scale_g != null) && (this.option.mandel_color_scale_r != null)) {
-        return [this.option.mandel_color_scale_r.value, this.option.mandel_color_scale_g.value, this.option.mandel_color_scale_b.value];
-      } else {
-        return this.colorize_themes[this.default_mandel_theme];
-      }
+      return this.colorize_themes[this.default_mandel_theme];
     };
 
     MandelIter.prototype.current_julia_theme = function() {
       return this.colorize_themes[this.default_julia_theme];
-    };
-
-    MandelIter.prototype.on_mandel_color_scale_change = function() {
-      return this.repaint_mandelbrot();
     };
 
     MandelIter.prototype.complex_to_string = function(z) {

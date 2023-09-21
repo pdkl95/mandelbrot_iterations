@@ -319,33 +319,33 @@ undivert(`style.css')
                 </select>
               </td>
             </tr>
-            <tr>
-              <th>
-                Color Scale <span class="textcolor red">Red</span>
-              </th>
-              <td class="slider color red">
-                <label for="mandel_color_scale_r" id="mandel_color_scale_r_label"></label>
-                <input id="mandel_color_scale_r" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
-              </td>
-            </tr>
-            <tr>
-              <th>
-                Color Scale <span class="textcolor green">Green</span>
-              </th>
-              <td class="slider color green">
-                <label for="mandel_color_scale_g" id="mandel_color_scale_g_label"></label>
-                <input id="mandel_color_scale_g" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
-              </td>
-            </tr>
-            <tr>
-              <th>
-                Color Scale <span class="textcolor blue">Blue</span>
-              </th>
-              <td class="slider color blue">
-                <label for="mandel_color_scale_b" id="mandel_color_scale_b_label"></label>
-                <input id="mandel_color_scale_b" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
-              </td>
-            </tr>
+            <!-- <tr> -->
+            <!--   <th> -->
+            <!--     Color Scale <span class="textcolor red">Red</span> -->
+            <!--   </th> -->
+            <!--   <td class="slider color red"> -->
+            <!--     <label for="mandel_color_scale_r" id="mandel_color_scale_r_label"></label> -->
+            <!--     <input id="mandel_color_scale_r" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
+            <!--   </td> -->
+            <!-- </tr> -->
+            <!-- <tr> -->
+            <!--   <th> -->
+            <!--     Color Scale <span class="textcolor green">Green</span> -->
+            <!--   </th> -->
+            <!--   <td class="slider color green"> -->
+            <!--     <label for="mandel_color_scale_g" id="mandel_color_scale_g_label"></label> -->
+            <!--     <input id="mandel_color_scale_g" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
+            <!--   </td> -->
+            <!-- </tr> -->
+            <!-- <tr> -->
+            <!--   <th> -->
+            <!--     Color Scale <span class="textcolor blue">Blue</span> -->
+            <!--   </th> -->
+            <!--   <td class="slider color blue"> -->
+            <!--     <label for="mandel_color_scale_b" id="mandel_color_scale_b_label"></label> -->
+            <!--     <input id="mandel_color_scale_b" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
+            <!--   </td> -->
+            <!-- </tr> -->
           </table>
         </div>
 
