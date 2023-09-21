@@ -894,19 +894,31 @@ td.name[contenteditable=true]:focus {
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Draw Lines</th>
               <td>
-                <input id="orbit_draw_lines" type="checkbox" checked="checked">
+                <input id="orbit_draw_lines" type="checkbox" checked="checked" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Draw Points</th>
               <td>
-                <input id="orbit_draw_points" type="checkbox" checked="checked">
+                <input id="orbit_draw_points" type="checkbox" checked="checked" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Point Size</th>
               <td>
-                <input id="orbit_point_size" type="number" min="0" max="20" step="0.25" value="2">
+                <input id="orbit_point_size" type="number" min="0" max="20" step="0.25" value="2" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Skip the first few results when drawing orbits.">Skip Initial<br>Iterations</th>
+              <td>
+                <input id="orbit_skip_initial_results" type="checkbox" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="The number of iterations to skip when Skip Initial Iterations is active.">Skip Size</th>
+              <td>
+                <input id="orbit_skip_initial_num" type="number" min="0" max="100" step="10" value="20" autocomplete="off">
               </td>
             </tr>
           </table>
@@ -953,6 +965,12 @@ td.name[contenteditable=true]:focus {
                 <input id="show_tooltips" type="checkbox" checked="checked">
               </td>
             </tr>
+            <tr>
+              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br>Saved Locations</th>
+              <td>
+                <input id="confirm_remove_saved_loc" type="checkbox" checked="checked">
+              </td>
+            </tr>
           </table>
         </div>
 
@@ -969,7 +987,7 @@ td.name[contenteditable=true]:focus {
               <th class="tt ttright" data-title="Maximum iterations when rendering the Julia overlay. WARNING: Higher values significantly increase Julia rendering time!">Max Iterations</th>
               <td class="slider">
                 <label for="julia_max_iterations" id="julia_max_iterations_label">120</label>
-                <input id="julia_max_iterations" type="range" value="100" min="20" max="250" step="10" autocomplete="off">
+                <input id="julia_max_iterations" type="range" value="80" min="20" max="250" step="10" autocomplete="off">
               </td>
             </tr>
             <tr>
@@ -986,7 +1004,7 @@ td.name[contenteditable=true]:focus {
               <th class="tt ttright" data-title="Alternative maximum iterations to use when paused (by clicking or pressing space) (anything over 500 is probably beyond the precision of Javascript double precision floating point math)">Max Iter When Paused</th>
               <td class="slider">
                 <label for="julia_max_iter_paused" id="julia_max_iter_paused_label">200</label>
-                <input id="julia_max_iter_paused" type="range" value="250" min="50" max="2500" step="50" autocomplete="off">
+                <input id="julia_max_iter_paused" type="range" value="350" min="50" max="2500" step="50" autocomplete="off">
               </td>
             </tr>
             <tr>
@@ -1018,7 +1036,7 @@ td.name[contenteditable=true]:focus {
             <tr>
               <th class="tt ttright" data-title="Maximum size (in pixels) of the height & width of the Julia rendering box.">Max Julia Size</th>
               <td>
-                <input id="julia_local_max_size" type="number" value="750" min="50" max="1000" step="50" autocomplete="off">
+                <input id="julia_local_max_size" type="number" value="650" min="50" max="1000" step="50" autocomplete="off">
               </td>
             </tr>
           </table>
@@ -1042,33 +1060,33 @@ td.name[contenteditable=true]:focus {
                 </select>
               </td>
             </tr>
-            <tr>
-              <th>
-                Color Scale <span class="textcolor red">Red</span>
-              </th>
-              <td class="slider color red">
-                <label for="mandel_color_scale_r" id="mandel_color_scale_r_label"></label>
-                <input id="mandel_color_scale_r" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
-              </td>
-            </tr>
-            <tr>
-              <th>
-                Color Scale <span class="textcolor green">Green</span>
-              </th>
-              <td class="slider color green">
-                <label for="mandel_color_scale_g" id="mandel_color_scale_g_label"></label>
-                <input id="mandel_color_scale_g" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
-              </td>
-            </tr>
-            <tr>
-              <th>
-                Color Scale <span class="textcolor blue">Blue</span>
-              </th>
-              <td class="slider color blue">
-                <label for="mandel_color_scale_b" id="mandel_color_scale_b_label"></label>
-                <input id="mandel_color_scale_b" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off">
-              </td>
-            </tr>
+            <!-- <tr> -->
+            <!--   <th> -->
+            <!--     Color Scale <span class="textcolor red">Red</span> -->
+            <!--   </th> -->
+            <!--   <td class="slider color red"> -->
+            <!--     <label for="mandel_color_scale_r" id="mandel_color_scale_r_label"></label> -->
+            <!--     <input id="mandel_color_scale_r" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
+            <!--   </td> -->
+            <!-- </tr> -->
+            <!-- <tr> -->
+            <!--   <th> -->
+            <!--     Color Scale <span class="textcolor green">Green</span> -->
+            <!--   </th> -->
+            <!--   <td class="slider color green"> -->
+            <!--     <label for="mandel_color_scale_g" id="mandel_color_scale_g_label"></label> -->
+            <!--     <input id="mandel_color_scale_g" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
+            <!--   </td> -->
+            <!-- </tr> -->
+            <!-- <tr> -->
+            <!--   <th> -->
+            <!--     Color Scale <span class="textcolor blue">Blue</span> -->
+            <!--   </th> -->
+            <!--   <td class="slider color blue"> -->
+            <!--     <label for="mandel_color_scale_b" id="mandel_color_scale_b_label"></label> -->
+            <!--     <input id="mandel_color_scale_b" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
+            <!--   </td> -->
+            <!-- </tr> -->
           </table>
         </div>
 
@@ -1154,9 +1172,13 @@ td.name[contenteditable=true]:focus {
       } else {
         this.set(this["default"]);
       }
-      this.el.addEventListener('change', this.on_change);
-      this.el.addEventListener('input', this.on_input);
+      this.setup_listeners();
     }
+
+    Option.prototype.setup_listeners = function() {
+      this.el.addEventListener('change', this.on_change);
+      return this.el.addEventListener('input', this.on_input);
+    };
 
     Option.prototype.detect_default_value = function() {
       return this.get();
@@ -1199,8 +1221,8 @@ td.name[contenteditable=true]:focus {
       if (this.label_el != null) {
         this.label_el.innerText = this.label_text();
       }
-      if (this.persist && this.value !== this["default"]) {
-        return APP.storage_set(this.storage_id, this.value);
+      if (this.persist) {
+        return APP.storage_set(this.storage_id, this.value, this["default"]);
       }
     };
 
@@ -1414,6 +1436,10 @@ td.name[contenteditable=true]:focus {
       return SelectOption.__super__.constructor.apply(this, arguments);
     }
 
+    SelectOption.prototype.setup_listeners = function() {
+      return this.el.addEventListener('change', this.on_change);
+    };
+
     SelectOption.prototype.get = function(element) {
       if (element == null) {
         element = this.el;
@@ -1575,6 +1601,10 @@ td.name[contenteditable=true]:focus {
       this.serial = Highlight.Item.next_serialnum();
       this.id = "hl-item-" + this.serial;
       Highlight.items[this.id] = this;
+      this.z = {
+        r: this.r,
+        i: this.i
+      };
     }
 
     return Item;
@@ -1678,6 +1708,11 @@ td.name[contenteditable=true]:focus {
       if (row != null) {
         loc = Highlight.saved_locations[row.id];
         if (loc != null) {
+          if (APP.option.confirm_remove_saved_loc.value) {
+            if (!window.confirm("Remove saved location \"" + loc.name + "\" at " + (APP.complex_to_string(loc.z)) + "?")) {
+              return;
+            }
+          }
           return loc.remove();
         }
       }
@@ -2014,14 +2049,13 @@ td.name[contenteditable=true]:focus {
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
-      this.on_mandel_color_scale_change = bind(this.on_mandel_color_scale_change, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
       this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, format_color_scale, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
+      var fmtfloatopts, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
       this.colorize_themes = {
@@ -2091,6 +2125,7 @@ td.name[contenteditable=true]:focus {
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
+        confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
         set_c_real: new UI.FloatOption('set_c_real'),
         set_c_imag: new UI.FloatOption('set_c_imag'),
         keyboard_step: new UI.FloatOption('keyboard_step', 0.01),
@@ -2102,22 +2137,27 @@ td.name[contenteditable=true]:focus {
         orbit_draw_lines: new UI.BoolOption('orbit_draw_lines', true),
         orbit_draw_points: new UI.BoolOption('orbit_draw_points', true),
         orbit_point_size: new UI.FloatOption('orbit_point_size', 2),
+        orbit_skip_initial: new UI.BoolOption('orbit_skip_initial_results', false),
+        orbit_skip_num: new UI.IntOption('orbit_skip_initial_num', 20),
         julia_draw_local: new UI.BoolOption('julia_draw_local', false),
         julia_more_when_paused: new UI.BoolOption('julia_more_when_paused', true),
         julia_local_margin: new UI.IntOption('julia_local_margin', 80),
-        julia_local_max_size: new UI.IntOption('julia_local_max_size', 750),
+        julia_local_max_size: new UI.IntOption('julia_local_max_size', 650),
         julia_local_opacity: new UI.PercentOption('julia_local_opacity', 0.6),
         julia_local_pixel_size: new UI.IntOption('julia_local_pixel_size', 3),
-        julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 250),
-        julia_max_iterations: new UI.IntOption('julia_max_iterations', 100),
+        julia_max_iter_paused: new UI.IntOption('julia_max_iter_paused', 350),
+        julia_max_iterations: new UI.IntOption('julia_max_iterations', 80),
         julia_antialias: new UI.SelectOption('julia_antialias'),
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
-        mandel_color_scale_r: new UI.FloatOption('mandel_color_scale_r', this.colorize_themes[this.default_mandel_theme][0]),
-        mandel_color_scale_g: new UI.FloatOption('mandel_color_scale_g', this.colorize_themes[this.default_mandel_theme][1]),
-        mandel_color_scale_b: new UI.FloatOption('mandel_color_scale_b', this.colorize_themes[this.default_mandel_theme][2]),
         highlight_group: new UI.SelectOption('highlight_group')
       };
+      this.option.orbit_skip_initial.register_callback({
+        on_change: this.schedule_ui_draw
+      });
+      this.option.orbit_skip_num.register_callback({
+        on_change: this.schedule_ui_draw
+      });
       this.option.julia_draw_local.persist = false;
       this.option.julia_draw_local.register_callback({
         on_true: this.on_julia_draw_local_true,
@@ -2150,21 +2190,6 @@ td.name[contenteditable=true]:focus {
       });
       this.option.julia_local_pixel_size.set_label_text_formater(function(value) {
         return value + "x";
-      });
-      format_color_scale = function(value) {
-        return parseFloat(value).toFixed(2);
-      };
-      this.option.mandel_color_scale_r.set_label_text_formater(format_color_scale);
-      this.option.mandel_color_scale_g.set_label_text_formater(format_color_scale);
-      this.option.mandel_color_scale_b.set_label_text_formater(format_color_scale);
-      this.option.mandel_color_scale_r.register_callback({
-        on_change: this.on_mandel_color_scale_change
-      });
-      this.option.mandel_color_scale_g.register_callback({
-        on_change: this.on_mandel_color_scale_change
-      });
-      this.option.mandel_color_scale_b.register_callback({
-        on_change: this.on_mandel_color_scale_change
       });
       this.option.highlight_group.register_callback({
         on_change: this.on_highlight_group_changed
@@ -2276,7 +2301,6 @@ td.name[contenteditable=true]:focus {
           return;
         }
       }
-      console.log(event.target);
       accel = 1.0;
       if (event.shiftKey) {
         accel = this.shift_step_accel;
@@ -2359,8 +2383,15 @@ td.name[contenteditable=true]:focus {
       return this.constructor.storage_prefix + "-" + key;
     };
 
-    MandelIter.prototype.storage_set = function(key, value) {
-      return localStorage.setItem(this.storage_key(key), value);
+    MandelIter.prototype.storage_set = function(key, value, default_value) {
+      if (default_value == null) {
+        default_value = null;
+      }
+      if ((default_value != null) && (default_value === value)) {
+        return this.storage_remove(key);
+      } else {
+        return localStorage.setItem(this.storage_key(key), value);
+      }
     };
 
     MandelIter.prototype.storage_get = function(key) {
@@ -2397,19 +2428,11 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.current_mandel_theme = function() {
-      if ((this.option.mandel_color_scale_r != null) && (this.option.mandel_color_scale_g != null) && (this.option.mandel_color_scale_r != null)) {
-        return [this.option.mandel_color_scale_r.value, this.option.mandel_color_scale_g.value, this.option.mandel_color_scale_b.value];
-      } else {
-        return this.colorize_themes[this.default_mandel_theme];
-      }
+      return this.colorize_themes[this.default_mandel_theme];
     };
 
     MandelIter.prototype.current_julia_theme = function() {
       return this.colorize_themes[this.default_julia_theme];
-    };
-
-    MandelIter.prototype.on_mandel_color_scale_change = function() {
-      return this.repaint_mandelbrot();
     };
 
     MandelIter.prototype.complex_to_string = function(z) {
@@ -2952,10 +2975,13 @@ td.name[contenteditable=true]:focus {
       return [n, d <= 4];
     };
 
-    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
+    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield, skip) {
       var ci, cr, d, n, pi, pr, results, zi, zr;
       if (max_yield == null) {
         max_yield = this.mandel_maxiter;
+      }
+      if (skip == null) {
+        skip = 0;
       }
       cr = c.r;
       ci = c.i;
@@ -2963,13 +2989,17 @@ td.name[contenteditable=true]:focus {
       d = 0;
       zr = 0;
       zi = 0;
-      yield ({
-        z: {
-          r: zr,
-          i: zi
-        },
-        n: n
-      });
+      if (skip === 0) {
+        yield ({
+          z: {
+            r: zr,
+            i: zi
+          },
+          n: n
+        });
+      } else {
+        max_yield += skip;
+      }
       results = [];
       while ((d <= 4) && (n < max_yield)) {
         pr = (zr * zr) - (zi * zi);
@@ -2978,13 +3008,17 @@ td.name[contenteditable=true]:focus {
         zi = pi + ci;
         d = (zr * zr) + (zi * zi);
         n += 1;
-        results.push((yield {
-          z: {
-            r: zr,
-            i: zi
-          },
-          n: n
-        }));
+        if (skip > 0) {
+          results.push(skip -= 1);
+        } else {
+          results.push((yield {
+            z: {
+              r: zr,
+              i: zi
+            },
+            n: n
+          }));
+        }
       }
       return results;
     };
@@ -3169,7 +3203,7 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
-      var draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, step;
+      var do_skip, draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, skip, skip_first_line, step;
       mx = c.x;
       my = c.y;
       pos = this.canvas_to_complex(mx, my);
@@ -3182,7 +3216,14 @@ td.name[contenteditable=true]:focus {
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.35)';
       this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.6)';
-      if (draw_lines) {
+      do_skip = this.option.orbit_skip_initial.value;
+      skip = 0;
+      skip_first_line = false;
+      if (do_skip) {
+        skip = this.option.orbit_skip_num.value;
+        skip_first_line = true;
+      }
+      if (draw_lines && !do_skip) {
         this.graph_ui_ctx.beginPath();
         this.graph_ui_ctx.moveTo(mx, my);
       }
@@ -3193,13 +3234,17 @@ td.name[contenteditable=true]:focus {
           this.orbit_bb.min_y = this.graph_height;
           this.orbit_bb.max_y = 0;
         }
-        ref = this.mandelbrot_orbit(pos, this.option.orbit_draw_length.value);
+        ref = this.mandelbrot_orbit(pos, this.option.orbit_draw_length.value, skip);
         for (step of ref) {
           if (step.n > 0) {
             p = this.complex_to_canvas(step.z);
             if (draw_lines) {
-              this.graph_ui_ctx.lineTo(p.x, p.y);
-              this.graph_ui_ctx.stroke();
+              if (skip_first_line) {
+                skip_first_line = false;
+              } else {
+                this.graph_ui_ctx.lineTo(p.x, p.y);
+                this.graph_ui_ctx.stroke();
+              }
             }
             if (draw_points) {
               this.graph_ui_ctx.beginPath();
@@ -3383,6 +3428,7 @@ td.name[contenteditable=true]:focus {
         pixelsize: this.option.julia_local_pixel_size.value,
         opacity: Math.ceil(this.option.julia_local_opacity.value * 256),
         do_antialias: false,
+        do_early_stop: false,
         aamult: 1,
         aastep: 1.0,
         highres: this.pause_mode && this.option.julia_more_when_paused.value
@@ -3411,6 +3457,7 @@ td.name[contenteditable=true]:focus {
       this.ljopt.aamult = 1;
       this.ljopt.aastep = 1.0;
       this.ljopt.highres = this.pause_mode && this.option.julia_more_when_paused.value;
+      this.ljopt.do_early_stop = this.ljopt.highres;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       if (this.defer_highres_frames > 0) {
         this.defer_highres_frames = this.defer_highres_frames - 1;
@@ -3508,14 +3555,16 @@ td.name[contenteditable=true]:focus {
             }
           }
         }
-        if ((y % 10) === 0) {
-          if ((performance.now() - start_time) > this.julia_max_rendertime) {
-            this.ljopt.ystart = y + this.ljopt.pixelsize;
-            this.schedule_ui_draw();
-            this.set_status('rendering');
-            this.set_rendering_note(y + " / " + this.local_julia.height + " Julia lines");
-            this.set_rendering_note_progress(y / this.local_julia.height);
-            return;
+        if (this.ljopt.do_early_stop) {
+          if ((y % 10) === 0) {
+            if ((performance.now() - start_time) > this.julia_max_rendertime) {
+              this.ljopt.ystart = y + this.ljopt.pixelsize;
+              this.schedule_ui_draw();
+              this.set_status('rendering');
+              this.set_rendering_note(y + " / " + this.local_julia.height + " Julia lines");
+              this.set_rendering_note_progress(y / this.local_julia.height);
+              return;
+            }
           }
         }
       }
