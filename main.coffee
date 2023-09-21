@@ -98,6 +98,8 @@ class MandelIter
       orbit_draw_lines:         new UI.BoolOption('orbit_draw_lines', true)
       orbit_draw_points:        new UI.BoolOption('orbit_draw_points', true)
       orbit_point_size:         new UI.FloatOption('orbit_point_size', 2)
+      orbit_skip_initial:       new UI.BoolOption('orbit_skip_initial_results', false)
+      orbit_skip_num:           new UI.IntOption('orbit_skip_initial_num', 20)
       julia_draw_local:         new UI.BoolOption('julia_draw_local', false)
       julia_more_when_paused:   new UI.BoolOption('julia_more_when_paused', true)
       julia_local_margin:       new UI.IntOption('julia_local_margin', 80)
@@ -113,6 +115,9 @@ class MandelIter
       #mandel_color_scale_g:     new UI.FloatOption('mandel_color_scale_g', @colorize_themes[@default_mandel_theme][1])
       #mandel_color_scale_b:     new UI.FloatOption('mandel_color_scale_b', @colorize_themes[@default_mandel_theme][2])
       highlight_group:          new UI.SelectOption('highlight_group');
+
+    @option.orbit_skip_initial.register_callback on_change: @schedule_ui_draw
+    @option.orbit_skip_num.register_callback     on_change: @schedule_ui_draw
 
     @option.julia_draw_local.persist = false
 
@@ -778,7 +783,7 @@ class MandelIter
 
     [n, d <= 4]
 
-  mandelbrot_orbit: (c, max_yield = @mandel_maxiter) ->
+  mandelbrot_orbit: (c, max_yield = @mandel_maxiter, skip = 0) ->
     cr = c.r
     ci = c.i
     n = 0
@@ -786,7 +791,10 @@ class MandelIter
     zr = 0
     zi = 0
 
-    yield z: {r: zr, i: zi}, n: n
+    if skip is 0
+      yield z: {r: zr, i: zi}, n: n
+    else
+      max_yield += skip
 
     while (d <= 4) and (n < max_yield)
       pr = (zr * zr) - (zi * zi)
@@ -796,7 +804,10 @@ class MandelIter
       d  = (zr * zr) + (zi * zi)
       n += 1
 
-      yield z: {r: zr, i: zi}, n: n
+      if skip > 0
+        skip -= 1
+      else
+        yield z: {r: zr, i: zi}, n: n
 
   mandel_color_value: (x, y) ->
     c = @canvas_to_complex(x, y)
@@ -968,7 +979,14 @@ class MandelIter
     @graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.35)'
     @graph_ui_ctx.fillStyle   = 'rgba(255,249,187, 0.6)'
 
-    if draw_lines
+    do_skip = @option.orbit_skip_initial.value
+    skip = 0
+    skip_first_line = false
+    if do_skip
+      skip = @option.orbit_skip_num.value
+      skip_first_line = true
+
+    if draw_lines and not do_skip
       @graph_ui_ctx.beginPath()
       @graph_ui_ctx.moveTo(mx, my)
 
@@ -979,13 +997,16 @@ class MandelIter
         @orbit_bb.min_y = @graph_height
         @orbit_bb.max_y = 0
 
-      for step from @mandelbrot_orbit(pos, @option.orbit_draw_length.value)
+      for step from @mandelbrot_orbit(pos, @option.orbit_draw_length.value, skip)
         if step.n > 0
           p = @complex_to_canvas(step.z)
 
           if draw_lines
-            @graph_ui_ctx.lineTo(p.x, p.y)
-            @graph_ui_ctx.stroke()
+            if skip_first_line
+              skip_first_line = false
+            else
+              @graph_ui_ctx.lineTo(p.x, p.y)
+              @graph_ui_ctx.stroke()
 
           if draw_points
             @graph_ui_ctx.beginPath()

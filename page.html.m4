@@ -165,19 +165,31 @@ undivert(`style.css')
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Draw Lines</th>
               <td>
-                <input id="orbit_draw_lines" type="checkbox" checked="checked">
+                <input id="orbit_draw_lines" type="checkbox" checked="checked" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Draw Points</th>
               <td>
-                <input id="orbit_draw_points" type="checkbox" checked="checked">
+                <input id="orbit_draw_points" type="checkbox" checked="checked" autocomplete="off">
               </td>
             </tr>
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Point Size</th>
               <td>
-                <input id="orbit_point_size" type="number" min="0" max="20" step="0.25" value="2">
+                <input id="orbit_point_size" type="number" min="0" max="20" step="0.25" value="2" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Skip the first few results when drawing orbits.">Skip Initial<br>Iterations</th>
+              <td>
+                <input id="orbit_skip_initial_results" type="checkbox" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="The number of iterations to skip when Skip Initial Iterations is active.">Skip Size</th>
+              <td>
+                <input id="orbit_skip_initial_num" type="number" min="0" max="100" step="10" value="20" autocomplete="off">
               </td>
             </tr>
           </table>

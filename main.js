@@ -129,6 +129,8 @@
         orbit_draw_lines: new UI.BoolOption('orbit_draw_lines', true),
         orbit_draw_points: new UI.BoolOption('orbit_draw_points', true),
         orbit_point_size: new UI.FloatOption('orbit_point_size', 2),
+        orbit_skip_initial: new UI.BoolOption('orbit_skip_initial_results', false),
+        orbit_skip_num: new UI.IntOption('orbit_skip_initial_num', 20),
         julia_draw_local: new UI.BoolOption('julia_draw_local', false),
         julia_more_when_paused: new UI.BoolOption('julia_more_when_paused', true),
         julia_local_margin: new UI.IntOption('julia_local_margin', 80),
@@ -142,6 +144,12 @@
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
         highlight_group: new UI.SelectOption('highlight_group')
       };
+      this.option.orbit_skip_initial.register_callback({
+        on_change: this.schedule_ui_draw
+      });
+      this.option.orbit_skip_num.register_callback({
+        on_change: this.schedule_ui_draw
+      });
       this.option.julia_draw_local.persist = false;
       this.option.julia_draw_local.register_callback({
         on_true: this.on_julia_draw_local_true,
@@ -959,10 +967,13 @@
       return [n, d <= 4];
     };
 
-    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield) {
+    MandelIter.prototype.mandelbrot_orbit = function*(c, max_yield, skip) {
       var ci, cr, d, n, pi, pr, results, zi, zr;
       if (max_yield == null) {
         max_yield = this.mandel_maxiter;
+      }
+      if (skip == null) {
+        skip = 0;
       }
       cr = c.r;
       ci = c.i;
@@ -970,13 +981,17 @@
       d = 0;
       zr = 0;
       zi = 0;
-      yield ({
-        z: {
-          r: zr,
-          i: zi
-        },
-        n: n
-      });
+      if (skip === 0) {
+        yield ({
+          z: {
+            r: zr,
+            i: zi
+          },
+          n: n
+        });
+      } else {
+        max_yield += skip;
+      }
       results = [];
       while ((d <= 4) && (n < max_yield)) {
         pr = (zr * zr) - (zi * zi);
@@ -985,13 +1000,17 @@
         zi = pi + ci;
         d = (zr * zr) + (zi * zi);
         n += 1;
-        results.push((yield {
-          z: {
-            r: zr,
-            i: zi
-          },
-          n: n
-        }));
+        if (skip > 0) {
+          results.push(skip -= 1);
+        } else {
+          results.push((yield {
+            z: {
+              r: zr,
+              i: zi
+            },
+            n: n
+          }));
+        }
       }
       return results;
     };
@@ -1176,7 +1195,7 @@
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
-      var draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, step;
+      var do_skip, draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, skip, skip_first_line, step;
       mx = c.x;
       my = c.y;
       pos = this.canvas_to_complex(mx, my);
@@ -1189,7 +1208,14 @@
       this.graph_ui_ctx.lineWidth = 2;
       this.graph_ui_ctx.strokeStyle = 'rgba(255,255,108,0.35)';
       this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.6)';
-      if (draw_lines) {
+      do_skip = this.option.orbit_skip_initial.value;
+      skip = 0;
+      skip_first_line = false;
+      if (do_skip) {
+        skip = this.option.orbit_skip_num.value;
+        skip_first_line = true;
+      }
+      if (draw_lines && !do_skip) {
         this.graph_ui_ctx.beginPath();
         this.graph_ui_ctx.moveTo(mx, my);
       }
@@ -1200,13 +1226,17 @@
           this.orbit_bb.min_y = this.graph_height;
           this.orbit_bb.max_y = 0;
         }
-        ref = this.mandelbrot_orbit(pos, this.option.orbit_draw_length.value);
+        ref = this.mandelbrot_orbit(pos, this.option.orbit_draw_length.value, skip);
         for (step of ref) {
           if (step.n > 0) {
             p = this.complex_to_canvas(step.z);
             if (draw_lines) {
-              this.graph_ui_ctx.lineTo(p.x, p.y);
-              this.graph_ui_ctx.stroke();
+              if (skip_first_line) {
+                skip_first_line = false;
+              } else {
+                this.graph_ui_ctx.lineTo(p.x, p.y);
+                this.graph_ui_ctx.stroke();
+              }
             }
             if (draw_points) {
               this.graph_ui_ctx.beginPath();
