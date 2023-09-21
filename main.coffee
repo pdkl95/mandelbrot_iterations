@@ -86,6 +86,7 @@ class MandelIter
 
     @option =
       show_tooltips:            new UI.BoolOption('show_tooltips', true)
+      confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true)
       set_c_real:               new UI.FloatOption('set_c_real')
       set_c_imag:               new UI.FloatOption('set_c_imag')
       keyboard_step:            new UI.FloatOption('keyboard_step', 0.01)

@@ -26,6 +26,10 @@
       this.serial = Highlight.Item.next_serialnum();
       this.id = "hl-item-" + this.serial;
       Highlight.items[this.id] = this;
+      this.z = {
+        r: this.r,
+        i: this.i
+      };
     }
 
     return Item;
@@ -129,6 +133,11 @@
       if (row != null) {
         loc = Highlight.saved_locations[row.id];
         if (loc != null) {
+          if (APP.option.confirm_remove_saved_loc.value) {
+            if (!window.confirm("Remove saved location \"" + loc.name + "\" at " + (APP.complex_to_string(loc.z)) + "?")) {
+              return;
+            }
+          }
           return loc.remove();
         }
       }

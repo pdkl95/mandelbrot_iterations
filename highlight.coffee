@@ -14,6 +14,10 @@ class Highlight.Item
     @id = "hl-item-#{@serial}"
     Highlight.items[@id] = this
 
+    @z =
+      r: @r
+      i: @i
+
 class Highlight.SavedItem extends Highlight.Item
   @storage_id: (idx) ->
     "saved_loc[#{idx}]"
@@ -88,6 +92,8 @@ class Highlight.SavedItem extends Highlight.Item
     if row?
       loc = Highlight.saved_locations[row.id]
       if loc?
+        if APP.option.confirm_remove_saved_loc.value
+          return unless window.confirm("Remove saved location \"#{loc.name}\" at #{APP.complex_to_string(loc.z)}?")
         loc.remove()
 
   on_set_c_button_click: (event) =>

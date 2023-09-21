@@ -953,6 +953,12 @@ td.name[contenteditable=true]:focus {
                 <input id="show_tooltips" type="checkbox" checked="checked">
               </td>
             </tr>
+            <tr>
+              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br>Saved Locations</th>
+              <td>
+                <input id="confirm_remove_saved_loc" type="checkbox" checked="checked">
+              </td>
+            </tr>
           </table>
         </div>
 
@@ -1583,6 +1589,10 @@ td.name[contenteditable=true]:focus {
       this.serial = Highlight.Item.next_serialnum();
       this.id = "hl-item-" + this.serial;
       Highlight.items[this.id] = this;
+      this.z = {
+        r: this.r,
+        i: this.i
+      };
     }
 
     return Item;
@@ -1686,6 +1696,11 @@ td.name[contenteditable=true]:focus {
       if (row != null) {
         loc = Highlight.saved_locations[row.id];
         if (loc != null) {
+          if (APP.option.confirm_remove_saved_loc.value) {
+            if (!window.confirm("Remove saved location \"" + loc.name + "\" at " + (APP.complex_to_string(loc.z)) + "?")) {
+              return;
+            }
+          }
           return loc.remove();
         }
       }
@@ -2099,6 +2114,7 @@ td.name[contenteditable=true]:focus {
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
+        confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
         set_c_real: new UI.FloatOption('set_c_real'),
         set_c_imag: new UI.FloatOption('set_c_imag'),
         keyboard_step: new UI.FloatOption('keyboard_step', 0.01),

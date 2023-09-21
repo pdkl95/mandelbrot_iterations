@@ -224,6 +224,12 @@ undivert(`style.css')
                 <input id="show_tooltips" type="checkbox" checked="checked">
               </td>
             </tr>
+            <tr>
+              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br>Saved Locations</th>
+              <td>
+                <input id="confirm_remove_saved_loc" type="checkbox" checked="checked">
+              </td>
+            </tr>
           </table>
         </div>
 
