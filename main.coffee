@@ -76,6 +76,7 @@ class MandelIter
     @reset_storage  = @context.getElementById('reset_all_storage')
     @save_to_file   = @context.getElementById('save_to_file')
     @load_from_file = @context.getElementById('load_from_file')
+    @load_from_file_input = @context.getElementById('load_from_file_input')
 
     @button_reset.addEventListener(  'click',  @on_button_reset_click)
     @button_zoom.addEventListener(   'click',  @on_button_zoom_click)
@@ -87,6 +88,7 @@ class MandelIter
     @reset_storage.addEventListener( 'click',  @on_reset_storage_click)
     @save_to_file.addEventListener(  'click',  @on_save_to_file_click)
     @load_from_file.addEventListener('click',  @on_load_from_file_click)
+    @load_from_file_input.addEventListener('change', @on_load_from_file_input_change, false)
 
     @option =
       show_tooltips:            new UI.BoolOption('show_tooltips', true)
@@ -363,6 +365,24 @@ class MandelIter
     FileIO.download(filename, filedata, 'application/json')
 
   on_load_from_file_click: (event) =>
+    @load_from_file_input.click()
+
+  on_load_from_file_input_change: (event) =>
+    return if @load_from_file_input.files.length < 1
+    file = @load_from_file_input.files[0]
+
+    reader = new FileReader()
+    reader.onload = () =>
+      enc = new TextDecoder("utf-8")
+      json_obj = JSON.parse(enc.decode(reader.result))
+      if json_obj?
+        objs = json_obj.saved_locations
+        if objs?
+          @saved_locations.load_json_objs(objs)
+
+    reader.readAsArrayBuffer(file)
+
+  on_load_from_file_input_load: (event) =>
 
   current_mandel_theme: ->
     # if @option.mandel_color_scale_r? and @option.mandel_color_scale_g? and @option.mandel_color_scale_r?

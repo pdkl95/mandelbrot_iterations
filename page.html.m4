@@ -144,6 +144,7 @@ undivert(`style.css')
               </table>
               <div id="saved_location_buttons">
                 <button id="save_to_file">Save To File</button>
+                <input id="load_from_file_input" class="hidden" type="file" accept=".json" />
                 <button id="load_from_file">Load From File</button>
               </div>
             </div>

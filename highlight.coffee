@@ -77,7 +77,6 @@ class Highlight.SavedItem extends Highlight.Item
   save: (idx = @save_idx) ->
     if idx?
       @save_idx = idx
-      console.log('save', Highlight.SavedItem.storage_id(idx), @serialize())
       APP.storage_set(Highlight.SavedItem.storage_id(idx), @serialize())
     else
       APP.warn("Saving location \"#{@name}\" failed!")
@@ -182,10 +181,10 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
   load_json_objs: (objs) ->
     for obj in objs
       if obj.real? and obj.imag? and obj.name?
-        item = new Highlight.SavedItem(this, obj.real, obj.imag, obj.name)
+        item = @create_new_saved_item(obj.real, obj.imag, obj.name)
         if item?
-          @items.push(item)
-    @update_all_save_idx()
+          @append(item)
+          @save()
 
   save: ->
     for item, idx in @items
