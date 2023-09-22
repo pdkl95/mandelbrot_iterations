@@ -871,6 +871,11 @@ td.name[contenteditable=true]:focus {
                 <tbody id="saved_locations_body">
                 </tbody>
               </table>
+              <div id="saved_location_buttons">
+                <button id="save_to_file">Save To File</button>
+                <input id="load_from_file_input" class="hidden" type="file" accept=".json" />
+                <button id="load_from_file">Load From File</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1666,6 +1671,14 @@ td.name[contenteditable=true]:focus {
       return this.tr_el;
     };
 
+    SavedItem.prototype.to_json_obj = function() {
+      return {
+        real: this.r,
+        imag: this.i,
+        name: this.name
+      };
+    };
+
     SavedItem.prototype.serialize = function() {
       if (this.name != null) {
         return this.r + "|" + this.i + "|" + this.name;
@@ -1680,7 +1693,6 @@ td.name[contenteditable=true]:focus {
       }
       if (idx != null) {
         this.save_idx = idx;
-        console.log('save', Highlight.SavedItem.storage_id(idx), this.serialize());
         return APP.storage_set(Highlight.SavedItem.storage_id(idx), this.serialize());
       } else {
         return APP.warn("Saving location \"" + this.name + "\" failed!");
@@ -1826,6 +1838,48 @@ td.name[contenteditable=true]:focus {
     SavedLocations.prototype.add = function(z) {
       this.append(this.create_new_saved_item(z.r, z.i));
       return this.save();
+    };
+
+    SavedLocations.prototype.update_all_save_idx = function() {
+      var idx, item, j, len, ref, results;
+      ref = this.items;
+      results = [];
+      for (idx = j = 0, len = ref.length; j < len; idx = ++j) {
+        item = ref[idx];
+        results.push(item.save(idx));
+      }
+      return results;
+    };
+
+    SavedLocations.prototype.to_json_obj = function() {
+      var idx, item, j, len, list, ref;
+      list = [];
+      ref = this.items;
+      for (idx = j = 0, len = ref.length; j < len; idx = ++j) {
+        item = ref[idx];
+        list.push(item.to_json_obj());
+      }
+      return list;
+    };
+
+    SavedLocations.prototype.load_json_objs = function(objs) {
+      var item, j, len, obj, results;
+      results = [];
+      for (j = 0, len = objs.length; j < len; j++) {
+        obj = objs[j];
+        if ((obj.real != null) && (obj.imag != null) && (obj.name != null)) {
+          item = this.create_new_saved_item(obj.real, obj.imag, obj.name);
+          if (item != null) {
+            this.append(item);
+            results.push(this.save());
+          } else {
+            results.push(void 0);
+          }
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
     };
 
     SavedLocations.prototype.save = function() {
@@ -2007,6 +2061,27 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
+  window.FileIO || (window.FileIO = {});
+
+  FileIO.download = function(filename, filedata, mimetype) {
+    var file, link, url;
+    if (mimetype == null) {
+      mimetype = 'text/plain';
+    }
+    file = new File([filedata], filename, {
+      type: mimetype
+    });
+    link = document.createElement('a');
+    url = URL.createObjectURL(file);
+    link.href = url;
+    link.download = file.name;
+    link.click();
+    return window.URL.revokeObjectURL(url);
+  };
+
+}).call(this);
+
+(function() {
   var MandelIter, TAU,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -2049,6 +2124,11 @@ td.name[contenteditable=true]:focus {
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_load_from_file_input_load = bind(this.on_load_from_file_input_load, this);
+      this.on_load_from_file_input_change = bind(this.on_load_from_file_input_change, this);
+      this.on_load_from_file_click = bind(this.on_load_from_file_click, this);
+      this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
+      this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
       this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
       this.on_keydown = bind(this.on_keydown, this);
@@ -2115,6 +2195,9 @@ td.name[contenteditable=true]:focus {
       this.button_set_c = this.context.getElementById('set_c');
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
+      this.save_to_file = this.context.getElementById('save_to_file');
+      this.load_from_file = this.context.getElementById('load_from_file');
+      this.load_from_file_input = this.context.getElementById('load_from_file_input');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
@@ -2123,6 +2206,9 @@ td.name[contenteditable=true]:focus {
       this.button_set_c.addEventListener('click', this.on_button_set_c_click);
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
+      this.save_to_file.addEventListener('click', this.on_save_to_file_click);
+      this.load_from_file.addEventListener('click', this.on_load_from_file_click);
+      this.load_from_file_input.addEventListener('change', this.on_load_from_file_input_change, false);
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
@@ -2426,6 +2512,49 @@ td.name[contenteditable=true]:focus {
       }
       return results;
     };
+
+    MandelIter.prototype.saved_locations_serialize = function() {
+      return JSON.stringify({
+        saved_locations: this.saved_locations.to_json_obj()
+      });
+    };
+
+    MandelIter.prototype.on_save_to_file_click = function(event) {
+      var date, filedata, filename;
+      date = new Date(Date.now());
+      filename = "mandel_iter-saved_locations-" + (date.toJSON()) + ".json";
+      filedata = this.saved_locations_serialize();
+      return FileIO.download(filename, filedata, 'application/json');
+    };
+
+    MandelIter.prototype.on_load_from_file_click = function(event) {
+      return this.load_from_file_input.click();
+    };
+
+    MandelIter.prototype.on_load_from_file_input_change = function(event) {
+      var file, reader;
+      if (this.load_from_file_input.files.length < 1) {
+        return;
+      }
+      file = this.load_from_file_input.files[0];
+      reader = new FileReader();
+      reader.onload = (function(_this) {
+        return function() {
+          var enc, json_obj, objs;
+          enc = new TextDecoder("utf-8");
+          json_obj = JSON.parse(enc.decode(reader.result));
+          if (json_obj != null) {
+            objs = json_obj.saved_locations;
+            if (objs != null) {
+              return _this.saved_locations.load_json_objs(objs);
+            }
+          }
+        };
+      })(this);
+      return reader.readAsArrayBuffer(file);
+    };
+
+    MandelIter.prototype.on_load_from_file_input_load = function(event) {};
 
     MandelIter.prototype.current_mandel_theme = function() {
       return this.colorize_themes[this.default_mandel_theme];
