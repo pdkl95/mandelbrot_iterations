@@ -91,6 +91,14 @@
       return this.tr_el;
     };
 
+    SavedItem.prototype.to_json_obj = function() {
+      return {
+        real: this.r,
+        imag: this.i,
+        name: this.name
+      };
+    };
+
     SavedItem.prototype.serialize = function() {
       if (this.name != null) {
         return this.r + "|" + this.i + "|" + this.name;
@@ -251,6 +259,42 @@
     SavedLocations.prototype.add = function(z) {
       this.append(this.create_new_saved_item(z.r, z.i));
       return this.save();
+    };
+
+    SavedLocations.prototype.update_all_save_idx = function() {
+      var idx, item, j, len, ref, results;
+      ref = this.items;
+      results = [];
+      for (idx = j = 0, len = ref.length; j < len; idx = ++j) {
+        item = ref[idx];
+        results.push(item.save(idx));
+      }
+      return results;
+    };
+
+    SavedLocations.prototype.to_json_obj = function() {
+      var idx, item, j, len, list, ref;
+      list = [];
+      ref = this.items;
+      for (idx = j = 0, len = ref.length; j < len; idx = ++j) {
+        item = ref[idx];
+        list.push(item.to_json_obj());
+      }
+      return list;
+    };
+
+    SavedLocations.prototype.load_json_objs = function(objs) {
+      var item, j, len, obj;
+      for (j = 0, len = objs.length; j < len; j++) {
+        obj = objs[j];
+        if ((obj.real != null) && (obj.imag != null) && (obj.name != null)) {
+          item = new Highlight.SavedItem(this, obj.real, obj.imag, obj.name);
+          if (item != null) {
+            this.items.push(item);
+          }
+        }
+      }
+      return this.update_all_save_idx();
     };
 
     SavedLocations.prototype.save = function() {

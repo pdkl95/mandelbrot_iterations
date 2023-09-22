@@ -66,23 +66,27 @@ class MandelIter
     @loc_radius = @context.getElementById('loc_radius')
     @loc_theta  = @context.getElementById('loc_theta')
 
-    @button_reset  = @context.getElementById('button_reset')
-    @button_zoom   = @context.getElementById('button_zoom')
-    @zoom_amount   = @context.getElementById('zoom_amount')
-    @btn_save_loc  = @context.getElementById('save_loc')
-    @btn_save_c    = @context.getElementById('save_c')
-    @button_set_c  = @context.getElementById('set_c')
-    @loc_to_set_c  = @context.getElementById('copy_loc_to_set_c')
-    @reset_storage = @context.getElementById('reset_all_storage')
+    @button_reset   = @context.getElementById('button_reset')
+    @button_zoom    = @context.getElementById('button_zoom')
+    @zoom_amount    = @context.getElementById('zoom_amount')
+    @btn_save_loc   = @context.getElementById('save_loc')
+    @btn_save_c     = @context.getElementById('save_c')
+    @button_set_c   = @context.getElementById('set_c')
+    @loc_to_set_c   = @context.getElementById('copy_loc_to_set_c')
+    @reset_storage  = @context.getElementById('reset_all_storage')
+    @save_to_file   = @context.getElementById('save_to_file')
+    @load_from_file = @context.getElementById('load_from_file')
 
-    @button_reset.addEventListener( 'click',  @on_button_reset_click)
-    @button_zoom.addEventListener(  'click',  @on_button_zoom_click)
-    @zoom_amount.addEventListener(  'change', @on_zoom_amount_change)
-    @btn_save_loc.addEventListener( 'click',  @on_btn_save_loc_click)
-    @btn_save_c.addEventListener(   'click',  @on_btn_save_c_click)
-    @button_set_c.addEventListener( 'click',  @on_button_set_c_click)
-    @loc_to_set_c.addEventListener( 'click',  @on_copy_loc_to_set_c_click)
-    @reset_storage.addEventListener('click',  @on_reset_storage_click)
+    @button_reset.addEventListener(  'click',  @on_button_reset_click)
+    @button_zoom.addEventListener(   'click',  @on_button_zoom_click)
+    @zoom_amount.addEventListener(   'change', @on_zoom_amount_change)
+    @btn_save_loc.addEventListener(  'click',  @on_btn_save_loc_click)
+    @btn_save_c.addEventListener(    'click',  @on_btn_save_c_click)
+    @button_set_c.addEventListener(  'click',  @on_button_set_c_click)
+    @loc_to_set_c.addEventListener(  'click',  @on_copy_loc_to_set_c_click)
+    @reset_storage.addEventListener( 'click',  @on_reset_storage_click)
+    @save_to_file.addEventListener(  'click',  @on_save_to_file_click)
+    @load_from_file.addEventListener('click',  @on_load_from_file_click)
 
     @option =
       show_tooltips:            new UI.BoolOption('show_tooltips', true)
@@ -348,6 +352,17 @@ class MandelIter
 
     for name, opt of @option
       opt.reset()
+
+  saved_locations_serialize: =>
+    JSON.stringify({ saved_locations: @saved_locations.to_json_obj() })
+
+  on_save_to_file_click: (event) =>
+    date = new Date(Date.now())
+    filename = "mandel_iter-saved_locations-#{date.toJSON()}.json"
+    filedata = @saved_locations_serialize()
+    FileIO.download(filename, filedata, 'application/json')
+
+  on_load_from_file_click: (event) =>
 
   current_mandel_theme: ->
     # if @option.mandel_color_scale_r? and @option.mandel_color_scale_g? and @option.mandel_color_scale_r?

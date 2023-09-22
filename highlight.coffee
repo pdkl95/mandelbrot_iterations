@@ -62,6 +62,12 @@ class Highlight.SavedItem extends Highlight.Item
 
     @tr_el
 
+  to_json_obj: ->
+    return
+      real: @r
+      imag: @i
+      name: @name
+
   serialize: ->
     if @name?
       "#{@r}|#{@i}|#{@name}"
@@ -162,6 +168,24 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
   add: (z) ->
     @append(@create_new_saved_item(z.r, z.i))
     @save()
+
+  update_all_save_idx: ->
+    for item, idx in @items
+      item.save(idx)
+
+  to_json_obj: ->
+    list = []
+    for item, idx in @items
+      list.push(item.to_json_obj())
+    list
+
+  load_json_objs: (objs) ->
+    for obj in objs
+      if obj.real? and obj.imag? and obj.name?
+        item = new Highlight.SavedItem(this, obj.real, obj.imag, obj.name)
+        if item?
+          @items.push(item)
+    @update_all_save_idx()
 
   save: ->
     for item, idx in @items

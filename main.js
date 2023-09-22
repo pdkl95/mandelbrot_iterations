@@ -41,6 +41,9 @@
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_load_from_file_click = bind(this.on_load_from_file_click, this);
+      this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
+      this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
       this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
       this.on_keydown = bind(this.on_keydown, this);
@@ -107,6 +110,8 @@
       this.button_set_c = this.context.getElementById('set_c');
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
+      this.save_to_file = this.context.getElementById('save_to_file');
+      this.load_from_file = this.context.getElementById('load_from_file');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
@@ -115,6 +120,8 @@
       this.button_set_c.addEventListener('click', this.on_button_set_c_click);
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
+      this.save_to_file.addEventListener('click', this.on_save_to_file_click);
+      this.load_from_file.addEventListener('click', this.on_load_from_file_click);
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
@@ -418,6 +425,22 @@
       }
       return results;
     };
+
+    MandelIter.prototype.saved_locations_serialize = function() {
+      return JSON.stringify({
+        saved_locations: this.saved_locations.to_json_obj()
+      });
+    };
+
+    MandelIter.prototype.on_save_to_file_click = function(event) {
+      var date, filedata, filename;
+      date = new Date(Date.now());
+      filename = "mandel_iter-saved_locations-" + (date.toJSON()) + ".json";
+      filedata = this.saved_locations_serialize();
+      return FileIO.download(filename, filedata, 'application/json');
+    };
+
+    MandelIter.prototype.on_load_from_file_click = function(event) {};
 
     MandelIter.prototype.current_mandel_theme = function() {
       return this.colorize_themes[this.default_mandel_theme];

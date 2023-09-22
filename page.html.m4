@@ -142,6 +142,10 @@ undivert(`style.css')
                 <tbody id="saved_locations_body">
                 </tbody>
               </table>
+              <div id="saved_location_buttons">
+                <button id="save_to_file">Save To File</button>
+                <button id="load_from_file">Load From File</button>
+              </div>
             </div>
           </div>
         </div>
@@ -385,6 +389,7 @@ undivert(`style.css')
 undivert(`uioption.js')
 undivert(`motion.js')
 undivert(`highlight.js')
+undivert(`fileio.js')
 undivert(`main.js')
     </script>
   </body>

@@ -21,6 +21,7 @@ MAIN_TARGET_DEPS = $(MAIN_TARGET_SRC) \
         $(builddir)/uioption.js \
         $(builddir)/motion.js \
 	$(builddir)/highlight.js \
+	$(builddir)/fileio.js \
 	$(builddir)/main.js \
         $(srcdir)/basic.css \
         $(srcdir)/style.css
