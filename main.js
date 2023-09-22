@@ -238,6 +238,7 @@
       this.initial_render_pixel_size = Math.pow(this.deferred_render_pass_scale, this.deferred_render_passes);
       this.render_lines_per_pass = 24;
       this.julia_max_rendertime = 250;
+      this.defer_highres_timeout = this.defer_highres_timeout_length = 650;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
@@ -862,47 +863,52 @@
       }
     };
 
-    MandelIter.prototype.move_mouse_position = function(dx, dy, accel) {
+    MandelIter.prototype.move_mouse_position = function(dx, dy, accel, force) {
       var oldx, oldy, pos;
       if (accel == null) {
         accel = 1.0;
       }
+      if (force == null) {
+        force = false;
+      }
       oldx = this.orbit_mouse.x;
       oldy = this.orbit_mouse.y;
-      this.set_mouse_position(this.orbit_mouse.x + (dx * accel), this.orbit_mouse.y + (dy * accel));
+      this.set_mouse_position(this.orbit_mouse.x + (dx * accel), this.orbit_mouse.y + (dy * accel), force);
       this.orbit_mouse.x = this.mouse.x;
       this.orbit_mouse.y = this.mouse.y;
       pos = this.canvas_to_complex(this.orbit_mouse.x, this.orbit_mouse.y);
       this.loc_c.innerText = this.complex_to_string(pos);
-      return this.defer_highres_frames = 1;
+      this.reset_julia_rendering();
+      this.defer_highres_frames = 1;
+      return this.defer_highres_timeout = performance.now() + this.defer_highres_timeout_length;
     };
 
     MandelIter.prototype.mouse_step_up = function(accel) {
       if (accel == null) {
         accel = 1.0;
       }
-      return this.move_mouse_position(0, -this.option.keyboard_step.value, accel);
+      return this.move_mouse_position(0, -this.option.keyboard_step.value, accel, true);
     };
 
     MandelIter.prototype.mouse_step_down = function(accel) {
       if (accel == null) {
         accel = 1.0;
       }
-      return this.move_mouse_position(0, this.option.keyboard_step.value, accel);
+      return this.move_mouse_position(0, this.option.keyboard_step.value, accel, true);
     };
 
     MandelIter.prototype.mouse_step_left = function(accel) {
       if (accel == null) {
         accel = 1.0;
       }
-      return this.move_mouse_position(-this.option.keyboard_step.value, 0, accel);
+      return this.move_mouse_position(-this.option.keyboard_step.value, 0, accel, true);
     };
 
     MandelIter.prototype.mouse_step_right = function(accel) {
       if (accel == null) {
         accel = 1.0;
       }
-      return this.move_mouse_position(this.option.keyboard_step.value, 0, accel);
+      return this.move_mouse_position(this.option.keyboard_step.value, 0, accel, true);
     };
 
     MandelIter.prototype.on_button_set_c_click = function(event) {
@@ -1488,7 +1494,7 @@
     };
 
     MandelIter.prototype.draw_local_julia_setup = function(c) {
-      var margin2x, maxsize, maxx, maxy, orbit_cx, orbit_cy;
+      var backheight, barheight, barmargin, barperc, delta, margin2x, maxsize, maxx, maxy, orbit_cx, orbit_cy;
       if (!this.ljopt.changed) {
         return false;
       }
@@ -1510,6 +1516,26 @@
         this.ljopt.highres = false;
         this.schedule_ui_draw();
         return false;
+      }
+      if (this.defer_highres_timeout > 0) {
+        delta = this.defer_highres_timeout - performance.now();
+        if (delta > 0) {
+          barmargin = 2;
+          barheight = 3;
+          backheight = barheight + barmargin + barmargin;
+          barperc = (this.defer_highres_timeout_length - delta) / this.defer_highres_timeout_length;
+          this.graph_ui_ctx.save();
+          this.graph_ui_ctx.fillStyle = 'rgba(30,30,30,0.55)';
+          this.graph_ui_ctx.fillRect(0, this.graph_height - backheight - 1, this.graph_width, backheight);
+          this.graph_ui_ctx.fillStyle = 'rgba(240,60,60,0.72)';
+          this.graph_ui_ctx.fillRect(1, this.graph_height - barheight - barmargin - 1, (this.graph_width * barperc) - 1, barheight);
+          this.graph_ui_ctx.restore();
+          this.ljopt.highres = false;
+          this.schedule_ui_draw();
+          return false;
+        } else {
+          this.defer_highres_timeout = 0;
+        }
       }
       this.ljopt.busy = true;
       this.ljopt.ystart = 0;

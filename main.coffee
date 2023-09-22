@@ -203,6 +203,8 @@ class MandelIter
     @initial_render_pixel_size = @deferred_render_pass_scale ** @deferred_render_passes
     @render_lines_per_pass = 24
     @julia_max_rendertime = 250
+    @defer_highres_timeout = 
+    @defer_highres_timeout_length = 650
 
     @rendering_note          = @context.getElementById('rendering_note')
     @rendering_note_hdr      = @context.getElementById('rendering_note_hdr')
@@ -693,30 +695,30 @@ class MandelIter
       @mouse_active = true
       @schedule_ui_draw()
 
-  move_mouse_position: (dx, dy, accel = 1.0) ->
-    #accel = accel * 10
+  move_mouse_position: (dx, dy, accel = 1.0, force = false) ->
     oldx = @orbit_mouse.x
     oldy = @orbit_mouse.y
-    @set_mouse_position(@orbit_mouse.x + (dx * accel), @orbit_mouse.y + (dy * accel))
+    @set_mouse_position(@orbit_mouse.x + (dx * accel), @orbit_mouse.y + (dy * accel), force)
     @orbit_mouse.x = @mouse.x
     @orbit_mouse.y = @mouse.y
     pos = @canvas_to_complex(@orbit_mouse.x, @orbit_mouse.y)
     @loc_c.innerText = @complex_to_string(pos)
 
+    @reset_julia_rendering()
     @defer_highres_frames = 1
-    #console.log('old', oldx, oldy, 'dx', dx, 'dy', dy, 'accel', accel, 'new', @orbit_mouse.x, @orbit_mouse.y)
+    @defer_highres_timeout = performance.now() + @defer_highres_timeout_length
 
   mouse_step_up: (accel = 1.0) ->
-    @move_mouse_position(0, -@option.keyboard_step.value, accel)
+    @move_mouse_position(0, -@option.keyboard_step.value, accel, true)
 
   mouse_step_down: (accel = 1.0) ->
-    @move_mouse_position(0,  @option.keyboard_step.value, accel)
+    @move_mouse_position(0,  @option.keyboard_step.value, accel, true)
 
   mouse_step_left: (accel = 1.0) ->
-    @move_mouse_position(-@option.keyboard_step.value, 0, accel)
+    @move_mouse_position(-@option.keyboard_step.value, 0, accel, true)
 
   mouse_step_right: (accel = 1.0) ->
-    @move_mouse_position( @option.keyboard_step.value, 0, accel)
+    @move_mouse_position( @option.keyboard_step.value, 0, accel, true)
 
   on_button_set_c_click: (event) =>
     z =
@@ -1277,6 +1279,26 @@ class MandelIter
       @ljopt.highres = false
       @schedule_ui_draw()
       return false
+
+    if @defer_highres_timeout > 0
+      delta = @defer_highres_timeout - performance.now()
+      if delta > 0
+        barmargin = 2
+        barheight = 3
+        backheight = barheight + barmargin + barmargin
+        barperc = (@defer_highres_timeout_length - delta) / @defer_highres_timeout_length
+        @graph_ui_ctx.save()
+        @graph_ui_ctx.fillStyle = 'rgba(30,30,30,0.55)'
+        @graph_ui_ctx.fillRect(0, @graph_height - backheight - 1, @graph_width, backheight)
+        @graph_ui_ctx.fillStyle = 'rgba(240,60,60,0.72)'
+        @graph_ui_ctx.fillRect(1, @graph_height - barheight - barmargin - 1, (@graph_width * barperc) - 1, barheight)
+        @graph_ui_ctx.restore()
+
+        @ljopt.highres = false
+        @schedule_ui_draw()
+        return false
+      else
+        @defer_highres_timeout = 0
 
     @ljopt.busy   = true
     @ljopt.ystart = 0
