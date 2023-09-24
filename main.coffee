@@ -202,7 +202,7 @@ class MandelIter
     @deferred_render_pass_scale = 3
     @initial_render_pixel_size = @deferred_render_pass_scale ** @deferred_render_passes
     @render_lines_per_pass = 24
-    @julia_max_rendertime = 250
+    @julia_max_rendertime = 200
     @defer_highres_timeout = 
     @defer_highres_timeout_length = 650
 
@@ -1248,6 +1248,7 @@ class MandelIter
       aamult:        1
       aastep:        1.0
       highres:       @pause_mode and @option.julia_more_when_paused.value
+      meeds_clear:   false
 
     @old_local_julia =
       x: 0
@@ -1271,6 +1272,7 @@ class MandelIter
     @ljopt.aastep        = 1.0
     @ljopt.highres       = @pause_mode and @option.julia_more_when_paused.value
     @ljopt.do_early_stop = @ljopt.highres
+    @ljopt.needs_clear   = true
 
     @julia_maxiter = @option.julia_max_iterations.value
 
@@ -1345,9 +1347,14 @@ class MandelIter
 
     return true
 
+  clear_julia: ->
+    if @ljopt.needs_clear
+      @ljopt.needs_clear = false
+      @graph_julia_ctx.clearRect(0, 0, @graph_width, @graph_height)
+
   draw_local_julia: (lj) ->
     start_time = performance.now()
-
+    rowcount = 0
     for y in [@ljopt.ystart..@local_julia.height] by @ljopt.pixelsize
       for x in [0..@local_julia.width] by @ljopt.pixelsize
         xx = x + @local_julia.x
@@ -1369,6 +1376,7 @@ class MandelIter
         val /= 255
 
         for py in [0..@ljopt.pixelsize]
+          rowcount++
           for px in [0..@ljopt.pixelsize]
             pos1x = (x + px) + ((y + py) * @current_image.width)
             pos4x = 4 * pos1x
@@ -1378,6 +1386,8 @@ class MandelIter
       if @ljopt.do_early_stop
         if (y % 10) == 0
           if (performance.now() - start_time) > @julia_max_rendertime
+            @clear_julia()
+            @graph_julia_ctx.putImageData(@current_image, @local_julia.x, @local_julia.y, 0, @ljopt.ystart, @local_julia.width, @local_julia.height - @ljopt.ystart)
             @ljopt.ystart = y + @ljopt.pixelsize
             @schedule_ui_draw()
             @set_status('rendering')
@@ -1385,9 +1395,8 @@ class MandelIter
             @set_rendering_note_progress(y/@local_julia.height)
             return
 
-    if (@old_local_julia.width > 0) and (@old_local_julia.height > 0)
-      @graph_julia_ctx.clearRect(@old_local_julia.x, @old_local_julia.y, @old_local_julia.width, @old_local_julia.height)
-    @graph_julia_ctx.putImageData(@current_image, @local_julia.x, @local_julia.y)
+    @clear_julia()
+    @graph_julia_ctx.putImageData(@current_image, @local_julia.x, @local_julia.y, 0, @ljopt.ystart, @local_julia.width, @local_julia.height - @ljopt.ystart)
     @reset_julia_rendering(@ljopt.highres and @pause_mode)
 
   reset_julia_rendering: (stoprender = false) ->

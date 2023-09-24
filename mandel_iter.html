@@ -2320,7 +2320,7 @@ td.name[contenteditable=true]:focus {
       this.deferred_render_pass_scale = 3;
       this.initial_render_pixel_size = Math.pow(this.deferred_render_pass_scale, this.deferred_render_passes);
       this.render_lines_per_pass = 24;
-      this.julia_max_rendertime = 250;
+      this.julia_max_rendertime = 200;
       this.defer_highres_timeout = this.defer_highres_timeout_length = 650;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
@@ -3566,7 +3566,8 @@ td.name[contenteditable=true]:focus {
         do_early_stop: false,
         aamult: 1,
         aastep: 1.0,
-        highres: this.pause_mode && this.option.julia_more_when_paused.value
+        highres: this.pause_mode && this.option.julia_more_when_paused.value,
+        meeds_clear: false
       };
       return this.old_local_julia = {
         x: 0,
@@ -3593,6 +3594,7 @@ td.name[contenteditable=true]:focus {
       this.ljopt.aastep = 1.0;
       this.ljopt.highres = this.pause_mode && this.option.julia_more_when_paused.value;
       this.ljopt.do_early_stop = this.ljopt.highres;
+      this.ljopt.needs_clear = true;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       if (this.defer_highres_frames > 0) {
         this.defer_highres_frames = this.defer_highres_frames - 1;
@@ -3680,9 +3682,17 @@ td.name[contenteditable=true]:focus {
       return true;
     };
 
+    MandelIter.prototype.clear_julia = function() {
+      if (this.ljopt.needs_clear) {
+        this.ljopt.needs_clear = false;
+        return this.graph_julia_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
+      }
+    };
+
     MandelIter.prototype.draw_local_julia = function(lj) {
-      var aax, aay, iter, j, k, l, o, pos1x, pos4x, px, py, q, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, start_time, val, x, xx, y, yy;
+      var aax, aay, iter, j, k, l, o, pos1x, pos4x, px, py, q, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, rowcount, s, start_time, val, x, xx, y, yy;
       start_time = performance.now();
+      rowcount = 0;
       for (y = j = ref = this.ljopt.ystart, ref1 = this.local_julia.height, ref2 = this.ljopt.pixelsize; ref2 > 0 ? j <= ref1 : j >= ref1; y = j += ref2) {
         for (x = k = 0, ref3 = this.local_julia.width, ref4 = this.ljopt.pixelsize; ref4 > 0 ? k <= ref3 : k >= ref3; x = k += ref4) {
           xx = x + this.local_julia.x;
@@ -3702,6 +3712,7 @@ td.name[contenteditable=true]:focus {
           }
           val /= 255;
           for (py = q = 0, ref9 = this.ljopt.pixelsize; 0 <= ref9 ? q <= ref9 : q >= ref9; py = 0 <= ref9 ? ++q : --q) {
+            rowcount++;
             for (px = s = 0, ref10 = this.ljopt.pixelsize; 0 <= ref10 ? s <= ref10 : s >= ref10; px = 0 <= ref10 ? ++s : --s) {
               pos1x = (x + px) + ((y + py) * this.current_image.width);
               pos4x = 4 * pos1x;
@@ -3713,6 +3724,8 @@ td.name[contenteditable=true]:focus {
         if (this.ljopt.do_early_stop) {
           if ((y % 10) === 0) {
             if ((performance.now() - start_time) > this.julia_max_rendertime) {
+              this.clear_julia();
+              this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y, 0, this.ljopt.ystart, this.local_julia.width, this.local_julia.height - this.ljopt.ystart);
               this.ljopt.ystart = y + this.ljopt.pixelsize;
               this.schedule_ui_draw();
               this.set_status('rendering');
@@ -3723,10 +3736,8 @@ td.name[contenteditable=true]:focus {
           }
         }
       }
-      if ((this.old_local_julia.width > 0) && (this.old_local_julia.height > 0)) {
-        this.graph_julia_ctx.clearRect(this.old_local_julia.x, this.old_local_julia.y, this.old_local_julia.width, this.old_local_julia.height);
-      }
-      this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y);
+      this.clear_julia();
+      this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y, 0, this.ljopt.ystart, this.local_julia.width, this.local_julia.height - this.ljopt.ystart);
       return this.reset_julia_rendering(this.ljopt.highres && this.pause_mode);
     };
 
