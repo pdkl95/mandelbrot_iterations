@@ -34,13 +34,14 @@ class Highlight.SavedItem extends Highlight.Item
     el = document.createElement('a')
     el.innerText = text
     el.classList.add('set_c_button')
-    el.addEventListener('click', @on_set_c_button_click)
+    #el.addEventListener('click', @on_set_c_button_click)
     el
 
   create_tr: (parent) ->
     return @tr_el if @tr_el?
     @tr_el = parent.insertRow(-1)
     @tr_el.id = @row_id
+    @tr_el.classList.add('saved_item_row')
 
     @name_cell = @tr_el.insertCell(0)
     @real_cell = @tr_el.insertCell(1)
@@ -51,6 +52,12 @@ class Highlight.SavedItem extends Highlight.Item
     @name_cell.classList.add('name')
     @name_cell.contentEditable = true
     @name_cell.addEventListener('input', @on_name_cell_input)
+    @real_cell.classList.add('location')
+    @real_cell.classList.add('real')
+    @imag_cell.classList.add('location')
+    @imag_cell.classList.add('imag')
+    @real_cell.addEventListener('click', @on_set_c_button_click)
+    @imag_cell.addEventListener('click', @on_set_c_button_click)
     @real_cell.append(@create_set_c_button(@r))
     @imag_cell.append(@create_set_c_button(@i))
 

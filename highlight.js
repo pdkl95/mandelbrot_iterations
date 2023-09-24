@@ -63,7 +63,6 @@
       el = document.createElement('a');
       el.innerText = text;
       el.classList.add('set_c_button');
-      el.addEventListener('click', this.on_set_c_button_click);
       return el;
     };
 
@@ -73,6 +72,7 @@
       }
       this.tr_el = parent.insertRow(-1);
       this.tr_el.id = this.row_id;
+      this.tr_el.classList.add('saved_item_row');
       this.name_cell = this.tr_el.insertCell(0);
       this.real_cell = this.tr_el.insertCell(1);
       this.imag_cell = this.tr_el.insertCell(2);
@@ -81,6 +81,12 @@
       this.name_cell.classList.add('name');
       this.name_cell.contentEditable = true;
       this.name_cell.addEventListener('input', this.on_name_cell_input);
+      this.real_cell.classList.add('location');
+      this.real_cell.classList.add('real');
+      this.imag_cell.classList.add('location');
+      this.imag_cell.classList.add('imag');
+      this.real_cell.addEventListener('click', this.on_set_c_button_click);
+      this.imag_cell.addEventListener('click', this.on_set_c_button_click);
       this.real_cell.append(this.create_set_c_button(this.r));
       this.imag_cell.append(this.create_set_c_button(this.i));
       this.delete_button = document.createElement('button');
