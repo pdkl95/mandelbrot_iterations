@@ -693,6 +693,8 @@ td.slider > label {
 #saved_locations {
   max-height: 16em;
   overflow-y: scroll;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 
@@ -701,28 +703,76 @@ button.delete {
   margin-left: 1em;
 }
 
-.set_c_button {
-  display: inline-block;
+.saved_item_row > .location {
   cursor: pointer;
-  padding: 3px 6px;
   border: 1px solid #e0e0e0;
 }
 
-.set_c_button:hover {
+.set_c_button {
+  display: block;
+  padding: 0 6px;
+  width:  100%;
+  height: 100%;
+}
+
+.saved_item_row:hover .set_c_button {
+  text-decoration: underline #4A90D9;
+}
+
+.saved_item_row:hover .location {
   background-color: #c0c0c0;
   border: 1px outset #bbb;
   text-shadow: 1px 1px 2px rgba(255,255,255,0.7);
 }
 
-.set_c_button:active {
+.saved_item_row > .real {
+  padding-left: 5px;
+  padding-right: 0;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.saved_item_row:hover > .real {
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+
+.saved_item_row > .imag {
+  padding-left: 0;
+  padding-right: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.saved_item_row:hover > .imag {
+  padding-left: 1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+  border-left: none;
+}
+
+.saved_item_row:active > .location {
   background-color: #eee;
   border: 1px intset #bbb;
   box-shadow: 1px 1px 3px -1px rgba(0,0,0,0.4) inset;
 
 }
 
+.saved_item_row:active > .location.real {
+  border-right: none;
+}
+
+.saved_item_row:active > .location.imag {
+  border-left: none;
+}
+
 td.name[contenteditable=true] {
-  cursor: pointer;
+  cursor: text;
   padding: 2px 5px;
   border: 1px solid #e0e0e0;
 }
@@ -733,6 +783,7 @@ td.name[contenteditable=true]:hover {
 }
 
 td.name[contenteditable=true]:focus {
+  cursor: text;
   background-color: #fff;
   border: 1px solid #4A90D9;
 }
@@ -1643,7 +1694,6 @@ td.name[contenteditable=true]:focus {
       el = document.createElement('a');
       el.innerText = text;
       el.classList.add('set_c_button');
-      el.addEventListener('click', this.on_set_c_button_click);
       return el;
     };
 
@@ -1653,6 +1703,7 @@ td.name[contenteditable=true]:focus {
       }
       this.tr_el = parent.insertRow(-1);
       this.tr_el.id = this.row_id;
+      this.tr_el.classList.add('saved_item_row');
       this.name_cell = this.tr_el.insertCell(0);
       this.real_cell = this.tr_el.insertCell(1);
       this.imag_cell = this.tr_el.insertCell(2);
@@ -1661,6 +1712,12 @@ td.name[contenteditable=true]:focus {
       this.name_cell.classList.add('name');
       this.name_cell.contentEditable = true;
       this.name_cell.addEventListener('input', this.on_name_cell_input);
+      this.real_cell.classList.add('location');
+      this.real_cell.classList.add('real');
+      this.imag_cell.classList.add('location');
+      this.imag_cell.classList.add('imag');
+      this.real_cell.addEventListener('click', this.on_set_c_button_click);
+      this.imag_cell.addEventListener('click', this.on_set_c_button_click);
       this.real_cell.append(this.create_set_c_button(this.r));
       this.imag_cell.append(this.create_set_c_button(this.i));
       this.delete_button = document.createElement('button');
@@ -2320,7 +2377,8 @@ td.name[contenteditable=true]:focus {
       this.deferred_render_pass_scale = 3;
       this.initial_render_pixel_size = Math.pow(this.deferred_render_pass_scale, this.deferred_render_passes);
       this.render_lines_per_pass = 24;
-      this.julia_max_rendertime = 250;
+      this.julia_max_rendertime = 200;
+      this.defer_highres_timeout = this.defer_highres_timeout_length = 650;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
@@ -2945,47 +3003,52 @@ td.name[contenteditable=true]:focus {
       }
     };
 
-    MandelIter.prototype.move_mouse_position = function(dx, dy, accel) {
+    MandelIter.prototype.move_mouse_position = function(dx, dy, accel, force) {
       var oldx, oldy, pos;
       if (accel == null) {
         accel = 1.0;
       }
+      if (force == null) {
+        force = false;
+      }
       oldx = this.orbit_mouse.x;
       oldy = this.orbit_mouse.y;
-      this.set_mouse_position(this.orbit_mouse.x + (dx * accel), this.orbit_mouse.y + (dy * accel));
+      this.set_mouse_position(this.orbit_mouse.x + (dx * accel), this.orbit_mouse.y + (dy * accel), force);
       this.orbit_mouse.x = this.mouse.x;
       this.orbit_mouse.y = this.mouse.y;
       pos = this.canvas_to_complex(this.orbit_mouse.x, this.orbit_mouse.y);
       this.loc_c.innerText = this.complex_to_string(pos);
-      return this.defer_highres_frames = 1;
+      this.reset_julia_rendering();
+      this.defer_highres_frames = 1;
+      return this.defer_highres_timeout = performance.now() + this.defer_highres_timeout_length;
     };
 
     MandelIter.prototype.mouse_step_up = function(accel) {
       if (accel == null) {
         accel = 1.0;
       }
-      return this.move_mouse_position(0, -this.option.keyboard_step.value, accel);
+      return this.move_mouse_position(0, -this.option.keyboard_step.value, accel, true);
     };
 
     MandelIter.prototype.mouse_step_down = function(accel) {
       if (accel == null) {
         accel = 1.0;
       }
-      return this.move_mouse_position(0, this.option.keyboard_step.value, accel);
+      return this.move_mouse_position(0, this.option.keyboard_step.value, accel, true);
     };
 
     MandelIter.prototype.mouse_step_left = function(accel) {
       if (accel == null) {
         accel = 1.0;
       }
-      return this.move_mouse_position(-this.option.keyboard_step.value, 0, accel);
+      return this.move_mouse_position(-this.option.keyboard_step.value, 0, accel, true);
     };
 
     MandelIter.prototype.mouse_step_right = function(accel) {
       if (accel == null) {
         accel = 1.0;
       }
-      return this.move_mouse_position(this.option.keyboard_step.value, 0, accel);
+      return this.move_mouse_position(this.option.keyboard_step.value, 0, accel, true);
     };
 
     MandelIter.prototype.on_button_set_c_click = function(event) {
@@ -3560,7 +3623,8 @@ td.name[contenteditable=true]:focus {
         do_early_stop: false,
         aamult: 1,
         aastep: 1.0,
-        highres: this.pause_mode && this.option.julia_more_when_paused.value
+        highres: this.pause_mode && this.option.julia_more_when_paused.value,
+        meeds_clear: false
       };
       return this.old_local_julia = {
         x: 0,
@@ -3571,7 +3635,7 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.draw_local_julia_setup = function(c) {
-      var margin2x, maxsize, maxx, maxy, orbit_cx, orbit_cy;
+      var backheight, barheight, barmargin, barperc, delta, margin2x, maxsize, maxx, maxy, orbit_cx, orbit_cy;
       if (!this.ljopt.changed) {
         return false;
       }
@@ -3587,12 +3651,33 @@ td.name[contenteditable=true]:focus {
       this.ljopt.aastep = 1.0;
       this.ljopt.highres = this.pause_mode && this.option.julia_more_when_paused.value;
       this.ljopt.do_early_stop = this.ljopt.highres;
+      this.ljopt.needs_clear = true;
       this.julia_maxiter = this.option.julia_max_iterations.value;
       if (this.defer_highres_frames > 0) {
         this.defer_highres_frames = this.defer_highres_frames - 1;
         this.ljopt.highres = false;
         this.schedule_ui_draw();
         return false;
+      }
+      if (this.defer_highres_timeout > 0) {
+        delta = this.defer_highres_timeout - performance.now();
+        if (delta > 0) {
+          barmargin = 2;
+          barheight = 3;
+          backheight = barheight + barmargin + barmargin;
+          barperc = (this.defer_highres_timeout_length - delta) / this.defer_highres_timeout_length;
+          this.graph_ui_ctx.save();
+          this.graph_ui_ctx.fillStyle = 'rgba(30,30,30,0.55)';
+          this.graph_ui_ctx.fillRect(0, this.graph_height - backheight - 1, this.graph_width, backheight);
+          this.graph_ui_ctx.fillStyle = 'rgba(240,60,60,0.72)';
+          this.graph_ui_ctx.fillRect(1, this.graph_height - barheight - barmargin - 1, (this.graph_width * barperc) - 1, barheight);
+          this.graph_ui_ctx.restore();
+          this.ljopt.highres = false;
+          this.schedule_ui_draw();
+          return false;
+        } else {
+          this.defer_highres_timeout = 0;
+        }
       }
       this.ljopt.busy = true;
       this.ljopt.ystart = 0;
@@ -3654,9 +3739,17 @@ td.name[contenteditable=true]:focus {
       return true;
     };
 
+    MandelIter.prototype.clear_julia = function() {
+      if (this.ljopt.needs_clear) {
+        this.ljopt.needs_clear = false;
+        return this.graph_julia_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
+      }
+    };
+
     MandelIter.prototype.draw_local_julia = function(lj) {
-      var aax, aay, iter, j, k, l, o, pos1x, pos4x, px, py, q, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, s, start_time, val, x, xx, y, yy;
+      var aax, aay, iter, j, k, l, o, pos1x, pos4x, px, py, q, ref, ref1, ref10, ref2, ref3, ref4, ref5, ref6, ref7, ref8, ref9, rowcount, s, start_time, val, x, xx, y, yy;
       start_time = performance.now();
+      rowcount = 0;
       for (y = j = ref = this.ljopt.ystart, ref1 = this.local_julia.height, ref2 = this.ljopt.pixelsize; ref2 > 0 ? j <= ref1 : j >= ref1; y = j += ref2) {
         for (x = k = 0, ref3 = this.local_julia.width, ref4 = this.ljopt.pixelsize; ref4 > 0 ? k <= ref3 : k >= ref3; x = k += ref4) {
           xx = x + this.local_julia.x;
@@ -3676,6 +3769,7 @@ td.name[contenteditable=true]:focus {
           }
           val /= 255;
           for (py = q = 0, ref9 = this.ljopt.pixelsize; 0 <= ref9 ? q <= ref9 : q >= ref9; py = 0 <= ref9 ? ++q : --q) {
+            rowcount++;
             for (px = s = 0, ref10 = this.ljopt.pixelsize; 0 <= ref10 ? s <= ref10 : s >= ref10; px = 0 <= ref10 ? ++s : --s) {
               pos1x = (x + px) + ((y + py) * this.current_image.width);
               pos4x = 4 * pos1x;
@@ -3687,6 +3781,8 @@ td.name[contenteditable=true]:focus {
         if (this.ljopt.do_early_stop) {
           if ((y % 10) === 0) {
             if ((performance.now() - start_time) > this.julia_max_rendertime) {
+              this.clear_julia();
+              this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y, 0, this.ljopt.ystart, this.local_julia.width, this.local_julia.height - this.ljopt.ystart);
               this.ljopt.ystart = y + this.ljopt.pixelsize;
               this.schedule_ui_draw();
               this.set_status('rendering');
@@ -3697,10 +3793,8 @@ td.name[contenteditable=true]:focus {
           }
         }
       }
-      if ((this.old_local_julia.width > 0) && (this.old_local_julia.height > 0)) {
-        this.graph_julia_ctx.clearRect(this.old_local_julia.x, this.old_local_julia.y, this.old_local_julia.width, this.old_local_julia.height);
-      }
-      this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y);
+      this.clear_julia();
+      this.graph_julia_ctx.putImageData(this.current_image, this.local_julia.x, this.local_julia.y, 0, this.ljopt.ystart, this.local_julia.width, this.local_julia.height - this.ljopt.ystart);
       return this.reset_julia_rendering(this.ljopt.highres && this.pause_mode);
     };
 
