@@ -159,7 +159,7 @@ footer {
   float: right;
 }
 
-.buttonbox.bbright ~ hr {\
+.buttonbox.bbright ~ hr {
   margin-top: 4px;
   margin-bottom: 4px;
   opacity: 0.15;
