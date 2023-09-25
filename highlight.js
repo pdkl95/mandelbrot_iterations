@@ -185,8 +185,12 @@
 
   })(Highlight.Item);
 
-  Highlight.SequenceItem = (function() {
-    function SequenceItem() {}
+  Highlight.SequenceItem = (function(superClass) {
+    extend(SequenceItem, superClass);
+
+    function SequenceItem() {
+      return SequenceItem.__super__.constructor.apply(this, arguments);
+    }
 
     SequenceItem.prototype.li_title = function() {
       return this.r + " + " + this.i + "i";
@@ -198,6 +202,7 @@
       el.id = this.id;
       el.classList.add('highlight_item');
       el.textContent = this.name;
+      console.log('create_li', el);
       return el;
     };
 
@@ -217,7 +222,7 @@
 
     return SequenceItem;
 
-  })();
+  })(Highlight.Item);
 
   Highlight.ItemCollection = (function() {
     function ItemCollection() {
@@ -398,6 +403,7 @@
         var child = new ctor, result = func.apply(child, args);
         return Object(result) === result ? result : child;
       })(Highlight.SequenceItem, item_args, function(){});
+      console.log('seqitem', item);
       return this.items.push(item);
     };
 

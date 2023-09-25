@@ -125,7 +125,7 @@ class Highlight.SavedItem extends Highlight.Item
         loc.name = event.target.innerText
         @save()
 
-class Highlight.SequenceItem
+class Highlight.SequenceItem extends Highlight.Item
   li_title: ->
     "#{@r} + #{@i}i"
 
