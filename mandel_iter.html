@@ -1763,11 +1763,9 @@ td.name[contenteditable=true]:focus {
     };
 
     SavedItem.prototype.remove = function() {
-      var idx;
       this.remove_storage();
       this.tr_el.remove();
-      idx = this.parent_collection.items.indexOf(this);
-      this.parent_collection.items.splice(idx, 1);
+      this.parent_collection.remove_item(this);
       return delete Highlight.saved_locations[this.row_id];
     };
 
@@ -1869,6 +1867,8 @@ td.name[contenteditable=true]:focus {
       return this._serialnum++;
     };
 
+    SavedLocations.prototype.num_saved_key = 'num_saved_locations';
+
     function SavedLocations(id) {
       this.id = id;
       SavedLocations.__super__.constructor.call(this);
@@ -1906,6 +1906,21 @@ td.name[contenteditable=true]:focus {
         results.push(item.save(idx));
       }
       return results;
+    };
+
+    SavedLocations.prototype.update_num_saved = function() {
+      if (this.items.length > 0) {
+        return APP.storage_set(this.num_saved_key, this.items.length);
+      } else {
+        return APP.storage_remove(this.num_saved_key);
+      }
+    };
+
+    SavedLocations.prototype.remove_item = function(item) {
+      var idx;
+      idx = this.items.indexOf(item);
+      this.items.splice(idx, 1);
+      return this.update_num_saved();
     };
 
     SavedLocations.prototype.to_json_obj = function() {
@@ -1946,7 +1961,7 @@ td.name[contenteditable=true]:focus {
         item = ref[idx];
         item.save(idx);
       }
-      return APP.storage_set('num_saved_locations', this.items.length);
+      return this.update_num_saved();
     };
 
     SavedLocations.prototype.deserialize = function(str) {
@@ -1971,7 +1986,7 @@ td.name[contenteditable=true]:focus {
 
     SavedLocations.prototype.load_storage = function() {
       var idx, item, j, n, ref;
-      n = APP.storage_get_int('num_saved_locations');
+      n = APP.storage_get_int(this.num_saved_key);
       for (idx = j = 0, ref = n; 0 <= ref ? j <= ref : j >= ref; idx = 0 <= ref ? ++j : --j) {
         item = this.load_item_from_storage(idx);
         if (item != null) {
@@ -2118,6 +2133,8 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
   window.FileIO || (window.FileIO = {});
 
   FileIO.download = function(filename, filedata, mimetype) {
@@ -2135,6 +2152,60 @@ td.name[contenteditable=true]:focus {
     link.click();
     return window.URL.revokeObjectURL(url);
   };
+
+  FileIO.Uploader = (function() {
+    function Uploader(input_id, button_id) {
+      this.input_id = input_id;
+      this.button_id = button_id != null ? button_id : null;
+      this.on_input_change = bind(this.on_input_change, this);
+      this.on_button_click = bind(this.on_button_click, this);
+      this.input_el = document.getElementById(this.input_id);
+      this.input_el.addEventListener('change', this.on_input_change, false);
+      if (this.button_id != null) {
+        this.button_el = document.getElementById(this.button_id);
+        this.button_el.addEventListener('click', this.on_button_click);
+      }
+      this.on_upload_callbacks = [];
+    }
+
+    Uploader.prototype.on_upload = function(callback_func) {
+      return this.on_upload_callbacks.push(callback_func);
+    };
+
+    Uploader.prototype.send_upload_callbacks = function(filedata) {
+      var callback, i, len, ref, results;
+      ref = this.on_upload_callbacks;
+      results = [];
+      for (i = 0, len = ref.length; i < len; i++) {
+        callback = ref[i];
+        results.push(callback(filedata));
+      }
+      return results;
+    };
+
+    Uploader.prototype.on_button_click = function(event) {
+      return this.input_el.click();
+    };
+
+    Uploader.prototype.on_input_change = function(event) {
+      var enc, file, reader;
+      if (this.input_el.files.length < 1) {
+        return;
+      }
+      file = this.input_el.files[0];
+      enc = new TextDecoder("utf-8");
+      reader = new FileReader();
+      reader.onload = (function(_this) {
+        return function() {
+          return _this.send_upload_callbacks(enc.decode(reader.result));
+        };
+      })(this);
+      return reader.readAsArrayBuffer(file);
+    };
+
+    return Uploader;
+
+  })();
 
 }).call(this);
 
@@ -2181,9 +2252,7 @@ td.name[contenteditable=true]:focus {
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
-      this.on_load_from_file_input_load = bind(this.on_load_from_file_input_load, this);
-      this.on_load_from_file_input_change = bind(this.on_load_from_file_input_change, this);
-      this.on_load_from_file_click = bind(this.on_load_from_file_click, this);
+      this.on_load_from_file_upload = bind(this.on_load_from_file_upload, this);
       this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
       this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
@@ -2253,8 +2322,6 @@ td.name[contenteditable=true]:focus {
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.save_to_file = this.context.getElementById('save_to_file');
-      this.load_from_file = this.context.getElementById('load_from_file');
-      this.load_from_file_input = this.context.getElementById('load_from_file_input');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
@@ -2264,8 +2331,6 @@ td.name[contenteditable=true]:focus {
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
-      this.load_from_file.addEventListener('click', this.on_load_from_file_click);
-      this.load_from_file_input.addEventListener('change', this.on_load_from_file_input_change, false);
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
@@ -2394,6 +2459,8 @@ td.name[contenteditable=true]:focus {
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
       this.highlight_next.addEventListener('click', this.on_highlight_next_click);
       this.highlight_list.addEventListener('click', this.on_highlight_list_click);
+      this.load_from_file_uploader = new FileIO.Uploader('load_from_file_input', 'load_from_file');
+      this.load_from_file_uploader.on_upload(this.on_load_from_file_upload);
       this.saved_locations = new Highlight.SavedLocations('saved_locations');
       this.saved_locations_tab_button = this.context.getElementById('saved_locations_tab_button');
       if (this.saved_locations.load_storage() > 0) {
@@ -2585,34 +2652,13 @@ td.name[contenteditable=true]:focus {
       return FileIO.download(filename, filedata, 'application/json');
     };
 
-    MandelIter.prototype.on_load_from_file_click = function(event) {
-      return this.load_from_file_input.click();
-    };
-
-    MandelIter.prototype.on_load_from_file_input_change = function(event) {
-      var file, reader;
-      if (this.load_from_file_input.files.length < 1) {
-        return;
+    MandelIter.prototype.on_load_from_file_upload = function(filedata) {
+      var objs, ref;
+      objs = (ref = JSON.parse(filedata)) != null ? ref.saved_locations : void 0;
+      if (objs != null) {
+        return this.saved_locations.load_json_objs(objs);
       }
-      file = this.load_from_file_input.files[0];
-      reader = new FileReader();
-      reader.onload = (function(_this) {
-        return function() {
-          var enc, json_obj, objs;
-          enc = new TextDecoder("utf-8");
-          json_obj = JSON.parse(enc.decode(reader.result));
-          if (json_obj != null) {
-            objs = json_obj.saved_locations;
-            if (objs != null) {
-              return _this.saved_locations.load_json_objs(objs);
-            }
-          }
-        };
-      })(this);
-      return reader.readAsArrayBuffer(file);
     };
-
-    MandelIter.prototype.on_load_from_file_input_load = function(event) {};
 
     MandelIter.prototype.current_mandel_theme = function() {
       return this.colorize_themes[this.default_mandel_theme];

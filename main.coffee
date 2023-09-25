@@ -75,8 +75,6 @@ class MandelIter
     @loc_to_set_c   = @context.getElementById('copy_loc_to_set_c')
     @reset_storage  = @context.getElementById('reset_all_storage')
     @save_to_file   = @context.getElementById('save_to_file')
-    @load_from_file = @context.getElementById('load_from_file')
-    @load_from_file_input = @context.getElementById('load_from_file_input')
 
     @button_reset.addEventListener(  'click',  @on_button_reset_click)
     @button_zoom.addEventListener(   'click',  @on_button_zoom_click)
@@ -87,8 +85,6 @@ class MandelIter
     @loc_to_set_c.addEventListener(  'click',  @on_copy_loc_to_set_c_click)
     @reset_storage.addEventListener( 'click',  @on_reset_storage_click)
     @save_to_file.addEventListener(  'click',  @on_save_to_file_click)
-    @load_from_file.addEventListener('click',  @on_load_from_file_click)
-    @load_from_file_input.addEventListener('change', @on_load_from_file_input_change, false)
 
     @option =
       show_tooltips:            new UI.BoolOption('show_tooltips', true)
@@ -221,6 +217,9 @@ class MandelIter
     @highlight_prev.addEventListener('click', @on_highlight_prev_click)
     @highlight_next.addEventListener('click', @on_highlight_next_click)
     @highlight_list.addEventListener('click', @on_highlight_list_click)
+
+    @load_from_file_uploader = new FileIO.Uploader('load_from_file_input', 'load_from_file')
+    @load_from_file_uploader.on_upload(@on_load_from_file_upload)
 
     @saved_locations = new Highlight.SavedLocations('saved_locations')
     @saved_locations_tab_button = @context.getElementById('saved_locations_tab_button')
@@ -366,25 +365,10 @@ class MandelIter
     filedata = @saved_locations_serialize()
     FileIO.download(filename, filedata, 'application/json')
 
-  on_load_from_file_click: (event) =>
-    @load_from_file_input.click()
-
-  on_load_from_file_input_change: (event) =>
-    return if @load_from_file_input.files.length < 1
-    file = @load_from_file_input.files[0]
-
-    reader = new FileReader()
-    reader.onload = () =>
-      enc = new TextDecoder("utf-8")
-      json_obj = JSON.parse(enc.decode(reader.result))
-      if json_obj?
-        objs = json_obj.saved_locations
-        if objs?
-          @saved_locations.load_json_objs(objs)
-
-    reader.readAsArrayBuffer(file)
-
-  on_load_from_file_input_load: (event) =>
+  on_load_from_file_upload: (filedata) =>
+    objs = JSON.parse(filedata)?.saved_locations
+    if objs?
+      @saved_locations.load_json_objs(objs)
 
   current_mandel_theme: ->
     # if @option.mandel_color_scale_r? and @option.mandel_color_scale_g? and @option.mandel_color_scale_r?

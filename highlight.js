@@ -132,11 +132,9 @@
     };
 
     SavedItem.prototype.remove = function() {
-      var idx;
       this.remove_storage();
       this.tr_el.remove();
-      idx = this.parent_collection.items.indexOf(this);
-      this.parent_collection.items.splice(idx, 1);
+      this.parent_collection.remove_item(this);
       return delete Highlight.saved_locations[this.row_id];
     };
 
@@ -238,6 +236,8 @@
       return this._serialnum++;
     };
 
+    SavedLocations.prototype.num_saved_key = 'num_saved_locations';
+
     function SavedLocations(id) {
       this.id = id;
       SavedLocations.__super__.constructor.call(this);
@@ -275,6 +275,21 @@
         results.push(item.save(idx));
       }
       return results;
+    };
+
+    SavedLocations.prototype.update_num_saved = function() {
+      if (this.items.length > 0) {
+        return APP.storage_set(this.num_saved_key, this.items.length);
+      } else {
+        return APP.storage_remove(this.num_saved_key);
+      }
+    };
+
+    SavedLocations.prototype.remove_item = function(item) {
+      var idx;
+      idx = this.items.indexOf(item);
+      this.items.splice(idx, 1);
+      return this.update_num_saved();
     };
 
     SavedLocations.prototype.to_json_obj = function() {
@@ -315,7 +330,7 @@
         item = ref[idx];
         item.save(idx);
       }
-      return APP.storage_set('num_saved_locations', this.items.length);
+      return this.update_num_saved();
     };
 
     SavedLocations.prototype.deserialize = function(str) {
@@ -340,7 +355,7 @@
 
     SavedLocations.prototype.load_storage = function() {
       var idx, item, j, n, ref;
-      n = APP.storage_get_int('num_saved_locations');
+      n = APP.storage_get_int(this.num_saved_key);
       for (idx = j = 0, ref = n; 0 <= ref ? j <= ref : j >= ref; idx = 0 <= ref ? ++j : --j) {
         item = this.load_item_from_storage(idx);
         if (item != null) {

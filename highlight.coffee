@@ -95,8 +95,7 @@ class Highlight.SavedItem extends Highlight.Item
   remove: ->
     @remove_storage()
     @tr_el.remove()
-    idx = @parent_collection.items.indexOf(this)
-    @parent_collection.items.splice(idx, 1)
+    @parent_collection.remove_item(this)
     delete Highlight.saved_locations[@row_id]
 
   on_delete_button_click: (event) =>
@@ -157,6 +156,8 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
     @_serialnum ||= 0
     @_serialnum++
 
+  num_saved_key: 'num_saved_locations'
+
   constructor: (@id) ->
     super()
 
@@ -179,6 +180,17 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
     for item, idx in @items
       item.save(idx)
 
+  update_num_saved: ->
+    if @items.length > 0
+      APP.storage_set(@num_saved_key, @items.length)
+    else
+      APP.storage_remove(@num_saved_key)
+
+  remove_item: (item) ->
+    idx = @items.indexOf(item)
+    @items.splice(idx, 1)
+    @update_num_saved()
+
   to_json_obj: ->
     list = []
     for item, idx in @items
@@ -196,7 +208,7 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
   save: ->
     for item, idx in @items
       item.save(idx)
-    APP.storage_set('num_saved_locations', @items.length)
+    @update_num_saved()
 
   deserialize: (str) ->
     new Highlight.SavedItem(this, str.split('|')...)
@@ -211,7 +223,7 @@ class Highlight.SavedLocations extends Highlight.ItemCollection
       null
 
   load_storage: ->
-    n = APP.storage_get_int('num_saved_locations')
+    n = APP.storage_get_int(@num_saved_key)
     for idx in [0..n]
       item = @load_item_from_storage(idx)
       @append(item) if item?

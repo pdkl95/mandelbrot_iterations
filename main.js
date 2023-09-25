@@ -41,9 +41,7 @@
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
-      this.on_load_from_file_input_load = bind(this.on_load_from_file_input_load, this);
-      this.on_load_from_file_input_change = bind(this.on_load_from_file_input_change, this);
-      this.on_load_from_file_click = bind(this.on_load_from_file_click, this);
+      this.on_load_from_file_upload = bind(this.on_load_from_file_upload, this);
       this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
       this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
@@ -113,8 +111,6 @@
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.save_to_file = this.context.getElementById('save_to_file');
-      this.load_from_file = this.context.getElementById('load_from_file');
-      this.load_from_file_input = this.context.getElementById('load_from_file_input');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
@@ -124,8 +120,6 @@
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
-      this.load_from_file.addEventListener('click', this.on_load_from_file_click);
-      this.load_from_file_input.addEventListener('change', this.on_load_from_file_input_change, false);
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
@@ -254,6 +248,8 @@
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
       this.highlight_next.addEventListener('click', this.on_highlight_next_click);
       this.highlight_list.addEventListener('click', this.on_highlight_list_click);
+      this.load_from_file_uploader = new FileIO.Uploader('load_from_file_input', 'load_from_file');
+      this.load_from_file_uploader.on_upload(this.on_load_from_file_upload);
       this.saved_locations = new Highlight.SavedLocations('saved_locations');
       this.saved_locations_tab_button = this.context.getElementById('saved_locations_tab_button');
       if (this.saved_locations.load_storage() > 0) {
@@ -445,34 +441,13 @@
       return FileIO.download(filename, filedata, 'application/json');
     };
 
-    MandelIter.prototype.on_load_from_file_click = function(event) {
-      return this.load_from_file_input.click();
-    };
-
-    MandelIter.prototype.on_load_from_file_input_change = function(event) {
-      var file, reader;
-      if (this.load_from_file_input.files.length < 1) {
-        return;
+    MandelIter.prototype.on_load_from_file_upload = function(filedata) {
+      var objs, ref;
+      objs = (ref = JSON.parse(filedata)) != null ? ref.saved_locations : void 0;
+      if (objs != null) {
+        return this.saved_locations.load_json_objs(objs);
       }
-      file = this.load_from_file_input.files[0];
-      reader = new FileReader();
-      reader.onload = (function(_this) {
-        return function() {
-          var enc, json_obj, objs;
-          enc = new TextDecoder("utf-8");
-          json_obj = JSON.parse(enc.decode(reader.result));
-          if (json_obj != null) {
-            objs = json_obj.saved_locations;
-            if (objs != null) {
-              return _this.saved_locations.load_json_objs(objs);
-            }
-          }
-        };
-      })(this);
-      return reader.readAsArrayBuffer(file);
     };
-
-    MandelIter.prototype.on_load_from_file_input_load = function(event) {};
 
     MandelIter.prototype.current_mandel_theme = function() {
       return this.colorize_themes[this.default_mandel_theme];
