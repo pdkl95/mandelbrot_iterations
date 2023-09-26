@@ -22,6 +22,7 @@ MAIN_TARGET_DEPS = $(MAIN_TARGET_SRC) \
         $(builddir)/motion.js \
 	$(builddir)/highlight.js \
 	$(builddir)/fileio.js \
+	$(builddir)/color.js \
 	$(builddir)/main.js \
         $(srcdir)/basic.css \
         $(srcdir)/style.css

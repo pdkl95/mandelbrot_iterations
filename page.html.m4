@@ -186,7 +186,7 @@ undivert(`style.css')
               </td>
             </tr>
             <tr>
-              <th class="tt ttright" data-title="Skip the first few results when drawing orbits.">Skip Initial<br>Iterations</th>
+              <th class="tt ttright" data-title="Skip the first few results when drawing orbits.">Skip Initial<br />Iterations</th>
               <td>
                 <input id="orbit_skip_initial_results" type="checkbox" autocomplete="off">
               </td>
@@ -242,7 +242,7 @@ undivert(`style.css')
               </td>
             </tr>
             <tr>
-              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br>Saved Locations</th>
+              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br />Saved Locations</th>
               <td>
                 <input id="confirm_remove_saved_loc" type="checkbox" checked="checked">
               </td>
@@ -318,7 +318,7 @@ undivert(`style.css')
           </table>
 
           <h3>Mandelbrot Options</h3>
-          <table>
+          <table>Scale <span class="textcolor red">Red</span>
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">
@@ -336,33 +336,40 @@ undivert(`style.css')
                 </select>
               </td>
             </tr>
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor red">Red</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color red"> -->
-            <!--     <label for="mandel_color_scale_r" id="mandel_color_scale_r_label"></label> -->
-            <!--     <input id="mandel_color_scale_r" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor green">Green</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color green"> -->
-            <!--     <label for="mandel_color_scale_g" id="mandel_color_scale_g_label"></label> -->
-            <!--     <input id="mandel_color_scale_g" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor blue">Blue</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color blue"> -->
-            <!--     <label for="mandel_color_scale_b" id="mandel_color_scale_b_label"></label> -->
-            <!--     <input id="mandel_color_scale_b" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
+            <tr>
+              <th class="tt ttright" data-title="Color for compllex values inside the Mandelbrot Set. (traditionally black)">
+                Internal Color
+              </th>
+              <td class="color_picker">
+                <label for="mandel_color_internal" id="mandel_color_internal_label">#000000</label>
+                <input id="mandel_color_internal" name="mandel_color_internal"
+                       type="color" value="#000000" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Color to use for complex values _outside_ the Mandelbrot Set with the _lowest_ escape count. (values of C that took the fewest iterations to have a magnitude greater than 2.">
+                External Color
+                <br />
+                Lowest Escape Count
+              </th>
+              <td class="color_picker">
+                <label for="mandel_color_escape_min" id="mandel_color_escape_min_label">#000000</label>
+                <input id="mandel_color_escape_min" name="mandel_color_escape_min"
+                       type="color" value="#000000" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Color to use for complex values _outside_ the Mandelbrot Set with the _highest_ escape count. (values of C that took the largest number of iterations to have a magnitude greater than 2.">
+                External Color
+                <br />
+                Highest Escape Count
+              </th>
+              <td class="color_picker">
+                <label for="mandel_color_escape_max" id="mandel_color_escape_max_label">#FFFFFF</label>
+                <input id="mandel_color_escape_max" name="mandel_color_escape_max"
+                       type="color" value="#FFFFFF" autocomplete="off">
+              </td>
+            </tr>
           </table>
         </div>
 
@@ -391,6 +398,7 @@ undivert(`uioption.js')
 undivert(`motion.js')
 undivert(`highlight.js')
 undivert(`fileio.js')
+undivert(`color.js')
 undivert(`main.js')
     </script>
   </body>

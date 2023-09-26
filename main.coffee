@@ -14,12 +14,28 @@ class MandelIter
 
     @running = false
 
-    @colorize_themes =
-      linear_greyscale: [1, 1, 1]
-      greyish_purple:   [2, 0.8, 2]
+    @content_el    = @context.getElementById('content')
+    @status        = @context.getElementById('status')
+    @status_current = 'loading'
 
-    @default_mandel_theme = 'linear_greyscale'
-    @default_julia_theme  = 'greyish_purple'
+    @msgbox = @context.getElementById('msgbox')
+    @msg    = @context.getElementById('msg')
+    @msg_visible = false
+
+    @default_mandel_theme = new Color.Theme('linear_greyscale')
+    @default_mandel_theme.set_colors
+      internal:   '#010203'
+      escape_min: '#112233'
+      escape_max: '#FFFFFF'
+
+    @default_julia_theme = new Color.Theme('greyish_purple')
+    @default_julia_theme.set_colors
+      internal:   '#000000'
+      escape_min: '#000000'
+      escape_max: '#FFFFFF'
+    @default_julia_theme.add_stop 0.2, '#280A28'
+    @default_julia_theme.add_stop 0.6, '#8D008D'
+    @default_julia_theme.add_stop 0.8, '#AE64AE'
 
     fmtfloatopts =
       notation:    'standard'
@@ -32,14 +48,6 @@ class MandelIter
     @fmtfloat = new Intl.NumberFormat undefined, fmtfloatopts
     fmtfloatopts['signDisplay'] = 'never'
     @fmtfloatnosign = new Intl.NumberFormat undefined, fmtfloatopts
-
-    @content_el    = @context.getElementById('content')
-    @status        = @context.getElementById('status')
-    @status_current = 'loading'
-
-    @msgbox = @context.getElementById('msgbox')
-    @msg    = @context.getElementById('msg')
-    @msg_visible = false
 
     @show_tooltips = @context.getElementById('show_tooltips')
     @show_tooltips.addEventListener('change', @on_show_tooltips_change)
@@ -113,9 +121,9 @@ class MandelIter
       julia_antialias:          new UI.SelectOption('julia_antialias');
       mandel_antialias:         new UI.SelectOption('mandel_antialias');
       mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 120)
-      #mandel_color_scale_r:     new UI.FloatOption('mandel_color_scale_r', @colorize_themes[@default_mandel_theme][0])
-      #mandel_color_scale_g:     new UI.FloatOption('mandel_color_scale_g', @colorize_themes[@default_mandel_theme][1])
-      #mandel_color_scale_b:     new UI.FloatOption('mandel_color_scale_b', @colorize_themes[@default_mandel_theme][2])
+      mandel_color_internal:    new UI.ColorOption('mandel_color_internal')
+      mandel_color_escape_min:  new UI.ColorOption('mandel_color_escape_min')
+      mandel_color_escape_max:  new UI.ColorOption('mandel_color_escape_max')
       highlight_group:          new UI.SelectOption('highlight_group');
 
     @option.orbit_skip_initial.register_callback on_change: @schedule_ui_draw
@@ -141,14 +149,9 @@ class MandelIter
 
     @option.julia_local_pixel_size.set_label_text_formater (value) -> "#{value}x"
 
-    #format_color_scale = (value) ->
-    #  parseFloat(value).toFixed(2)
-    # @option.mandel_color_scale_r.set_label_text_formater(format_color_scale)
-    # @option.mandel_color_scale_g.set_label_text_formater(format_color_scale)
-    # @option.mandel_color_scale_b.set_label_text_formater(format_color_scale)
-    # @option.mandel_color_scale_r.register_callback on_change: @on_mandel_color_scale_change
-    # @option.mandel_color_scale_g.register_callback on_change: @on_mandel_color_scale_change
-    # @option.mandel_color_scale_b.register_callback on_change: @on_mandel_color_scale_change
+    @option.mandel_color_internal.register_callback   on_change: @on_mandel_color_change
+    @option.mandel_color_escape_min.register_callback on_change: @on_mandel_color_change
+    @option.mandel_color_escape_max.register_callback on_change: @on_mandel_color_change
 
     @option.highlight_group.register_callback on_change: @on_highlight_group_changed
 
@@ -310,6 +313,7 @@ class MandelIter
     @debugbox_msg.textContent = '' + msg
 
   warn: (msg) ->
+    console.log("WARNING", msg)
     @set_highlight_msg("WARNING: #{msg}")
 
   on_tabbutton_click: (event) =>
@@ -370,17 +374,22 @@ class MandelIter
     if objs?
       @saved_locations.load_json_objs(objs)
 
-  current_mandel_theme: ->
-    # if @option.mandel_color_scale_r? and @option.mandel_color_scale_g? and @option.mandel_color_scale_r?
-    #   [ @option.mandel_color_scale_r.value, @option.mandel_color_scale_g.value, @option.mandel_color_scale_b.value ]
-    # else
-    @colorize_themes[@default_mandel_theme]
+  use_fractal_colors: (opt = {}) ->
+    if opt.internal?
+      @fract_color_internal = opt.internal
+    if opt.escape_min?
+      @fract_color_escape_min = opt.escape_min
+    if opt.escape_max?
+      @fract_color_escape_max = opt.escape_max
 
-  current_julia_theme: ->
-    @colorize_themes[@default_julia_theme]
+  use_mandel_colors: ->
+    @use_fractal_colors(@default_mandel_colors)
 
-  #on_mandel_color_scale_change: =>
-  #  @repaint_mandelbrot()
+  use_julia_colors: ->
+    @use_fractal_colors(@default_julia_colors)
+
+  on_mandel_color_change: =>
+    @repaint_mandelbrot()
 
   complex_to_string: (z) ->
     rstr = @fmtfloat.format(z.r)
@@ -422,7 +431,7 @@ class MandelIter
       @msgbox.classList.add('hidden')
       @msg_visible = false
 
-  set_highlight_msg: (text) ->
+  set_highlight_msg: (text) =>
     @msg.textContent = text
     @msgbox.classList.remove('hidden')
     @msg_visible = true
@@ -917,7 +926,7 @@ class MandelIter
     if stopline >= @graph_height
       stopline = @graph_height
 
-    @current_theme = @current_mandel_theme()
+    @current_theme = @default_mandel_theme
     @current_image = @render_mandel_img
 
     aamult = @option.mandel_antialias.value
@@ -960,9 +969,7 @@ class MandelIter
 
   colorize_pixel: (value, offset) ->
     value = Math.pow(value, 0.5) * 255
-    @current_image.data[offset    ] = value * @current_theme[0]
-    @current_image.data[offset + 1] = value * @current_theme[1]
-    @current_image.data[offset + 2] = value * @current_theme[2]
+    [ @current_image.data[offset], @current_image.data[offset + 1], @current_image.data[offset + 2] ] = @current_theme.lookup(value)
 
   repaint_canvas: (ctx, values, theme) ->
     return unless ctx? and values?
@@ -1327,7 +1334,7 @@ class MandelIter
       @local_julia.y = maxy if @local_julia.y > maxy
 
     @current_image = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
-    @current_theme = @current_julia_theme()
+    @current_theme = @default_julia_theme
 
     return true
 

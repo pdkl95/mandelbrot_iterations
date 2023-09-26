@@ -342,7 +342,7 @@ footer {
   float: right;
 }
 
-.buttonbox.bbright ~ hr {\
+.buttonbox.bbright ~ hr {
   margin-top: 4px;
   margin-bottom: 4px;
   opacity: 0.15;
@@ -966,7 +966,7 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
             <tr>
-              <th class="tt ttright" data-title="Skip the first few results when drawing orbits.">Skip Initial<br>Iterations</th>
+              <th class="tt ttright" data-title="Skip the first few results when drawing orbits.">Skip Initial<br />Iterations</th>
               <td>
                 <input id="orbit_skip_initial_results" type="checkbox" autocomplete="off">
               </td>
@@ -1022,7 +1022,7 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
             <tr>
-              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br>Saved Locations</th>
+              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br />Saved Locations</th>
               <td>
                 <input id="confirm_remove_saved_loc" type="checkbox" checked="checked">
               </td>
@@ -1098,7 +1098,7 @@ td.name[contenteditable=true]:focus {
           </table>
 
           <h3>Mandelbrot Options</h3>
-          <table>
+          <table>Scale <span class="textcolor red">Red</span>
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">
@@ -1116,33 +1116,40 @@ td.name[contenteditable=true]:focus {
                 </select>
               </td>
             </tr>
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor red">Red</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color red"> -->
-            <!--     <label for="mandel_color_scale_r" id="mandel_color_scale_r_label"></label> -->
-            <!--     <input id="mandel_color_scale_r" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor green">Green</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color green"> -->
-            <!--     <label for="mandel_color_scale_g" id="mandel_color_scale_g_label"></label> -->
-            <!--     <input id="mandel_color_scale_g" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor blue">Blue</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color blue"> -->
-            <!--     <label for="mandel_color_scale_b" id="mandel_color_scale_b_label"></label> -->
-            <!--     <input id="mandel_color_scale_b" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
+            <tr>
+              <th class="tt ttright" data-title="Color for compllex values inside the Mandelbrot Set. (traditionally black)">
+                Internal Color
+              </th>
+              <td class="color_picker">
+                <label for="mandel_color_internal" id="mandel_color_internal_label">#000000</label>
+                <input id="mandel_color_internal" name="mandel_color_internal"
+                       type="color" value="#000000" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Color to use for complex values _outside_ the Mandelbrot Set with the _lowest_ escape count. (values of C that took the fewest iterations to have a magnitude greater than 2.">
+                External Color
+                <br />
+                Lowest Escape Count
+              </th>
+              <td class="color_picker">
+                <label for="mandel_color_escape_min" id="mandel_color_escape_min_label">#000000</label>
+                <input id="mandel_color_escape_min" name="mandel_color_escape_min"
+                       type="color" value="#000000" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <th class="tt ttright" data-title="Color to use for complex values _outside_ the Mandelbrot Set with the _highest_ escape count. (values of C that took the largest number of iterations to have a magnitude greater than 2.">
+                External Color
+                <br />
+                Highest Escape Count
+              </th>
+              <td class="color_picker">
+                <label for="mandel_color_escape_max" id="mandel_color_escape_max_label">#FFFFFF</label>
+                <input id="mandel_color_escape_max" name="mandel_color_escape_max"
+                       type="color" value="#FFFFFF" autocomplete="off">
+              </td>
+            </tr>
           </table>
         </div>
 
@@ -1539,6 +1546,48 @@ td.name[contenteditable=true]:focus {
 
   })(UI.Option);
 
+  UI.ColorOption = (function(superClass) {
+    extend(ColorOption, superClass);
+
+    function ColorOption() {
+      return ColorOption.__super__.constructor.apply(this, arguments);
+    }
+
+    ColorOption.prototype.color = function() {
+      if (this.coior == null) {
+        return this.color = new Color.RGB();
+      }
+    };
+
+    ColorOption.prototype.get = function(element) {
+      var c;
+      if (element == null) {
+        element = this.el;
+      }
+      c = this.color();
+      c.set(element.value);
+      return c;
+    };
+
+    ColorOption.prototype.set = function(new_value, update_element) {
+      if (update_element == null) {
+        update_element = true;
+      }
+      this.color.set(new_value);
+      if (update_element) {
+        this.el.value = this.color.to_hex();
+      }
+      return this.color;
+    };
+
+    ColorOption.prototype.label_text = function() {
+      return this.color.to_hex();
+    };
+
+    return ColorOption;
+
+  })(UI.Option);
+
 }).call(this);
 
 (function() {
@@ -1833,7 +1882,6 @@ td.name[contenteditable=true]:focus {
       el.id = this.id;
       el.classList.add('highlight_item');
       el.textContent = this.name;
-      console.log('create_li', el);
       return el;
     };
 
@@ -2034,7 +2082,6 @@ td.name[contenteditable=true]:focus {
         var child = new ctor, result = func.apply(child, args);
         return Object(result) === result ? result : child;
       })(Highlight.SequenceItem, item_args, function(){});
-      console.log('seqitem', item);
       return this.items.push(item);
     };
 
@@ -2216,6 +2263,313 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
+  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty,
+    slice = [].slice;
+
+  window.Color || (window.Color = {});
+
+  Color.RGB = (function() {
+    function RGB(value) {
+      if (value == null) {
+        value = '#000000';
+      }
+      this.r - 0;
+      this.g = 0;
+      this.b = 0;
+      this.set(value);
+    }
+
+    RGB.prototype.set = function(value) {
+      switch (typeof value) {
+        case "string":
+          return this.set_string(value);
+        case 'object':
+          if ((value.r != null) && (value.g != null) && (value.b != null)) {
+            return this.set_rgb(value.r, value.g, value.b);
+          } else {
+            return APP.warn('Object is not Color.RGB-like', value);
+          }
+          break;
+        default:
+          return console.log('cannot interpret as a color', value);
+      }
+    };
+
+    RGB.prototype._parse_byte = function(x) {
+      var value;
+      value = (function() {
+        switch (typeof x) {
+          case 'number':
+            return parseInt(x, 10);
+          case 'string':
+            if (x.length === 1) {
+              x = "" + x + x;
+            }
+            return parseInt(x, 16);
+          default:
+            APP.warn('Not a byte value', x);
+            return 0;
+        }
+      })();
+      if (value < 0) {
+        return 0;
+      } else {
+        if (value > 255) {
+          return 255;
+        } else {
+          return value;
+        }
+      }
+    };
+
+    RGB.prototype.set = function(value) {
+      switch (typeof value) {
+        case 'string':
+          return this.set_string(value);
+        case 'object':
+          return this.set_rgb(value.g, value.b, value.g);
+        default:
+          return APP.warn("Cannot set color to a", value);
+      }
+    };
+
+    RGB.prototype.set_rgb = function(r, g, b) {
+      this.r = this._parse_byte(r);
+      this.g = this._parse_byte(g);
+      return this.b = this._parse_byte(b);
+    };
+
+    RGB.prototype.set_string = function(str) {
+      var md;
+      md = str.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      if (md != null) {
+        return this.set_rgb(md[1], md[2], md[3]);
+      }
+      md = str.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
+      if (md != null) {
+        return this.set_rgb(md[1], md[2], md[3]);
+      }
+      APP.warn("Invalid color string", str);
+      return this;
+    };
+
+    RGB.prototype.hexbyte = function(byte) {
+      var str;
+      if (byte < 0) {
+        byte = 0;
+      }
+      if (byte > 255) {
+        byte = 255;
+      }
+      str = byte.toString(16);
+      if (str.length < 2) {
+        str = "0" + str;
+      }
+      return str;
+    };
+
+    RGB.prototype.linear_blend_rgb = function(other, t) {
+      var b, g, r;
+      r = parseInt(((1 - t) * this.r) + (t * other.r));
+      g = parseInt(((1 - t) * this.g) + (t * other.g));
+      b = parseInt(((1 - t) * this.b) + (t * other.b));
+      return [r, g, b];
+    };
+
+    RGB.prototype.rgb = function() {
+      return [this.r, this.g, this.b];
+    };
+
+    RGB.prototype.to_hex = function() {
+      return ["#", this.hexbyte(this.r), this.hexbyte(this.g), this.hexbyte(this.b)].join('');
+    };
+
+    RGB.prototype.to_rgb = function() {
+      return "rgb(" + this.r + "," + this.g + "," + this.b + ")";
+    };
+
+    RGB.prototype.to_rgba = function(a) {
+      return "rgbs(" + this.r + "," + this.g + "," + this.b + "," + a + ")";
+    };
+
+    return RGB;
+
+  })();
+
+  Color.Stop = (function(superClass) {
+    extend(Stop, superClass);
+
+    Stop.compare = function(a, b) {
+      return a.position - b.position;
+    };
+
+    function Stop() {
+      var position, rest;
+      position = arguments[0], rest = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+      Stop.__super__.constructor.apply(this, rest);
+      this.set_position(position);
+    }
+
+    Stop.prototype.set_position = function(value) {
+      this.position = parseFloat(value);
+      if (this.position < 0) {
+        this.position = 0;
+      }
+      if (this.position > 1) {
+        this.position = 1;
+      }
+      return this.position;
+    };
+
+    return Stop;
+
+  })(Color.RGB);
+
+  Color.Theme = (function() {
+    function Theme(name1) {
+      this.name = name1;
+      this.default_table_size = 256;
+      this.named_color = {};
+      this.stops = [];
+    }
+
+    Theme.prototype.find_stop_at = function(pos) {};
+
+    Theme.prototype.add_stop = function(position, value) {
+      var color, index;
+      if ((position < 0) || (position > 1)) {
+        APP.warn("Color positions in a Theme must satisfy 0 <= position <= 1");
+      }
+      color = new Color.Stop(position, value);
+      index = this.find_stop_at(position);
+      if (index != null) {
+        this.stops[index] = color;
+      } else {
+        this.stops.push(color);
+        this.sort_stops();
+      }
+      return color;
+    };
+
+    Theme.prototype.sort_stops = function() {
+      var i, j, next, prev, ref, results;
+      this.stops.sort(Color.Stop.compare);
+      results = [];
+      for (i = j = 1, ref = this.stops.length; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
+        prev = this.stops[i - 1];
+        next = this.stops[i];
+        prev.next = next;
+        if (next) {
+          results.push(next.prev = prev);
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
+
+    Theme.prototype.set_color = function(name, value) {
+      var color;
+      color = new Color.RGB(value);
+      this.named_color[name] = color;
+      switch (name) {
+        case 'escape_min':
+          return this.add_stop(0, color);
+        case 'escape_max':
+          return this.add_stop(1, color);
+      }
+    };
+
+    Theme.prototype.set_colors = function(opt) {
+      var name, results, value;
+      results = [];
+      for (name in opt) {
+        value = opt[name];
+        results.push(this.set_color(name, value));
+      }
+      return results;
+    };
+
+    Theme.prototype.color_at = function(pos) {
+      var j, len, prev, ref, stop;
+      prev = this.stops[0];
+      ref = this.stops;
+      for (j = 0, len = ref.length; j < len; j++) {
+        stop = ref[j];
+        if (pos > stop.position) {
+          return prev;
+        }
+        prev = stop;
+      }
+      return prev;
+    };
+
+    Theme.prototype.rgb_at = function(pos) {
+      var delta, next, prev, t;
+      prev = this.color_at(pos);
+      if (prev.next != null) {
+        next = prev.next;
+        delta = next.position - prev.position;
+        t = pos - delta;
+        return prev.linear_blend_rgb(next, t);
+      } else {
+        return prev.rgb();
+      }
+    };
+
+    Theme.prototype.reset_lookup_table = function(size) {
+      if (size == null) {
+        size = this.default_table_size;
+      }
+      return this.table = this.build_lookup_table(size);
+    };
+
+    Theme.prototype.build_lookup_table = function(size) {
+      var delta, next, offset, pos, prev, results, rgb, step, stop_index, t;
+      if (size == null) {
+        size = this.default_table_size;
+      }
+      this.table = new Uint8Array(size * 3);
+      stop_index = 0;
+      prev = this.stops[stop_index++];
+      next = this.stops[stop_index++];
+      step = 1.0 / size;
+      pos = 0;
+      offset = 0;
+      delta = t;
+      results = [];
+      while (pos < 1.0) {
+        if (pos >= next.position) {
+          prev = next;
+          next = this.stops[stop_index++];
+        }
+        delta = next.position - prev.position;
+        t = (pos - prev.position) / delta;
+        rgb = prev.linear_blend_rgb(next, t);
+        this.table[offset] = rgb[0];
+        this.table[offset + 1] = rgb[1];
+        this.table[offset + 2] = rgb[2];
+        offset += 3;
+        results.push(pos += step);
+      }
+      return results;
+    };
+
+    Theme.prototype.lookup = function(value) {
+      if (this.table == null) {
+        this.build_lookup_table();
+      }
+      return [this.table[value], this.table[value + 1], this.table[value + 2]];
+    };
+
+    return Theme;
+
+  })();
+
+}).call(this);
+
+(function() {
   var MandelIter, TAU,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -2257,7 +2611,9 @@ td.name[contenteditable=true]:focus {
       this.on_highlight_next_click = bind(this.on_highlight_next_click, this);
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
+      this.set_highlight_msg = bind(this.set_highlight_msg, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_mandel_color_change = bind(this.on_mandel_color_change, this);
       this.on_load_from_file_upload = bind(this.on_load_from_file_upload, this);
       this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
       this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
@@ -2270,12 +2626,27 @@ td.name[contenteditable=true]:focus {
       var fmtfloatopts, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
-      this.colorize_themes = {
-        linear_greyscale: [1, 1, 1],
-        greyish_purple: [2, 0.8, 2]
-      };
-      this.default_mandel_theme = 'linear_greyscale';
-      this.default_julia_theme = 'greyish_purple';
+      this.content_el = this.context.getElementById('content');
+      this.status = this.context.getElementById('status');
+      this.status_current = 'loading';
+      this.msgbox = this.context.getElementById('msgbox');
+      this.msg = this.context.getElementById('msg');
+      this.msg_visible = false;
+      this.default_mandel_theme = new Color.Theme('linear_greyscale');
+      this.default_mandel_theme.set_colors({
+        internal: '#010203',
+        escape_min: '#112233',
+        escape_max: '#FFFFFF'
+      });
+      this.default_julia_theme = new Color.Theme('greyish_purple');
+      this.default_julia_theme.set_colors({
+        internal: '#000000',
+        escape_min: '#000000',
+        escape_max: '#FFFFFF'
+      });
+      this.default_julia_theme.add_stop(0.2, '#280A28');
+      this.default_julia_theme.add_stop(0.6, '#8D008D');
+      this.default_julia_theme.add_stop(0.8, '#AE64AE');
       fmtfloatopts = {
         notation: 'standard',
         style: 'decimal',
@@ -2287,12 +2658,6 @@ td.name[contenteditable=true]:focus {
       this.fmtfloat = new Intl.NumberFormat(void 0, fmtfloatopts);
       fmtfloatopts['signDisplay'] = 'never';
       this.fmtfloatnosign = new Intl.NumberFormat(void 0, fmtfloatopts);
-      this.content_el = this.context.getElementById('content');
-      this.status = this.context.getElementById('status');
-      this.status_current = 'loading';
-      this.msgbox = this.context.getElementById('msgbox');
-      this.msg = this.context.getElementById('msg');
-      this.msg_visible = false;
       this.show_tooltips = this.context.getElementById('show_tooltips');
       this.show_tooltips.addEventListener('change', this.on_show_tooltips_change);
       this.show_tooltips.checked = true;
@@ -2364,6 +2729,9 @@ td.name[contenteditable=true]:focus {
         julia_antialias: new UI.SelectOption('julia_antialias'),
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
+        mandel_color_internal: new UI.ColorOption('mandel_color_internal'),
+        mandel_color_escape_min: new UI.ColorOption('mandel_color_escape_min'),
+        mandel_color_escape_max: new UI.ColorOption('mandel_color_escape_max'),
         highlight_group: new UI.SelectOption('highlight_group')
       };
       this.option.orbit_skip_initial.register_callback({
@@ -2404,6 +2772,15 @@ td.name[contenteditable=true]:focus {
       });
       this.option.julia_local_pixel_size.set_label_text_formater(function(value) {
         return value + "x";
+      });
+      this.option.mandel_color_internal.register_callback({
+        on_change: this.on_mandel_color_change
+      });
+      this.option.mandel_color_escape_min.register_callback({
+        on_change: this.on_mandel_color_change
+      });
+      this.option.mandel_color_escape_max.register_callback({
+        on_change: this.on_mandel_color_change
       });
       this.option.highlight_group.register_callback({
         on_change: this.on_highlight_group_changed
@@ -2573,6 +2950,7 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.warn = function(msg) {
+      console.log("WARNING", msg);
       return this.set_highlight_msg("WARNING: " + msg);
     };
 
@@ -2666,12 +3044,31 @@ td.name[contenteditable=true]:focus {
       }
     };
 
-    MandelIter.prototype.current_mandel_theme = function() {
-      return this.colorize_themes[this.default_mandel_theme];
+    MandelIter.prototype.use_fractal_colors = function(opt) {
+      if (opt == null) {
+        opt = {};
+      }
+      if (opt.internal != null) {
+        this.fract_color_internal = opt.internal;
+      }
+      if (opt.escape_min != null) {
+        this.fract_color_escape_min = opt.escape_min;
+      }
+      if (opt.escape_max != null) {
+        return this.fract_color_escape_max = opt.escape_max;
+      }
     };
 
-    MandelIter.prototype.current_julia_theme = function() {
-      return this.colorize_themes[this.default_julia_theme];
+    MandelIter.prototype.use_mandel_colors = function() {
+      return this.use_fractal_colors(this.default_mandel_colors);
+    };
+
+    MandelIter.prototype.use_julia_colors = function() {
+      return this.use_fractal_colors(this.default_julia_colors);
+    };
+
+    MandelIter.prototype.on_mandel_color_change = function() {
+      return this.repaint_mandelbrot();
     };
 
     MandelIter.prototype.complex_to_string = function(z) {
@@ -3374,7 +3771,7 @@ td.name[contenteditable=true]:focus {
       if (stopline >= this.graph_height) {
         stopline = this.graph_height;
       }
-      this.current_theme = this.current_mandel_theme();
+      this.current_theme = this.default_mandel_theme;
       this.current_image = this.render_mandel_img;
       aamult = this.option.mandel_antialias.value;
       aastep = 1.0 / aamult;
@@ -3418,10 +3815,9 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.colorize_pixel = function(value, offset) {
+      var ref;
       value = Math.pow(value, 0.5) * 255;
-      this.current_image.data[offset] = value * this.current_theme[0];
-      this.current_image.data[offset + 1] = value * this.current_theme[1];
-      return this.current_image.data[offset + 2] = value * this.current_theme[2];
+      return ref = this.current_theme.lookup(value), this.current_image.data[offset] = ref[0], this.current_image.data[offset + 1] = ref[1], this.current_image.data[offset + 2] = ref[2], ref;
     };
 
     MandelIter.prototype.repaint_canvas = function(ctx, values, theme) {
@@ -3787,7 +4183,7 @@ td.name[contenteditable=true]:focus {
         }
       }
       this.current_image = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
-      this.current_theme = this.current_julia_theme();
+      this.current_theme = this.default_julia_theme;
       return true;
     };
 

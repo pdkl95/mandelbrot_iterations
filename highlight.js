@@ -202,7 +202,6 @@
       el.id = this.id;
       el.classList.add('highlight_item');
       el.textContent = this.name;
-      console.log('create_li', el);
       return el;
     };
 
@@ -403,7 +402,6 @@
         var child = new ctor, result = func.apply(child, args);
         return Object(result) === result ? result : child;
       })(Highlight.SequenceItem, item_args, function(){});
-      console.log('seqitem', item);
       return this.items.push(item);
     };
 

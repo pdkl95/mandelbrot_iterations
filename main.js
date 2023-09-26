@@ -40,7 +40,9 @@
       this.on_highlight_next_click = bind(this.on_highlight_next_click, this);
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
+      this.set_highlight_msg = bind(this.set_highlight_msg, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_mandel_color_change = bind(this.on_mandel_color_change, this);
       this.on_load_from_file_upload = bind(this.on_load_from_file_upload, this);
       this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
       this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
@@ -53,12 +55,27 @@
       var fmtfloatopts, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
-      this.colorize_themes = {
-        linear_greyscale: [1, 1, 1],
-        greyish_purple: [2, 0.8, 2]
-      };
-      this.default_mandel_theme = 'linear_greyscale';
-      this.default_julia_theme = 'greyish_purple';
+      this.content_el = this.context.getElementById('content');
+      this.status = this.context.getElementById('status');
+      this.status_current = 'loading';
+      this.msgbox = this.context.getElementById('msgbox');
+      this.msg = this.context.getElementById('msg');
+      this.msg_visible = false;
+      this.default_mandel_theme = new Color.Theme('linear_greyscale');
+      this.default_mandel_theme.set_colors({
+        internal: '#010203',
+        escape_min: '#112233',
+        escape_max: '#FFFFFF'
+      });
+      this.default_julia_theme = new Color.Theme('greyish_purple');
+      this.default_julia_theme.set_colors({
+        internal: '#000000',
+        escape_min: '#000000',
+        escape_max: '#FFFFFF'
+      });
+      this.default_julia_theme.add_stop(0.2, '#280A28');
+      this.default_julia_theme.add_stop(0.6, '#8D008D');
+      this.default_julia_theme.add_stop(0.8, '#AE64AE');
       fmtfloatopts = {
         notation: 'standard',
         style: 'decimal',
@@ -70,12 +87,6 @@
       this.fmtfloat = new Intl.NumberFormat(void 0, fmtfloatopts);
       fmtfloatopts['signDisplay'] = 'never';
       this.fmtfloatnosign = new Intl.NumberFormat(void 0, fmtfloatopts);
-      this.content_el = this.context.getElementById('content');
-      this.status = this.context.getElementById('status');
-      this.status_current = 'loading';
-      this.msgbox = this.context.getElementById('msgbox');
-      this.msg = this.context.getElementById('msg');
-      this.msg_visible = false;
       this.show_tooltips = this.context.getElementById('show_tooltips');
       this.show_tooltips.addEventListener('change', this.on_show_tooltips_change);
       this.show_tooltips.checked = true;
@@ -147,6 +158,9 @@
         julia_antialias: new UI.SelectOption('julia_antialias'),
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
+        mandel_color_internal: new UI.ColorOption('mandel_color_internal'),
+        mandel_color_escape_min: new UI.ColorOption('mandel_color_escape_min'),
+        mandel_color_escape_max: new UI.ColorOption('mandel_color_escape_max'),
         highlight_group: new UI.SelectOption('highlight_group')
       };
       this.option.orbit_skip_initial.register_callback({
@@ -187,6 +201,15 @@
       });
       this.option.julia_local_pixel_size.set_label_text_formater(function(value) {
         return value + "x";
+      });
+      this.option.mandel_color_internal.register_callback({
+        on_change: this.on_mandel_color_change
+      });
+      this.option.mandel_color_escape_min.register_callback({
+        on_change: this.on_mandel_color_change
+      });
+      this.option.mandel_color_escape_max.register_callback({
+        on_change: this.on_mandel_color_change
       });
       this.option.highlight_group.register_callback({
         on_change: this.on_highlight_group_changed
@@ -356,6 +379,7 @@
     };
 
     MandelIter.prototype.warn = function(msg) {
+      console.log("WARNING", msg);
       return this.set_highlight_msg("WARNING: " + msg);
     };
 
@@ -449,12 +473,31 @@
       }
     };
 
-    MandelIter.prototype.current_mandel_theme = function() {
-      return this.colorize_themes[this.default_mandel_theme];
+    MandelIter.prototype.use_fractal_colors = function(opt) {
+      if (opt == null) {
+        opt = {};
+      }
+      if (opt.internal != null) {
+        this.fract_color_internal = opt.internal;
+      }
+      if (opt.escape_min != null) {
+        this.fract_color_escape_min = opt.escape_min;
+      }
+      if (opt.escape_max != null) {
+        return this.fract_color_escape_max = opt.escape_max;
+      }
     };
 
-    MandelIter.prototype.current_julia_theme = function() {
-      return this.colorize_themes[this.default_julia_theme];
+    MandelIter.prototype.use_mandel_colors = function() {
+      return this.use_fractal_colors(this.default_mandel_colors);
+    };
+
+    MandelIter.prototype.use_julia_colors = function() {
+      return this.use_fractal_colors(this.default_julia_colors);
+    };
+
+    MandelIter.prototype.on_mandel_color_change = function() {
+      return this.repaint_mandelbrot();
     };
 
     MandelIter.prototype.complex_to_string = function(z) {
@@ -1157,7 +1200,7 @@
       if (stopline >= this.graph_height) {
         stopline = this.graph_height;
       }
-      this.current_theme = this.current_mandel_theme();
+      this.current_theme = this.default_mandel_theme;
       this.current_image = this.render_mandel_img;
       aamult = this.option.mandel_antialias.value;
       aastep = 1.0 / aamult;
@@ -1201,10 +1244,9 @@
     };
 
     MandelIter.prototype.colorize_pixel = function(value, offset) {
+      var ref;
       value = Math.pow(value, 0.5) * 255;
-      this.current_image.data[offset] = value * this.current_theme[0];
-      this.current_image.data[offset + 1] = value * this.current_theme[1];
-      return this.current_image.data[offset + 2] = value * this.current_theme[2];
+      return ref = this.current_theme.lookup(value), this.current_image.data[offset] = ref[0], this.current_image.data[offset + 1] = ref[1], this.current_image.data[offset + 2] = ref[2], ref;
     };
 
     MandelIter.prototype.repaint_canvas = function(ctx, values, theme) {
@@ -1570,7 +1612,7 @@
         }
       }
       this.current_image = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
-      this.current_theme = this.current_julia_theme();
+      this.current_theme = this.default_julia_theme;
       return true;
     };
 

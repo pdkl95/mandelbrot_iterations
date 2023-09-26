@@ -370,4 +370,46 @@
 
   })(UI.Option);
 
+  UI.ColorOption = (function(superClass) {
+    extend(ColorOption, superClass);
+
+    function ColorOption() {
+      return ColorOption.__super__.constructor.apply(this, arguments);
+    }
+
+    ColorOption.prototype.color = function() {
+      if (this.coior == null) {
+        return this.color = new Color.RGB();
+      }
+    };
+
+    ColorOption.prototype.get = function(element) {
+      var c;
+      if (element == null) {
+        element = this.el;
+      }
+      c = this.color();
+      c.set(element.value);
+      return c;
+    };
+
+    ColorOption.prototype.set = function(new_value, update_element) {
+      if (update_element == null) {
+        update_element = true;
+      }
+      this.color.set(new_value);
+      if (update_element) {
+        this.el.value = this.color.to_hex();
+      }
+      return this.color;
+    };
+
+    ColorOption.prototype.label_text = function() {
+      return this.color.to_hex();
+    };
+
+    return ColorOption;
+
+  })(UI.Option);
+
 }).call(this);
