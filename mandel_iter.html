@@ -240,6 +240,10 @@ h1 {
   overflow: hidden;
 }
 
+.noselect {
+  user-select: none;
+}
+
 .hidden {
   display: none;
 }
@@ -788,6 +792,49 @@ td.name[contenteditable=true]:focus {
   border: 1px solid #4A90D9;
 }
 
+.color_picker > label {
+  width: 5em;
+  display: inline-block;
+  font-family: monospace;
+  text-align: center;
+}
+
+.gradient_editor {
+}
+
+.gradient_editor .editor_bg_container {
+  width: 302px;
+  height: 42px
+}
+
+.gradient_editor .editor_bg {
+  width: 300px;
+  height: 40px;
+  border: 1px solid #555;
+}
+
+.gradient_editor .stop_container {
+  position: relative;
+  height: 20px;
+  width: 300px;
+  cursor: pointer;
+}
+
+.gradient_editor .stop_container > .color_stop {
+  position: absolute;
+  cursor: default;
+  width: 11px;
+  height: 17px;
+  border: 1px outset #888;
+}
+
+.gradient_editor .stop_container > .color_stop_bg {
+  background: rgb(0,0,0) none repeat scroll 0% 0%;
+  cursor: default;
+}
+
+
+
     </style>
   </head>
   <body>
@@ -1149,6 +1196,9 @@ td.name[contenteditable=true]:focus {
                 <input id="mandel_color_escape_max" name="mandel_color_escape_max"
                        type="color" value="#FFFFFF" autocomplete="off">
               </td>
+            </tr>
+            <tr>
+              <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
             </tr>
           </table>
         </div>
@@ -2250,7 +2300,8 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
-  var extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty,
     slice = [].slice;
 
@@ -2307,17 +2358,6 @@ td.name[contenteditable=true]:focus {
         } else {
           return value;
         }
-      }
-    };
-
-    RGB.prototype.set = function(value) {
-      switch (typeof value) {
-        case 'string':
-          return this.set_string(value);
-        case 'object':
-          return this.set_rgb(value.r, value.b, value.g);
-        default:
-          return APP.warn("Cannot set color to a", value);
       }
     };
 
@@ -2392,8 +2432,12 @@ td.name[contenteditable=true]:focus {
     };
 
     function Stop() {
-      var position, rest;
-      position = arguments[0], rest = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+      var position, rest, theme;
+      theme = arguments[0], position = arguments[1], rest = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+      this.theme = theme;
+      this.on_editor_mousedown = bind(this.on_editor_mousedown, this);
+      this.on_editor_dblclick = bind(this.on_editor_dblclick, this);
+      this.on_editor_input_change = bind(this.on_editor_input_change, this);
       Stop.__super__.constructor.apply(this, rest);
       this.set_position(position);
     }
@@ -2406,7 +2450,93 @@ td.name[contenteditable=true]:focus {
       if (this.position > 1) {
         this.position = 1;
       }
+      if (this.editor_el != null) {
+        this.update_editor_position();
+      }
       return this.position;
+    };
+
+    Stop.prototype.prepare_editor = function() {
+      this.editor_el = document.createElement('div');
+      this.editor_el.classList.add('color_stop');
+      this.editor_input = document.createElement('input');
+      this.editor_input.classList.add('hidden');
+      this.editor_input.setAttribute('type', 'color');
+      this.editor_input.setAttribute('tabindex', -1);
+      this.update_editor_input();
+      this.editor_el.appendChild(this.editor_input);
+      this.theme.editor_stop_container.appendChild(this.editor_el);
+      this.update_editor_bg(false);
+      this.update_editor_position();
+      this.editor_input.addEventListener('change', this.on_editor_input_change);
+      this.editor_el.addEventListener('dblclick', this.on_editor_dblclick);
+      return this.editor_el.addEventListener('mousedown', this.on_editor_mousedown);
+    };
+
+    Stop.prototype.on_editor_input_change = function(event) {
+      this.set_string(this.editor_input.value);
+      return this.update_editor_bg();
+    };
+
+    Stop.prototype.on_editor_dblclick = function(event) {
+      return this.editor_input.click();
+    };
+
+    Stop.prototype.update_editor_input = function() {
+      if (this.editor_input != null) {
+        return this.editor_input.value = this.to_hex();
+      }
+    };
+
+    Stop.prototype.on_editor_mousedown = function(event) {
+      return this.theme.start_drag(this, event);
+    };
+
+    Stop.prototype.position_percent = function() {
+      return (this.position * 100) + "%";
+    };
+
+    Stop.prototype.update_editor_position = function(update_theme) {
+      if (update_theme == null) {
+        update_theme = true;
+      }
+      this.editor_el.style.left = this.position_percent();
+      if (update_theme) {
+        return this.theme.update_editor_gradient();
+      }
+    };
+
+    Stop.prototype.update_editor_bg = function(update_theme) {
+      if (update_theme == null) {
+        update_theme = true;
+      }
+      this.editor_el.style.backgroundColor = this.to_rgb();
+      if (update_theme) {
+        return this.theme.update_editor_gradient();
+      }
+    };
+
+    Stop.prototype.set_rgb = function(r, g, b) {
+      Stop.__super__.set_rgb.call(this, r, g, b);
+      if (this.editor_bg_el != null) {
+        return this.update_editor_bg();
+      }
+    };
+
+    Stop.prototype.remove_editor = function() {
+      if (this.editor_el != null) {
+        return this.editor_el.remove();
+      }
+    };
+
+    Stop.prototype.remove = function() {
+      var index;
+      this.remove_editor();
+      index = this.theme.stops.indexOf(this);
+      if (index != null) {
+        this.theme.stops.splice(index, 1);
+      }
+      return this.theme.rebuild();
     };
 
     return Stop;
@@ -2414,12 +2544,19 @@ td.name[contenteditable=true]:focus {
   })(Color.RGB);
 
   Color.Theme = (function() {
-    function Theme(name1) {
+    function Theme(name1, editor_id) {
       this.name = name1;
+      this.editor_id = editor_id != null ? editor_id : null;
+      this.on_editor_stop_container_click = bind(this.on_editor_stop_container_click, this);
+      this.on_editor_mousemove = bind(this.on_editor_mousemove, this);
+      this.on_editor_mouseup = bind(this.on_editor_mouseup, this);
       this.default_table_size = 256;
       this.named_color = {};
       this.stops = [];
       this.table_size = 0;
+      if (this.editor_id != null) {
+        this.construct_editor();
+      }
     }
 
     Theme.prototype.find_stop_index = function(pos) {
@@ -2436,17 +2573,32 @@ td.name[contenteditable=true]:focus {
     };
 
     Theme.prototype.add_stop = function(position, value) {
-      var color, index;
+      var color, index, j, k, len, len1, ref, ref1, stop;
       if ((position < 0) || (position > 1)) {
         APP.warn("Color positions in a Theme must satisfy 0 <= position <= 1");
       }
-      color = new Color.Stop(position, value);
+      if (this.editor != null) {
+        ref = this.stops;
+        for (j = 0, len = ref.length; j < len; j++) {
+          stop = ref[j];
+          stop.remove_editor();
+        }
+        this.editor_stop_container.replaceChildren();
+      }
+      color = new Color.Stop(this, position, value);
       index = this.find_stop_index(position);
       if (index != null) {
         this.stops[index] = color;
       } else {
         this.stops.push(color);
         this.sort_stops();
+      }
+      if (this.editor != null) {
+        ref1 = this.stops;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          stop = ref1[k];
+          stop.prepare_editor();
+        }
       }
       return color;
     };
@@ -2573,7 +2725,89 @@ td.name[contenteditable=true]:focus {
       if (size == null) {
         size = this.default_table_size;
       }
-      return this.build_lookup_table(size);
+      if (this.stops.length < 2) {
+        return;
+      }
+      if (this.gradient) {
+        return this.gradient.rebuild();
+      }
+    };
+
+    Theme.prototype.send_updates_to = function(grad) {
+      return this.gradient = grad;
+    };
+
+    Theme.prototype.construct_editor = function() {
+      this.editor = document.getElementById(this.editor_id);
+      console.log(this.editor);
+      this.editor_bg_container = document.createElement('div');
+      this.editor_bg_container.classList.add('editor_bg_container');
+      this.editor_bg = document.createElement('div');
+      this.editor_bg.classList.add('editor_bg');
+      this.editor_bg.classList.add('noselect');
+      this.editor_bg.classList.add('clear_both');
+      this.editor_bg_container.appendChild(this.editor_bg);
+      this.editor.appendChild(this.editor_bg_container);
+      this.editor_stop_container = document.createElement('div');
+      this.editor_stop_container.classList.add('stop_container');
+      this.editor_stop_container.classList.add('noselect');
+      this.editor_stop_container.setAttribute('title', 'Click to add a color marker');
+      this.editor.appendChild(this.editor_stop_container);
+      this.editor_stop_container.addEventListener('click', this.on_editor_stop_container_click);
+      this.drag = null;
+      this.editor.addEventListener('mouseup', this.on_editor_mouseup);
+      return this.editor.addEventListener('mousemove', this.on_editor_mousemove);
+    };
+
+    Theme.prototype.editor_gradient_stops_css = function() {
+      var stops;
+      stops = this.stops.map(function(stop) {
+        return (stop.to_rgb()) + " " + (stop.position_percent());
+      });
+      return stops.join(', ');
+    };
+
+    Theme.prototype.editor_linear_gradient_css = function() {
+      return "linear-gradient(to right, " + (this.editor_gradient_stops_css()) + ")";
+    };
+
+    Theme.prototype.editor_background_css = function() {
+      return "rgba(0,0,0,0) " + (this.editor_linear_gradient_css()) + " repeat scroll 0% 0%";
+    };
+
+    Theme.prototype.update_editor_gradient = function() {
+      return this.editor_bg.style.background = this.editor_background_css();
+    };
+
+    Theme.prototype.start_drag = function(stop, event) {
+      this.drag = stop;
+      this.drag_start_x = event.layerX;
+      this.drag_start_y = event.layerY;
+      this.drag_x = this.drag_start_x;
+      return this.drag_y = this.drag_start_y;
+    };
+
+    Theme.prototype.update_drag_position = function() {
+      return console.log('drag pos', this.drag_x);
+    };
+
+    Theme.prototype.on_editor_mouseup = function(event) {
+      if (this.drag != null) {
+        this.update_drag_position();
+        return this.drag = null;
+      }
+    };
+
+    Theme.prototype.on_editor_mousemove = function(event) {
+      if (this.drag != null) {
+        this.drag_x = event.layerX;
+        this.drag_y = event.layerY;
+        return this.update_drag_position();
+      }
+    };
+
+    Theme.prototype.on_editor_stop_container_click = function(event) {
+      return console.log('add new color stop!');
     };
 
     return Theme;
@@ -2647,7 +2881,7 @@ td.name[contenteditable=true]:focus {
       this.msg = this.context.getElementById('msg');
       this.msg_visible = false;
       this.theme = {};
-      this.theme.mandel = new Color.Theme('linear_greyscale');
+      this.theme.mandel = new Color.Theme('linear_greyscale', 'mandel_external_color');
       this.theme.mandel.set_colors({
         internal: '#000000',
         escape_min: '#000000',
@@ -3031,7 +3265,7 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.on_reset_storage_click = function() {
-      var name, opt, ref, results;
+      var name, opt, ref;
       if (!window.confirm("Remove ALL persistent storage and reset ALL values back to defaults?")) {
         return;
       }
@@ -3039,12 +3273,11 @@ td.name[contenteditable=true]:focus {
       this.storage_remove('orbit_mouse_x');
       this.storage_remove('orbit_mouse_y');
       ref = this.option;
-      results = [];
       for (name in ref) {
         opt = ref[name];
-        results.push(opt.reset());
+        opt.reset();
       }
-      return results;
+      return this.on_mandel_color_changed();
     };
 
     MandelIter.prototype.saved_locations_serialize = function() {

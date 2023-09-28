@@ -370,6 +370,9 @@ undivert(`style.css')
                        type="color" value="#FFFFFF" autocomplete="off">
               </td>
             </tr>
+            <tr>
+              <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
+            </tr>
           </table>
         </div>
 

@@ -23,7 +23,7 @@ class MandelIter
     @msg_visible = false
 
     @theme = {}
-    @theme.mandel = new Color.Theme('linear_greyscale')
+    @theme.mandel = new Color.Theme('linear_greyscale', 'mandel_external_color')
     @theme.mandel.set_colors
       internal:   '#000000'
       escape_min: '#000000'
@@ -366,6 +366,8 @@ class MandelIter
 
     for name, opt of @option
       opt.reset()
+
+    @on_mandel_color_changed()
 
   saved_locations_serialize: =>
     JSON.stringify({ saved_locations: @saved_locations.to_json_obj() })

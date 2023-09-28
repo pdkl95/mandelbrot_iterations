@@ -63,7 +63,7 @@
       this.msg = this.context.getElementById('msg');
       this.msg_visible = false;
       this.theme = {};
-      this.theme.mandel = new Color.Theme('linear_greyscale');
+      this.theme.mandel = new Color.Theme('linear_greyscale', 'mandel_external_color');
       this.theme.mandel.set_colors({
         internal: '#000000',
         escape_min: '#000000',
@@ -447,7 +447,7 @@
     };
 
     MandelIter.prototype.on_reset_storage_click = function() {
-      var name, opt, ref, results;
+      var name, opt, ref;
       if (!window.confirm("Remove ALL persistent storage and reset ALL values back to defaults?")) {
         return;
       }
@@ -455,12 +455,11 @@
       this.storage_remove('orbit_mouse_x');
       this.storage_remove('orbit_mouse_y');
       ref = this.option;
-      results = [];
       for (name in ref) {
         opt = ref[name];
-        results.push(opt.reset());
+        opt.reset();
       }
-      return results;
+      return this.on_mandel_color_changed();
     };
 
     MandelIter.prototype.saved_locations_serialize = function() {

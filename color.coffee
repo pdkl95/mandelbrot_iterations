@@ -41,15 +41,6 @@ class Color.RGB
       else
         value
 
-  set: (value) ->
-    switch typeof value
-      when 'string'
-        @set_string(value)
-      when 'object'
-        @set_rgb(value.r, value.b, value.g)
-      else
-        APP.warn("Cannot set color to a", value)
-
   set_rgb: (r,g,b) ->
     @r = @_parse_byte(r)
     @g = @_parse_byte(g)
@@ -96,7 +87,7 @@ class Color.Stop extends Color.RGB
   @compare: (a, b) ->
     a.position - b.position
 
-  constructor: (position, rest...) ->
+  constructor: (@theme, position, rest...) ->
     super(rest...)
     @set_position(position)
 
@@ -104,14 +95,77 @@ class Color.Stop extends Color.RGB
     @position = parseFloat(value)
     @position = 0 if @position < 0
     @position = 1 if @position > 1
+    @update_editor_position() if @editor_el?
     @position
 
+  prepare_editor: ->
+    @editor_el = document.createElement('div')
+    @editor_el.classList.add('color_stop')
+
+    @editor_input = document.createElement('input')
+    @editor_input.classList.add('hidden')
+    @editor_input.setAttribute('type', 'color')
+    @editor_input.setAttribute('tabindex', -1)
+    @update_editor_input()
+
+    @editor_el.appendChild(@editor_input)
+    @theme.editor_stop_container.appendChild(@editor_el)
+
+    @update_editor_bg(false)
+    @update_editor_position()
+    @editor_input.addEventListener('change', @on_editor_input_change)
+    @editor_el.addEventListener('dblclick', @on_editor_dblclick)
+    @editor_el.addEventListener('mousedown', @on_editor_mousedown)
+
+  on_editor_input_change: (event) =>
+    @set_string(@editor_input.value)
+    @update_editor_bg()
+
+  on_editor_dblclick: (event) =>
+    @editor_input.click()
+
+  update_editor_input: ->
+    if @editor_input?
+      @editor_input.value = @to_hex()
+
+  on_editor_mousedown: (event) =>
+    @theme.start_drag(this, event)
+
+  position_percent: ->
+    "#{@position * 100}%"
+
+  update_editor_position: (update_theme = true) ->
+    @editor_el.style.left = @position_percent()
+    @theme.update_editor_gradient() if update_theme
+
+  update_editor_bg: (update_theme = true) ->
+    @editor_el.style.backgroundColor = @to_rgb()
+    @theme.update_editor_gradient() if update_theme
+
+  set_rgb: (r,g,b) ->
+    super(r,g,b)
+    if @editor_bg_el?
+      @update_editor_bg()
+
+  remove_editor: ->
+    if @editor_el?
+      @editor_el.remove()
+
+  remove: ->
+    @remove_editor()
+    index = @theme.stops.indexOf(this)
+    @theme.stops.splice(index, 1) if index?
+
+    @theme.rebuild()
+
 class Color.Theme
-  constructor: (@name) ->
+  constructor: (@name, @editor_id = null) ->
     @default_table_size = 256
     @named_color = {}
     @stops = []
     @table_size = 0
+
+    @construct_editor() if @editor_id?
 
   find_stop_index: (pos) ->
     i = 0
@@ -126,7 +180,12 @@ class Color.Theme
     if (position < 0) or (position > 1)
       APP.warn("Color positions in a Theme must satisfy 0 <= position <= 1")
 
-    color = new Color.Stop(position, value)
+    if @editor?
+      for stop in @stops
+        stop.remove_editor()
+      @editor_stop_container.replaceChildren()
+
+    color = new Color.Stop(this, position, value)
     #console.log("add stop pos=#{color.position}", color)
     index = @find_stop_index(position)
     if index?
@@ -135,7 +194,11 @@ class Color.Theme
       @stops.push(color)
       @sort_stops()
 
-    #console.log('new stops', @stops)
+    #console.log('new stops', @stops) 
+    if @editor?
+      for stop in @stops
+        stop.prepare_editor()
+
     color
 
   sort_stops: ->
@@ -219,4 +282,71 @@ class Color.Theme
     return [@table[value], @table[value + 1], @table[value + 2]]
 
   rebuild: (size = @default_table_size) ->
-    @build_lookup_table(size)
+    return if @stops.length < 2
+    @gradient.rebuild() if @gradient
+
+  send_updates_to: (grad) ->
+    @gradient = grad
+
+  construct_editor: ->
+    @editor = document.getElementById(@editor_id)
+    console.log(@editor)
+    @editor_bg_container = document.createElement('div')
+    @editor_bg_container.classList.add('editor_bg_container')
+    @editor_bg = document.createElement('div')
+    @editor_bg.classList.add('editor_bg')
+    @editor_bg.classList.add('noselect')
+    @editor_bg.classList.add('clear_both')
+    @editor_bg_container.appendChild(@editor_bg)
+    @editor.appendChild(@editor_bg_container)
+
+    @editor_stop_container = document.createElement('div')
+    @editor_stop_container.classList.add('stop_container')
+    @editor_stop_container.classList.add('noselect')
+    @editor_stop_container.setAttribute('title', 'Click to add a color marker')
+    @editor.appendChild(@editor_stop_container)
+
+    @editor_stop_container.addEventListener('click', @on_editor_stop_container_click)
+
+    @drag = null
+    @editor.addEventListener('mouseup',   @on_editor_mouseup)
+    @editor.addEventListener('mousemove', @on_editor_mousemove)
+
+  editor_gradient_stops_css: ->
+    stops = @stops.map (stop) ->
+      "#{stop.to_rgb()} #{stop.position_percent()}"
+
+    stops.join(', ')
+
+  editor_linear_gradient_css: ->
+    "linear-gradient(to right, #{@editor_gradient_stops_css()})"
+
+  editor_background_css: ->
+    "rgba(0,0,0,0) #{@editor_linear_gradient_css()} repeat scroll 0% 0%"
+
+  update_editor_gradient: ->
+    @editor_bg.style.background = @editor_background_css()
+
+  start_drag: (stop, event) ->
+    @drag = stop
+    @drag_start_x = event.layerX
+    @drag_start_y = event.layerY
+    @drag_x = @drag_start_x
+    @drag_y = @drag_start_y
+
+  update_drag_position: ->
+    console.log('drag pos', @drag_x)
+
+  on_editor_mouseup: (event) =>
+    if @drag?
+      @update_drag_position()
+      @drag = null
+
+  on_editor_mousemove: (event) =>
+    if @drag?
+      @drag_x = event.layerX
+      @drag_y = event.layerY
+      @update_drag_position()
+
+  on_editor_stop_container_click: (event) =>
+    console.log('add new color stop!')

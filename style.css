@@ -57,6 +57,10 @@ h1 {
   overflow: hidden;
 }
 
+.noselect {
+  user-select: none;
+}
+
 .hidden {
   display: none;
 }
@@ -604,3 +608,46 @@ td.name[contenteditable=true]:focus {
   background-color: #fff;
   border: 1px solid #4A90D9;
 }
+
+.color_picker > label {
+  width: 5em;
+  display: inline-block;
+  font-family: monospace;
+  text-align: center;
+}
+
+.gradient_editor {
+}
+
+.gradient_editor .editor_bg_container {
+  width: 302px;
+  height: 42px
+}
+
+.gradient_editor .editor_bg {
+  width: 300px;
+  height: 40px;
+  border: 1px solid #555;
+}
+
+.gradient_editor .stop_container {
+  position: relative;
+  height: 20px;
+  width: 300px;
+  cursor: pointer;
+}
+
+.gradient_editor .stop_container > .color_stop {
+  position: absolute;
+  cursor: default;
+  width: 11px;
+  height: 17px;
+  border: 1px outset #888;
+}
+
+.gradient_editor .stop_container > .color_stop_bg {
+  background: rgb(0,0,0) none repeat scroll 0% 0%;
+  cursor: default;
+}
+
+
