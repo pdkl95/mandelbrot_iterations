@@ -16,6 +16,7 @@
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
       this.draw_ui_callback = bind(this.draw_ui_callback, this);
       this.on_julia_changed = bind(this.on_julia_changed, this);
+      this.on_mandel_color_changed = bind(this.on_mandel_color_changed, this);
       this.canvas_to_complex = bind(this.canvas_to_complex, this);
       this.on_julia_more_when_paused_false = bind(this.on_julia_more_when_paused_false, this);
       this.on_julia_more_when_paused_true = bind(this.on_julia_more_when_paused_true, this);
@@ -61,21 +62,22 @@
       this.msgbox = this.context.getElementById('msgbox');
       this.msg = this.context.getElementById('msg');
       this.msg_visible = false;
-      this.default_mandel_theme = new Color.Theme('linear_greyscale');
-      this.default_mandel_theme.set_colors({
-        internal: '#010203',
-        escape_min: '#112233',
-        escape_max: '#FFFFFF'
-      });
-      this.default_julia_theme = new Color.Theme('greyish_purple');
-      this.default_julia_theme.set_colors({
+      this.theme = {};
+      this.theme.mandel = new Color.Theme('linear_greyscale');
+      this.theme.mandel.set_colors({
         internal: '#000000',
         escape_min: '#000000',
         escape_max: '#FFFFFF'
       });
-      this.default_julia_theme.add_stop(0.2, '#280A28');
-      this.default_julia_theme.add_stop(0.6, '#8D008D');
-      this.default_julia_theme.add_stop(0.8, '#AE64AE');
+      this.theme.julis = new Color.Theme('greyish_purple');
+      this.theme.julis.set_colors({
+        internal: '#000000',
+        escape_min: '#000000',
+        escape_max: '#FFFFFF'
+      });
+      this.theme.julis.add_stop(0.2, '#280A28');
+      this.theme.julis.add_stop(0.6, '#8D008D');
+      this.theme.julis.add_stop(0.8, '#AE64AE');
       fmtfloatopts = {
         notation: 'standard',
         style: 'decimal',
@@ -214,6 +216,15 @@
       this.option.highlight_group.register_callback({
         on_change: this.on_highlight_group_changed
       });
+      this.option.mandel_color_internal.register_callback({
+        on_change: this.on_mandel_color_changed
+      });
+      this.option.mandel_color_escape_min.register_callback({
+        on_change: this.on_mandel_color_changed
+      });
+      this.option.mandel_color_escape_max.register_callback({
+        on_change: this.on_mandel_color_changed
+      });
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -311,6 +322,7 @@
           this.reset_julia_rendering();
         }
       }
+      this.theme_mandel_update();
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -1200,8 +1212,9 @@
       if (stopline >= this.graph_height) {
         stopline = this.graph_height;
       }
-      this.current_theme = this.default_mandel_theme;
+      this.current_theme = this.theme.mandel;
       this.current_image = this.render_mandel_img;
+      this.current_internal_color = this.current_theme.named_color.internal;
       aamult = this.option.mandel_antialias.value;
       aastep = 1.0 / aamult;
       if (aamult === 1) {
@@ -1237,16 +1250,24 @@
       if (x < this.graph_width && y < this.graph_height) {
         pos1x = x + (y * this.graph_width);
         pos4x = 4 * pos1x;
-        value /= this.mandel_maxiter;
         this.mandel_values[pos1x] = value;
         return this.colorize_pixel(value, pos4x);
       }
     };
 
     MandelIter.prototype.colorize_pixel = function(value, offset) {
-      var ref;
-      value = Math.pow(value, 0.5) * 255;
-      return ref = this.current_theme.lookup(value), this.current_image.data[offset] = ref[0], this.current_image.data[offset + 1] = ref[1], this.current_image.data[offset + 2] = ref[2], ref;
+      var rgb;
+      if (value === 0) {
+        this.current_image.data[offset] = this.current_internal_color.r;
+        this.current_image.data[offset + 1] = this.current_internal_color.g;
+        return this.current_image.data[offset + 2] = this.current_internal_color.b;
+      } else {
+        value = Math.pow(value, 0.5) * 25;
+        rgb = this.current_theme.lookup(value);
+        this.current_image.data[offset] = rgb[0];
+        this.current_image.data[offset + 1] = rgb[2];
+        return this.current_image.data[offset + 2] = rgb[1];
+      }
     };
 
     MandelIter.prototype.repaint_canvas = function(ctx, values, theme) {
@@ -1256,6 +1277,7 @@
       }
       this.current_image = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
       this.current_theme = theme;
+      this.current_internal_color = this.current_theme.named_color.internal;
       for (y = j = 0, ref = this.graph_height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
         for (x = k = 0, ref1 = this.graph_width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
           pos1x = x + (y * this.graph_width);
@@ -1268,7 +1290,22 @@
     };
 
     MandelIter.prototype.repaint_mandelbrot = function() {
-      return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.current_mandel_theme());
+      return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.theme.mandel);
+    };
+
+    MandelIter.prototype.theme_mandel_update = function() {
+      this.theme.mandel.set_colors({
+        internal: this.option.mandel_color_internal.value,
+        escape_min: this.option.mandel_color_escape_min.value,
+        escape_max: this.option.mandel_color_escape_max.value
+      });
+      return this.theme.mandel.rebuild();
+    };
+
+    MandelIter.prototype.on_mandel_color_changed = function() {
+      console.log('COLOR CHANGED');
+      this.theme_mandel_update();
+      return this.repaint_mandelbrot();
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
@@ -1612,7 +1649,7 @@
         }
       }
       this.current_image = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
-      this.current_theme = this.default_julia_theme;
+      this.current_theme = this.theme.julis;
       return true;
     };
 

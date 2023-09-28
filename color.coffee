@@ -46,7 +46,7 @@ class Color.RGB
       when 'string'
         @set_string(value)
       when 'object'
-        @set_rgb(value.g, value.b, value.g)
+        @set_rgb(value.r, value.b, value.g)
       else
         APP.warn("Cannot set color to a", value)
 
@@ -111,22 +111,31 @@ class Color.Theme
     @default_table_size = 256
     @named_color = {}
     @stops = []
+    @table_size = 0
 
-  find_stop_at: (pos) ->
+  find_stop_index: (pos) ->
+    i = 0
+    while i < @stops.length
+      stop = @stops[i]
+      if stop.position is pos
+        return i
+      i++
+    return null
 
   add_stop: (position, value) ->
     if (position < 0) or (position > 1)
       APP.warn("Color positions in a Theme must satisfy 0 <= position <= 1")
 
     color = new Color.Stop(position, value)
-
-    index = @find_stop_at(position)
+    #console.log("add stop pos=#{color.position}", color)
+    index = @find_stop_index(position)
     if index?
       @stops[index] = color
     else
       @stops.push(color)
       @sort_stops()
 
+    #console.log('new stops', @stops)
     color
 
   sort_stops: ->
@@ -138,6 +147,7 @@ class Color.Theme
       next.prev = prev if next
 
   set_color: (name, value) ->
+    console.log('set_color', name, value)
     color = new Color.RGB(value)
     @named_color[name] = color
 
@@ -173,20 +183,23 @@ class Color.Theme
     @table = @build_lookup_table(size)
 
   build_lookup_table: (size = @default_table_size) ->
-    @table = new Uint8Array(size * 3)
+    if size > @table_size
+      @table = new Uint8ClampedArray(size * 3)
+      @table_size = size
+
     stop_index = 0
     prev = @stops[stop_index++]
     next = @stops[stop_index++]
     step = 1.0 / size
     pos = 0
     offset = 0
-    delta = t
+    delta = next.position
 
     while pos < 1.0
       if pos >= next.position
         prev = next
         next = @stops[stop_index++]
-      delta = next.position - prev.position
+        delta = next.position - prev.position
 
       t = (pos - prev.position) / delta
       rgb = prev.linear_blend_rgb(next, t)
@@ -200,4 +213,10 @@ class Color.Theme
 
   lookup: (value) ->
     @build_lookup_table() unless @table?
+    value = Math.floor(value)
+    value = value % @table_size
+    value *= 3
     return [@table[value], @table[value + 1], @table[value + 2]]
+
+  rebuild: (size = @default_table_size) ->
+    @build_lookup_table(size)

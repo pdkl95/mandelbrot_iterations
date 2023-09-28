@@ -318,7 +318,7 @@ undivert(`style.css')
           </table>
 
           <h3>Mandelbrot Options</h3>
-          <table>Scale <span class="textcolor red">Red</span>
+          <table>
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">

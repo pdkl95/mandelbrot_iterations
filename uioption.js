@@ -377,35 +377,22 @@
       return ColorOption.__super__.constructor.apply(this, arguments);
     }
 
-    ColorOption.prototype.color = function() {
-      if (this.coior == null) {
-        return this.color = new Color.RGB();
-      }
-    };
-
     ColorOption.prototype.get = function(element) {
-      var c;
       if (element == null) {
         element = this.el;
       }
-      c = this.color();
-      c.set(element.value);
-      return c;
+      return element.value;
     };
 
     ColorOption.prototype.set = function(new_value, update_element) {
       if (update_element == null) {
         update_element = true;
       }
-      this.color.set(new_value);
+      this.set_value(new_value);
       if (update_element) {
-        this.el.value = this.color.to_hex();
+        this.el.value = new_value;
       }
       return this.color;
-    };
-
-    ColorOption.prototype.label_text = function() {
-      return this.color.to_hex();
     };
 
     return ColorOption;

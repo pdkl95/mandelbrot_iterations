@@ -64,7 +64,7 @@
         case 'string':
           return this.set_string(value);
         case 'object':
-          return this.set_rgb(value.g, value.b, value.g);
+          return this.set_rgb(value.r, value.b, value.g);
         default:
           return APP.warn("Cannot set color to a", value);
       }
@@ -168,9 +168,21 @@
       this.default_table_size = 256;
       this.named_color = {};
       this.stops = [];
+      this.table_size = 0;
     }
 
-    Theme.prototype.find_stop_at = function(pos) {};
+    Theme.prototype.find_stop_index = function(pos) {
+      var i, stop;
+      i = 0;
+      while (i < this.stops.length) {
+        stop = this.stops[i];
+        if (stop.position === pos) {
+          return i;
+        }
+        i++;
+      }
+      return null;
+    };
 
     Theme.prototype.add_stop = function(position, value) {
       var color, index;
@@ -178,7 +190,7 @@
         APP.warn("Color positions in a Theme must satisfy 0 <= position <= 1");
       }
       color = new Color.Stop(position, value);
-      index = this.find_stop_at(position);
+      index = this.find_stop_index(position);
       if (index != null) {
         this.stops[index] = color;
       } else {
@@ -207,6 +219,7 @@
 
     Theme.prototype.set_color = function(name, value) {
       var color;
+      console.log('set_color', name, value);
       color = new Color.RGB(value);
       this.named_color[name] = color;
       switch (name) {
@@ -266,21 +279,24 @@
       if (size == null) {
         size = this.default_table_size;
       }
-      this.table = new Uint8Array(size * 3);
+      if (size > this.table_size) {
+        this.table = new Uint8ClampedArray(size * 3);
+        this.table_size = size;
+      }
       stop_index = 0;
       prev = this.stops[stop_index++];
       next = this.stops[stop_index++];
       step = 1.0 / size;
       pos = 0;
       offset = 0;
-      delta = t;
+      delta = next.position;
       results = [];
       while (pos < 1.0) {
         if (pos >= next.position) {
           prev = next;
           next = this.stops[stop_index++];
+          delta = next.position - prev.position;
         }
-        delta = next.position - prev.position;
         t = (pos - prev.position) / delta;
         rgb = prev.linear_blend_rgb(next, t);
         this.table[offset] = rgb[0];
@@ -296,7 +312,17 @@
       if (this.table == null) {
         this.build_lookup_table();
       }
+      value = Math.floor(value);
+      value = value % this.table_size;
+      value *= 3;
       return [this.table[value], this.table[value + 1], this.table[value + 2]];
+    };
+
+    Theme.prototype.rebuild = function(size) {
+      if (size == null) {
+        size = this.default_table_size;
+      }
+      return this.build_lookup_table(size);
     };
 
     return Theme;

@@ -22,20 +22,21 @@ class MandelIter
     @msg    = @context.getElementById('msg')
     @msg_visible = false
 
-    @default_mandel_theme = new Color.Theme('linear_greyscale')
-    @default_mandel_theme.set_colors
-      internal:   '#010203'
-      escape_min: '#112233'
-      escape_max: '#FFFFFF'
-
-    @default_julia_theme = new Color.Theme('greyish_purple')
-    @default_julia_theme.set_colors
+    @theme = {}
+    @theme.mandel = new Color.Theme('linear_greyscale')
+    @theme.mandel.set_colors
       internal:   '#000000'
       escape_min: '#000000'
       escape_max: '#FFFFFF'
-    @default_julia_theme.add_stop 0.2, '#280A28'
-    @default_julia_theme.add_stop 0.6, '#8D008D'
-    @default_julia_theme.add_stop 0.8, '#AE64AE'
+
+    @theme.julis = new Color.Theme('greyish_purple')
+    @theme.julis.set_colors
+      internal:   '#000000'
+      escape_min: '#000000'
+      escape_max: '#FFFFFF'
+    @theme.julis.add_stop 0.2, '#280A28'
+    @theme.julis.add_stop 0.6, '#8D008D'
+    @theme.julis.add_stop 0.8, '#AE64AE'
 
     fmtfloatopts =
       notation:    'standard'
@@ -155,6 +156,10 @@ class MandelIter
 
     @option.highlight_group.register_callback on_change: @on_highlight_group_changed
 
+    @option.mandel_color_internal.register_callback on_change: @on_mandel_color_changed
+    @option.mandel_color_escape_min.register_callback on_change: @on_mandel_color_changed
+    @option.mandel_color_escape_max.register_callback on_change: @on_mandel_color_changed
+
     @pointer_angle = 0
     @pointer_angle_step = TAU/96
 
@@ -262,6 +267,8 @@ class MandelIter
         @pause_mode_on(false)
         @set_mouse_position(stored_x, stored_y, true)
         @reset_julia_rendering()
+
+    @theme_mandel_update()
 
     console.log('init() completed!')
 
@@ -926,8 +933,9 @@ class MandelIter
     if stopline >= @graph_height
       stopline = @graph_height
 
-    @current_theme = @default_mandel_theme
+    @current_theme = @theme.mandel
     @current_image = @render_mandel_img
+    @current_internal_color = @current_theme.named_color.internal
 
     aamult = @option.mandel_antialias.value
     aastep = 1.0 / aamult
@@ -962,14 +970,20 @@ class MandelIter
     if x < @graph_width and y < @graph_height
       pos1x = x + (y * @graph_width)
       pos4x = 4 * pos1x
-
-      value /= @mandel_maxiter
       @mandel_values[pos1x] = value
       @colorize_pixel(value, pos4x)
 
   colorize_pixel: (value, offset) ->
-    value = Math.pow(value, 0.5) * 255
-    [ @current_image.data[offset], @current_image.data[offset + 1], @current_image.data[offset + 2] ] = @current_theme.lookup(value)
+    if value is 0
+      @current_image.data[offset    ] = @current_internal_color.r
+      @current_image.data[offset + 1] = @current_internal_color.g
+      @current_image.data[offset + 2] = @current_internal_color.b
+    else
+      value = Math.pow(value, 0.5) * 25
+      rgb = @current_theme.lookup(value)
+      @current_image.data[offset    ] = rgb[0]
+      @current_image.data[offset + 1] = rgb[2]
+      @current_image.data[offset + 2] = rgb[1]
 
   repaint_canvas: (ctx, values, theme) ->
     return unless ctx? and values?
@@ -977,6 +991,7 @@ class MandelIter
     #@current_image = ctx.createImageData(@graph_width, @graph_height)
     @current_image = @graph_mandel_ctx.getImageData(0, 0, @graph_width, @graph_height)
     @current_theme = theme
+    @current_internal_color = @current_theme.named_color.internal
 
     for y in [0..@graph_height]
       for x in [0..@graph_width]
@@ -988,7 +1003,19 @@ class MandelIter
     ctx.putImageData(@current_image, 0, 0)
 
   repaint_mandelbrot: ->
-    @repaint_canvas(@graph_mandel_ctx, @mandel_values, @current_mandel_theme())
+    @repaint_canvas(@graph_mandel_ctx, @mandel_values, @theme.mandel)
+
+  theme_mandel_update: ->
+    @theme.mandel.set_colors
+      internal:   @option.mandel_color_internal.value
+      escape_min: @option.mandel_color_escape_min.value
+      escape_max: @option.mandel_color_escape_max.value
+    @theme.mandel.rebuild()
+
+  on_mandel_color_changed: =>
+    console.log('COLOR CHANGED')
+    @theme_mandel_update()
+    @repaint_mandelbrot()
 
   draw_orbit: (c) ->
     mx = c.x
@@ -1334,7 +1361,7 @@ class MandelIter
       @local_julia.y = maxy if @local_julia.y > maxy
 
     @current_image = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
-    @current_theme = @default_julia_theme
+    @current_theme = @theme.julis
 
     return true
 

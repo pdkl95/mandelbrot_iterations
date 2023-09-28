@@ -168,18 +168,10 @@ class UI.SelectOption extends UI.Option
     return null
 
 class UI.ColorOption extends UI.Option
-  color: ->
-    @color = new Color.RGB() unless @coior?
-
   get: (element = @el) ->
-    c = @color()
-    c.set(element.value)
-    c
+    element.value
 
   set: (new_value, update_element = true) ->
-    @color.set(new_value)
-    @el.value = @color.to_hex() if update_element
+    @set_value(new_value)
+    @el.value = new_value if update_element
     @color
-
-  label_text: ->
-    @color.to_hex()

@@ -1098,7 +1098,7 @@ td.name[contenteditable=true]:focus {
           </table>
 
           <h3>Mandelbrot Options</h3>
-          <table>Scale <span class="textcolor red">Red</span>
+          <table>
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">
@@ -1553,35 +1553,22 @@ td.name[contenteditable=true]:focus {
       return ColorOption.__super__.constructor.apply(this, arguments);
     }
 
-    ColorOption.prototype.color = function() {
-      if (this.coior == null) {
-        return this.color = new Color.RGB();
-      }
-    };
-
     ColorOption.prototype.get = function(element) {
-      var c;
       if (element == null) {
         element = this.el;
       }
-      c = this.color();
-      c.set(element.value);
-      return c;
+      return element.value;
     };
 
     ColorOption.prototype.set = function(new_value, update_element) {
       if (update_element == null) {
         update_element = true;
       }
-      this.color.set(new_value);
+      this.set_value(new_value);
       if (update_element) {
-        this.el.value = this.color.to_hex();
+        this.el.value = new_value;
       }
       return this.color;
-    };
-
-    ColorOption.prototype.label_text = function() {
-      return this.color.to_hex();
     };
 
     return ColorOption;
@@ -2328,7 +2315,7 @@ td.name[contenteditable=true]:focus {
         case 'string':
           return this.set_string(value);
         case 'object':
-          return this.set_rgb(value.g, value.b, value.g);
+          return this.set_rgb(value.r, value.b, value.g);
         default:
           return APP.warn("Cannot set color to a", value);
       }
@@ -2432,9 +2419,21 @@ td.name[contenteditable=true]:focus {
       this.default_table_size = 256;
       this.named_color = {};
       this.stops = [];
+      this.table_size = 0;
     }
 
-    Theme.prototype.find_stop_at = function(pos) {};
+    Theme.prototype.find_stop_index = function(pos) {
+      var i, stop;
+      i = 0;
+      while (i < this.stops.length) {
+        stop = this.stops[i];
+        if (stop.position === pos) {
+          return i;
+        }
+        i++;
+      }
+      return null;
+    };
 
     Theme.prototype.add_stop = function(position, value) {
       var color, index;
@@ -2442,7 +2441,7 @@ td.name[contenteditable=true]:focus {
         APP.warn("Color positions in a Theme must satisfy 0 <= position <= 1");
       }
       color = new Color.Stop(position, value);
-      index = this.find_stop_at(position);
+      index = this.find_stop_index(position);
       if (index != null) {
         this.stops[index] = color;
       } else {
@@ -2471,6 +2470,7 @@ td.name[contenteditable=true]:focus {
 
     Theme.prototype.set_color = function(name, value) {
       var color;
+      console.log('set_color', name, value);
       color = new Color.RGB(value);
       this.named_color[name] = color;
       switch (name) {
@@ -2530,21 +2530,24 @@ td.name[contenteditable=true]:focus {
       if (size == null) {
         size = this.default_table_size;
       }
-      this.table = new Uint8Array(size * 3);
+      if (size > this.table_size) {
+        this.table = new Uint8ClampedArray(size * 3);
+        this.table_size = size;
+      }
       stop_index = 0;
       prev = this.stops[stop_index++];
       next = this.stops[stop_index++];
       step = 1.0 / size;
       pos = 0;
       offset = 0;
-      delta = t;
+      delta = next.position;
       results = [];
       while (pos < 1.0) {
         if (pos >= next.position) {
           prev = next;
           next = this.stops[stop_index++];
+          delta = next.position - prev.position;
         }
-        delta = next.position - prev.position;
         t = (pos - prev.position) / delta;
         rgb = prev.linear_blend_rgb(next, t);
         this.table[offset] = rgb[0];
@@ -2560,7 +2563,17 @@ td.name[contenteditable=true]:focus {
       if (this.table == null) {
         this.build_lookup_table();
       }
+      value = Math.floor(value);
+      value = value % this.table_size;
+      value *= 3;
       return [this.table[value], this.table[value + 1], this.table[value + 2]];
+    };
+
+    Theme.prototype.rebuild = function(size) {
+      if (size == null) {
+        size = this.default_table_size;
+      }
+      return this.build_lookup_table(size);
     };
 
     return Theme;
@@ -2587,6 +2600,7 @@ td.name[contenteditable=true]:focus {
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
       this.draw_ui_callback = bind(this.draw_ui_callback, this);
       this.on_julia_changed = bind(this.on_julia_changed, this);
+      this.on_mandel_color_changed = bind(this.on_mandel_color_changed, this);
       this.canvas_to_complex = bind(this.canvas_to_complex, this);
       this.on_julia_more_when_paused_false = bind(this.on_julia_more_when_paused_false, this);
       this.on_julia_more_when_paused_true = bind(this.on_julia_more_when_paused_true, this);
@@ -2632,21 +2646,22 @@ td.name[contenteditable=true]:focus {
       this.msgbox = this.context.getElementById('msgbox');
       this.msg = this.context.getElementById('msg');
       this.msg_visible = false;
-      this.default_mandel_theme = new Color.Theme('linear_greyscale');
-      this.default_mandel_theme.set_colors({
-        internal: '#010203',
-        escape_min: '#112233',
-        escape_max: '#FFFFFF'
-      });
-      this.default_julia_theme = new Color.Theme('greyish_purple');
-      this.default_julia_theme.set_colors({
+      this.theme = {};
+      this.theme.mandel = new Color.Theme('linear_greyscale');
+      this.theme.mandel.set_colors({
         internal: '#000000',
         escape_min: '#000000',
         escape_max: '#FFFFFF'
       });
-      this.default_julia_theme.add_stop(0.2, '#280A28');
-      this.default_julia_theme.add_stop(0.6, '#8D008D');
-      this.default_julia_theme.add_stop(0.8, '#AE64AE');
+      this.theme.julis = new Color.Theme('greyish_purple');
+      this.theme.julis.set_colors({
+        internal: '#000000',
+        escape_min: '#000000',
+        escape_max: '#FFFFFF'
+      });
+      this.theme.julis.add_stop(0.2, '#280A28');
+      this.theme.julis.add_stop(0.6, '#8D008D');
+      this.theme.julis.add_stop(0.8, '#AE64AE');
       fmtfloatopts = {
         notation: 'standard',
         style: 'decimal',
@@ -2785,6 +2800,15 @@ td.name[contenteditable=true]:focus {
       this.option.highlight_group.register_callback({
         on_change: this.on_highlight_group_changed
       });
+      this.option.mandel_color_internal.register_callback({
+        on_change: this.on_mandel_color_changed
+      });
+      this.option.mandel_color_escape_min.register_callback({
+        on_change: this.on_mandel_color_changed
+      });
+      this.option.mandel_color_escape_max.register_callback({
+        on_change: this.on_mandel_color_changed
+      });
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -2882,6 +2906,7 @@ td.name[contenteditable=true]:focus {
           this.reset_julia_rendering();
         }
       }
+      this.theme_mandel_update();
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -3771,8 +3796,9 @@ td.name[contenteditable=true]:focus {
       if (stopline >= this.graph_height) {
         stopline = this.graph_height;
       }
-      this.current_theme = this.default_mandel_theme;
+      this.current_theme = this.theme.mandel;
       this.current_image = this.render_mandel_img;
+      this.current_internal_color = this.current_theme.named_color.internal;
       aamult = this.option.mandel_antialias.value;
       aastep = 1.0 / aamult;
       if (aamult === 1) {
@@ -3808,16 +3834,24 @@ td.name[contenteditable=true]:focus {
       if (x < this.graph_width && y < this.graph_height) {
         pos1x = x + (y * this.graph_width);
         pos4x = 4 * pos1x;
-        value /= this.mandel_maxiter;
         this.mandel_values[pos1x] = value;
         return this.colorize_pixel(value, pos4x);
       }
     };
 
     MandelIter.prototype.colorize_pixel = function(value, offset) {
-      var ref;
-      value = Math.pow(value, 0.5) * 255;
-      return ref = this.current_theme.lookup(value), this.current_image.data[offset] = ref[0], this.current_image.data[offset + 1] = ref[1], this.current_image.data[offset + 2] = ref[2], ref;
+      var rgb;
+      if (value === 0) {
+        this.current_image.data[offset] = this.current_internal_color.r;
+        this.current_image.data[offset + 1] = this.current_internal_color.g;
+        return this.current_image.data[offset + 2] = this.current_internal_color.b;
+      } else {
+        value = Math.pow(value, 0.5) * 25;
+        rgb = this.current_theme.lookup(value);
+        this.current_image.data[offset] = rgb[0];
+        this.current_image.data[offset + 1] = rgb[2];
+        return this.current_image.data[offset + 2] = rgb[1];
+      }
     };
 
     MandelIter.prototype.repaint_canvas = function(ctx, values, theme) {
@@ -3827,6 +3861,7 @@ td.name[contenteditable=true]:focus {
       }
       this.current_image = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
       this.current_theme = theme;
+      this.current_internal_color = this.current_theme.named_color.internal;
       for (y = j = 0, ref = this.graph_height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
         for (x = k = 0, ref1 = this.graph_width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
           pos1x = x + (y * this.graph_width);
@@ -3839,7 +3874,22 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.repaint_mandelbrot = function() {
-      return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.current_mandel_theme());
+      return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.theme.mandel);
+    };
+
+    MandelIter.prototype.theme_mandel_update = function() {
+      this.theme.mandel.set_colors({
+        internal: this.option.mandel_color_internal.value,
+        escape_min: this.option.mandel_color_escape_min.value,
+        escape_max: this.option.mandel_color_escape_max.value
+      });
+      return this.theme.mandel.rebuild();
+    };
+
+    MandelIter.prototype.on_mandel_color_changed = function() {
+      console.log('COLOR CHANGED');
+      this.theme_mandel_update();
+      return this.repaint_mandelbrot();
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
@@ -4183,7 +4233,7 @@ td.name[contenteditable=true]:focus {
         }
       }
       this.current_image = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
-      this.current_theme = this.default_julia_theme;
+      this.current_theme = this.theme.julis;
       return true;
     };
 
