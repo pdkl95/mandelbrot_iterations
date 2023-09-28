@@ -1,11 +1,16 @@
 window.Color or= {}
 
 class Color.RGB
-  constructor: (value = '#000000') ->
-    @r - 0
-    @g = 0
-    @b = 0
-    @set(value)
+  constructor: (value = '#000000', gvalue = null, bvalue = null) ->
+    if gvalue? and bvalue?
+      @r =  value
+      @g = gvalue
+      @b = bvalue
+    else
+      @r = 0
+      @g = 0
+      @b = 0
+      @set(value)
 
   set: (value) ->
     switch typeof value
@@ -199,6 +204,7 @@ class Color.Theme
       for stop in @stops
         stop.prepare_editor()
 
+    @rebuild()
     color
 
   sort_stops: ->
@@ -210,7 +216,6 @@ class Color.Theme
       next.prev = prev if next
 
   set_color: (name, value) ->
-    console.log('set_color', name, value)
     color = new Color.RGB(value)
     @named_color[name] = color
 
@@ -224,29 +229,32 @@ class Color.Theme
     for name, value of opt
       @set_color(name, value)
 
-  color_at: (pos) ->
-    prev = @stops[0]
-    for stop in @stops
-      if pos > stop.position
-        return prev
-      prev = stop
-    return prev
-
   rgb_at: (pos) ->
-    prev = @color_at(pos)
-    if prev.next?
-      next = prev.next
-      delta = next.position - prev.position
-      t = pos - delta
-      prev.linear_blend_rgb(next, t)
-    else
-      prev.rgb()
+    pos = 0 if pos < 0
+    pos = 1 if pos > 1
+
+    stop_index = 0
+    prev = @stops[stop_index++]
+    next = @stops[stop_index++]
+
+    while pos < prev.position
+      prev = next
+      next = @stops[stop_index++]
+
+    delta = next.position - prev.position
+    t = (pos - prev.position) / delta
+    prev.linear_blend_rgb(next, t)
+
+  rgb_hex_at: (pos) ->
+    rgb = @rgb_at(pos)
+    color = new Color.RGB(rgb...)
+    color.to_hex()
 
   reset_lookup_table: (size = @default_table_size) ->
     @table = @build_lookup_table(size)
 
   build_lookup_table: (size = @default_table_size) ->
-    if size > @table_size
+    if size > @table_size or !@table?
       @table = new Uint8ClampedArray(size * 3)
       @table_size = size
 
@@ -283,14 +291,11 @@ class Color.Theme
 
   rebuild: (size = @default_table_size) ->
     return if @stops.length < 2
-    @gradient.rebuild() if @gradient
-
-  send_updates_to: (grad) ->
-    @gradient = grad
+    #@reset_lookup_table(size)
+    @table = null
 
   construct_editor: ->
     @editor = document.getElementById(@editor_id)
-    console.log(@editor)
     @editor_bg_container = document.createElement('div')
     @editor_bg_container.classList.add('editor_bg_container')
     @editor_bg = document.createElement('div')
@@ -306,7 +311,11 @@ class Color.Theme
     @editor_stop_container.setAttribute('title', 'Click to add a color marker')
     @editor.appendChild(@editor_stop_container)
 
-    @editor_stop_container.addEventListener('click', @on_editor_stop_container_click)
+    @editor_footer = document.createElement('div')
+    @editor_footer.classList.add('clear_both')
+    @editor.appendChild(@editor_footer)
+
+    @editor_bg.addEventListener('click', @on_editor_bg_click)
 
     @drag = null
     @editor.addEventListener('mouseup',   @on_editor_mouseup)
@@ -326,27 +335,41 @@ class Color.Theme
 
   update_editor_gradient: ->
     @editor_bg.style.background = @editor_background_css()
+    @rebuild()
 
   start_drag: (stop, event) ->
+    rect = event.target.getBoundingClientRect()
     @drag = stop
-    @drag_start_x = event.layerX
-    @drag_start_y = event.layerY
+    @drag.editor_el.classList.add('drag')
+    @drag_start_x = event.clientX - event.currentTarget.offsetLeft
+    @drag_start_y = event.clientY - event.currentTarget.offsetTop
     @drag_x = @drag_start_x
     @drag_y = @drag_start_y
 
-  update_drag_position: ->
-    console.log('drag pos', @drag_x)
+  update_drag_position: (event) ->
+    rect = @editor_stop_container.getBoundingClientRect()
+    width = rect.width
+    start_offset = @drag.position * width
+    new_offset = start_offset + event.movementX
+    new_pos = new_offset / width
+    @drag.set_position(new_pos)
 
   on_editor_mouseup: (event) =>
     if @drag?
-      @update_drag_position()
+      @update_drag_position(event)
+      for el in document.querySelectorAll("##{@editor_id} .color_stop.drag")
+        el.classList.remove('drag')
       @drag = null
 
   on_editor_mousemove: (event) =>
     if @drag?
-      @drag_x = event.layerX
-      @drag_y = event.layerY
-      @update_drag_position()
+      @update_drag_position(event)
 
-  on_editor_stop_container_click: (event) =>
-    console.log('add new color stop!')
+  on_editor_bg_click: (event) =>
+    rect = @editor_bg.getBoundingClientRect()
+    start = rect.x
+    width = rect.width
+    x = event.clientX
+    pos = (x - start) / width
+    color = @rgb_hex_at(pos)
+    @add_stop(pos, color)

@@ -617,6 +617,7 @@ td.name[contenteditable=true]:focus {
 }
 
 .gradient_editor {
+  padding: 1em;
 }
 
 .gradient_editor .editor_bg_container {
@@ -627,27 +628,47 @@ td.name[contenteditable=true]:focus {
 .gradient_editor .editor_bg {
   width: 300px;
   height: 40px;
-  border: 1px solid #555;
+  border-top: 1px solid #555;
+  border-left: 1px solid #555;
+  border-right: 1px solid #555;
+  border-bottom: none;
+  cursor: pointer;
 }
 
 .gradient_editor .stop_container {
   position: relative;
-  height: 20px;
+  height: 50px;
   width: 300px;
-  cursor: pointer;
+  /* cursor: pointer; */
+  /* border-bottom: 1px dashed #888; */
+  /* background-color: #f7f8f9; */
+  /* box-shadow: inset 1px -2px 5px -6px rgba(0,0,0,0.7); */
 }
 
 .gradient_editor .stop_container > .color_stop {
   position: absolute;
-  cursor: default;
-  width: 11px;
-  height: 17px;
-  border: 1px outset #888;
-}
-
-.gradient_editor .stop_container > .color_stop_bg {
+  cursor: grab;
+  width: 19px;
+  height: 21px;
   background: rgb(0,0,0) none repeat scroll 0% 0%;
-  cursor: default;
+  top: 14px;
+  z-index: 1;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.6), 1px 1px 1px rgba(255,255,255,0.3);
 }
 
+.gradient_editor .stop_container > .color_stop.drag {
+  cursor: grabbing;
+}
 
+.gradient_editor .stop_container > .color_stop::before {
+  content: " ";
+  position: absolute;
+  display: block;
+  top: -16px;
+  width: 10px;
+  height: 17px;
+  background: linear-gradient(to bottom left, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 100%);
+}

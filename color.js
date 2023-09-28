@@ -7,14 +7,26 @@
   window.Color || (window.Color = {});
 
   Color.RGB = (function() {
-    function RGB(value) {
+    function RGB(value, gvalue, bvalue) {
       if (value == null) {
         value = '#000000';
       }
-      this.r - 0;
-      this.g = 0;
-      this.b = 0;
-      this.set(value);
+      if (gvalue == null) {
+        gvalue = null;
+      }
+      if (bvalue == null) {
+        bvalue = null;
+      }
+      if ((gvalue != null) && (bvalue != null)) {
+        this.r = value;
+        this.g = gvalue;
+        this.b = bvalue;
+      } else {
+        this.r = 0;
+        this.g = 0;
+        this.b = 0;
+        this.set(value);
+      }
     }
 
     RGB.prototype.set = function(value) {
@@ -246,7 +258,7 @@
     function Theme(name1, editor_id) {
       this.name = name1;
       this.editor_id = editor_id != null ? editor_id : null;
-      this.on_editor_stop_container_click = bind(this.on_editor_stop_container_click, this);
+      this.on_editor_bg_click = bind(this.on_editor_bg_click, this);
       this.on_editor_mousemove = bind(this.on_editor_mousemove, this);
       this.on_editor_mouseup = bind(this.on_editor_mouseup, this);
       this.default_table_size = 256;
@@ -299,6 +311,7 @@
           stop.prepare_editor();
         }
       }
+      this.rebuild();
       return color;
     };
 
@@ -321,7 +334,6 @@
 
     Theme.prototype.set_color = function(name, value) {
       var color;
-      console.log('set_color', name, value);
       color = new Color.RGB(value);
       this.named_color[name] = color;
       switch (name) {
@@ -342,31 +354,35 @@
       return results;
     };
 
-    Theme.prototype.color_at = function(pos) {
-      var j, len, prev, ref, stop;
-      prev = this.stops[0];
-      ref = this.stops;
-      for (j = 0, len = ref.length; j < len; j++) {
-        stop = ref[j];
-        if (pos > stop.position) {
-          return prev;
-        }
-        prev = stop;
+    Theme.prototype.rgb_at = function(pos) {
+      var delta, next, prev, stop_index, t;
+      if (pos < 0) {
+        pos = 0;
       }
-      return prev;
+      if (pos > 1) {
+        pos = 1;
+      }
+      stop_index = 0;
+      prev = this.stops[stop_index++];
+      next = this.stops[stop_index++];
+      while (pos < prev.position) {
+        prev = next;
+        next = this.stops[stop_index++];
+      }
+      delta = next.position - prev.position;
+      t = (pos - prev.position) / delta;
+      return prev.linear_blend_rgb(next, t);
     };
 
-    Theme.prototype.rgb_at = function(pos) {
-      var delta, next, prev, t;
-      prev = this.color_at(pos);
-      if (prev.next != null) {
-        next = prev.next;
-        delta = next.position - prev.position;
-        t = pos - delta;
-        return prev.linear_blend_rgb(next, t);
-      } else {
-        return prev.rgb();
-      }
+    Theme.prototype.rgb_hex_at = function(pos) {
+      var color, rgb;
+      rgb = this.rgb_at(pos);
+      color = (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(Color.RGB, rgb, function(){});
+      return color.to_hex();
     };
 
     Theme.prototype.reset_lookup_table = function(size) {
@@ -381,7 +397,7 @@
       if (size == null) {
         size = this.default_table_size;
       }
-      if (size > this.table_size) {
+      if (size > this.table_size || (this.table == null)) {
         this.table = new Uint8ClampedArray(size * 3);
         this.table_size = size;
       }
@@ -427,18 +443,11 @@
       if (this.stops.length < 2) {
         return;
       }
-      if (this.gradient) {
-        return this.gradient.rebuild();
-      }
-    };
-
-    Theme.prototype.send_updates_to = function(grad) {
-      return this.gradient = grad;
+      return this.table = null;
     };
 
     Theme.prototype.construct_editor = function() {
       this.editor = document.getElementById(this.editor_id);
-      console.log(this.editor);
       this.editor_bg_container = document.createElement('div');
       this.editor_bg_container.classList.add('editor_bg_container');
       this.editor_bg = document.createElement('div');
@@ -452,7 +461,10 @@
       this.editor_stop_container.classList.add('noselect');
       this.editor_stop_container.setAttribute('title', 'Click to add a color marker');
       this.editor.appendChild(this.editor_stop_container);
-      this.editor_stop_container.addEventListener('click', this.on_editor_stop_container_click);
+      this.editor_footer = document.createElement('div');
+      this.editor_footer.classList.add('clear_both');
+      this.editor.appendChild(this.editor_footer);
+      this.editor_bg.addEventListener('click', this.on_editor_bg_click);
       this.drag = null;
       this.editor.addEventListener('mouseup', this.on_editor_mouseup);
       return this.editor.addEventListener('mousemove', this.on_editor_mousemove);
@@ -475,38 +487,59 @@
     };
 
     Theme.prototype.update_editor_gradient = function() {
-      return this.editor_bg.style.background = this.editor_background_css();
+      this.editor_bg.style.background = this.editor_background_css();
+      return this.rebuild();
     };
 
     Theme.prototype.start_drag = function(stop, event) {
+      var rect;
+      rect = event.target.getBoundingClientRect();
       this.drag = stop;
-      this.drag_start_x = event.layerX;
-      this.drag_start_y = event.layerY;
+      this.drag.editor_el.classList.add('drag');
+      this.drag_start_x = event.clientX - event.currentTarget.offsetLeft;
+      this.drag_start_y = event.clientY - event.currentTarget.offsetTop;
       this.drag_x = this.drag_start_x;
       return this.drag_y = this.drag_start_y;
     };
 
-    Theme.prototype.update_drag_position = function() {
-      return console.log('drag pos', this.drag_x);
+    Theme.prototype.update_drag_position = function(event) {
+      var new_offset, new_pos, rect, start_offset, width;
+      rect = this.editor_stop_container.getBoundingClientRect();
+      width = rect.width;
+      start_offset = this.drag.position * width;
+      new_offset = start_offset + event.movementX;
+      new_pos = new_offset / width;
+      return this.drag.set_position(new_pos);
     };
 
     Theme.prototype.on_editor_mouseup = function(event) {
+      var el, j, len, ref;
       if (this.drag != null) {
-        this.update_drag_position();
+        this.update_drag_position(event);
+        ref = document.querySelectorAll("#" + this.editor_id + " .color_stop.drag");
+        for (j = 0, len = ref.length; j < len; j++) {
+          el = ref[j];
+          el.classList.remove('drag');
+        }
         return this.drag = null;
       }
     };
 
     Theme.prototype.on_editor_mousemove = function(event) {
       if (this.drag != null) {
-        this.drag_x = event.layerX;
-        this.drag_y = event.layerY;
-        return this.update_drag_position();
+        return this.update_drag_position(event);
       }
     };
 
-    Theme.prototype.on_editor_stop_container_click = function(event) {
-      return console.log('add new color stop!');
+    Theme.prototype.on_editor_bg_click = function(event) {
+      var color, pos, rect, start, width, x;
+      rect = this.editor_bg.getBoundingClientRect();
+      start = rect.x;
+      width = rect.width;
+      x = event.clientX;
+      pos = (x - start) / width;
+      color = this.rgb_hex_at(pos);
+      return this.add_stop(pos, color);
     };
 
     return Theme;
