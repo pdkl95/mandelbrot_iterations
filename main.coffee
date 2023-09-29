@@ -22,6 +22,9 @@ class MandelIter
     @msg    = @context.getElementById('msg')
     @msg_visible = false
 
+    for hdr in @context.querySelectorAll('.collapse_header')
+      hdr.addEventListener('click', @on_collapse_header_click)
+
     @theme = {}
     @theme.mandel = new Color.Theme('linear_greyscale', 'mandel_external_color')
     @theme.mandel.set_colors
@@ -322,6 +325,22 @@ class MandelIter
   warn: (msg) ->
     console.log("WARNING", msg)
     @set_highlight_msg("WARNING: #{msg}")
+
+  on_collapse_header_click: (event) ->
+    hdr = event.target
+    hide_id = hdr.dataset.collapse_hide
+    show_id = hdr.dataset.collapse_show
+    hide = document.getElementById(hide_id)
+    show = document.getElementById(show_id)
+
+    if hdr.classList.contains('collapsed')
+      hdr.classList.remove('collapsed')
+      hide.classList.remove('hidden')
+      show.classList.add('hidden')
+    else
+      hdr.classList.add('collapsed')
+      hide.classList.add('hidden')
+      show.classList.remove('hidden')
 
   on_tabbutton_click: (event) =>
     @tabbutton_activate(event.target)

@@ -53,7 +53,7 @@
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
+      var fmtfloatopts, hdr, j, k, len, len1, ref, ref1, ref2, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
       this.content_el = this.context.getElementById('content');
@@ -62,6 +62,11 @@
       this.msgbox = this.context.getElementById('msgbox');
       this.msg = this.context.getElementById('msg');
       this.msg_visible = false;
+      ref = this.context.querySelectorAll('.collapse_header');
+      for (j = 0, len = ref.length; j < len; j++) {
+        hdr = ref[j];
+        hdr.addEventListener('click', this.on_collapse_header_click);
+      }
       this.theme = {};
       this.theme.mandel = new Color.Theme('linear_greyscale', 'mandel_external_color');
       this.theme.mandel.set_colors({
@@ -107,9 +112,9 @@
       });
       this.resize_canvas(900, 600);
       this.fit_canvas_to_width();
-      ref = this.context.querySelectorAll('.tabbutton');
-      for (j = 0, len = ref.length; j < len; j++) {
-        tabbutton = ref[j];
+      ref1 = this.context.querySelectorAll('.tabbutton');
+      for (k = 0, len1 = ref1.length; k < len1; k++) {
+        tabbutton = ref1[k];
         tabbutton.addEventListener('click', this.on_tabbutton_click);
       }
       this.loc_c = this.context.getElementById('loc_c');
@@ -274,9 +279,9 @@
       this.highlight_prev = this.context.getElementById('highlight_prev');
       this.highlight_next = this.context.getElementById('highlight_next');
       this.highlight_list = this.context.getElementById('highlight_list');
-      ref1 = Highlight.sequences;
-      for (seq_id in ref1) {
-        seq = ref1[seq_id];
+      ref2 = Highlight.sequences;
+      for (seq_id in ref2) {
+        seq = ref2[seq_id];
         seq.add_to_groups(this.option.highlight_group.el);
       }
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
@@ -393,6 +398,24 @@
     MandelIter.prototype.warn = function(msg) {
       console.log("WARNING", msg);
       return this.set_highlight_msg("WARNING: " + msg);
+    };
+
+    MandelIter.prototype.on_collapse_header_click = function(event) {
+      var hdr, hide, hide_id, show, show_id;
+      hdr = event.target;
+      hide_id = hdr.dataset.collapse_hide;
+      show_id = hdr.dataset.collapse_show;
+      hide = document.getElementById(hide_id);
+      show = document.getElementById(show_id);
+      if (hdr.classList.contains('collapsed')) {
+        hdr.classList.remove('collapsed');
+        hide.classList.remove('hidden');
+        return show.classList.add('hidden');
+      } else {
+        hdr.classList.add('collapsed');
+        hide.classList.add('hidden');
+        return show.classList.remove('hidden');
+      }
     };
 
     MandelIter.prototype.on_tabbutton_click = function(event) {

@@ -70,11 +70,11 @@ undivert(`style.css')
           <span id="msg"></span>
         </div>
 
-        <hr class="clear_both"></hr>
+        <hr id="buttonbox_hr" class="clear_both"></hr>
 
         <div class="coordbox optionbox obright">
-          <h3>Pointer Location</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="pointer_location_table" data-collapse_show="pointer_location_hr">Pointer Location</h3>
+          <table id="pointer_location_table">
             <tr>
               <th>C =</th>
               <td><code id="loc_c" class="numfloat complex"></code></td>
@@ -93,9 +93,10 @@ undivert(`style.css')
                 <button id="copy_loc_to_set_c">&darr; Copy To Set C &darr;</button>
                 <button id="save_loc">Save &darr;</button>
               </td>
-          </table>
-
-          <table>
+            </tr>
+            <tr>
+              <th colspan="2">&nbsp;</th>
+            </tr>
             <tr>
               <th class="tt ttleft" data-title="Set the real part of the cursor position C.">Real</th>
               <td><input id="set_c_real" value="0"></td>
@@ -111,7 +112,8 @@ undivert(`style.css')
                 <button id="save_c">Save &darr;</button>
               </td>
             </tr>
-          </table> 
+          </table>
+          <hr id="pointer_location_hr" class="clear_both hidden collapse_hr"></hr>
 
           <div class="tabs">
             <div class="tabheader">
@@ -152,8 +154,8 @@ undivert(`style.css')
         </div>
 
         <div id="orbit_options" class="optionbox obleft">
-          <h3>Orbit Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="orbit_options_table" data-collapse_show="orbit_options_hr">Orbit Options</h3>
+          <table id="orbit_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Orbit Draw Length</th>
               <td>
@@ -198,9 +200,10 @@ undivert(`style.css')
               </td>
             </tr>
           </table>
+          <hr id="orbit_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>Trace Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="trace_options_table" data-collapse_show="trace_options_hr">Trace Options</h3>
+          <table id="trace_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of the main cardioid.">Highlight Trace Path</th>
               <td>
@@ -226,9 +229,10 @@ undivert(`style.css')
               </td>
             </tr>
           </table>
+          <hr id="trace_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>UI Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="ui_options_table" data-collapse_show="ui_options_hr">UI Options</h3>
+          <table id="ui_options_table" class="collapse_target">
             <tr class="hidden">
               <th class="tt ttright" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">Step</th>
               <td>
@@ -248,11 +252,12 @@ undivert(`style.css')
               </td>
             </tr>
           </table>
+          <hr id="ui_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <div id="julia_options" class="optionbox obleft">
-          <h3>Julia Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="julia_options_table" data-collapse_show="julia_options_hr">Julia Options</h3>
+          <table id="julia_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Show the Julia set in a box surrounding the currently rendered Mandelbrot orbit. WARNING: significantly increasres the amount of computation that is recomputed every time the orbit changes (i.e. every time the mouse moves)">Show Nearby Julia</th>
               <td>
@@ -316,9 +321,10 @@ undivert(`style.css')
               </td>
             </tr>
           </table>
+          <hr id="julia_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>Mandelbrot Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="mandelbrot_options_table" data-collapse_show="mandelbrot_options_hr">Mandelbrot Options</h3>
+          <table id="mandelbrot_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">
@@ -374,13 +380,14 @@ undivert(`style.css')
               <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
             </tr>
           </table>
+          <hr id="mandelbrot_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <hr class="clear_both"></hr>
 
         <div id="orbit_options" class="optionbox obleft">
-          <h3>Miscellaneous</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="miscellaneous_options_table" data-collapse_show="miscellaneous_options_hr">Miscellaneous</h3>
+          <table id="micellaneous_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Clears all localStorage data and resets the values back to their default values.">Clear Persistant Storage</th>
               <td>
@@ -388,6 +395,7 @@ undivert(`style.css')
               </td>
             </tr>
           </table>
+          <hr id="miscellaneous_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <div class="clear_both"></div>

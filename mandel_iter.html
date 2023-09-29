@@ -322,6 +322,10 @@ footer {
   margin-left: 0.2rem;
 }
 
+#buttonbox_hr {
+  margin-bottom: 0;
+}
+
 .buttonbox > button {
   background-color: #d2d2d2;
   border: 2px outset #cccccc;
@@ -377,7 +381,6 @@ footer {
 }
 
 .optionbox {
-  margin: 0.2rem;
   padding: 0.3rem;
 }
 
@@ -856,6 +859,33 @@ td.name[contenteditable=true]:focus {
   background: linear-gradient(to bottom left, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 100%);
 }
 
+.collapse_header {
+  cursor: pointer;
+}
+
+.collapse_header:not(.collapsed):hover {
+  background-color: #eee;
+}
+
+.collapse_header.collapsed {
+  border-style: inset;
+  background-color: #c0c0c0;
+  font-weight: normal;
+  font-style: italic;
+}
+
+.collapse_header.collapsed::after {
+  content: " ...";
+}
+
+.collapse_hr {
+  clear: both;
+  border: 1px dashed #aaa;
+  margin: 0 1em;
+  position: relative;
+  top: -3px;
+}
+
     </style>
   </head>
   <body>
@@ -918,11 +948,11 @@ td.name[contenteditable=true]:focus {
           <span id="msg"></span>
         </div>
 
-        <hr class="clear_both"></hr>
+        <hr id="buttonbox_hr" class="clear_both"></hr>
 
         <div class="coordbox optionbox obright">
-          <h3>Pointer Location</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="pointer_location_table" data-collapse_show="pointer_location_hr">Pointer Location</h3>
+          <table id="pointer_location_table">
             <tr>
               <th>C =</th>
               <td><code id="loc_c" class="numfloat complex"></code></td>
@@ -941,9 +971,10 @@ td.name[contenteditable=true]:focus {
                 <button id="copy_loc_to_set_c">&darr; Copy To Set C &darr;</button>
                 <button id="save_loc">Save &darr;</button>
               </td>
-          </table>
-
-          <table>
+            </tr>
+            <tr>
+              <th colspan="2">&nbsp;</th>
+            </tr>
             <tr>
               <th class="tt ttleft" data-title="Set the real part of the cursor position C.">Real</th>
               <td><input id="set_c_real" value="0"></td>
@@ -959,7 +990,8 @@ td.name[contenteditable=true]:focus {
                 <button id="save_c">Save &darr;</button>
               </td>
             </tr>
-          </table> 
+          </table>
+          <hr id="pointer_location_hr" class="clear_both hidden collapse_hr"></hr>
 
           <div class="tabs">
             <div class="tabheader">
@@ -1000,8 +1032,8 @@ td.name[contenteditable=true]:focus {
         </div>
 
         <div id="orbit_options" class="optionbox obleft">
-          <h3>Orbit Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="orbit_options_table" data-collapse_show="orbit_options_hr">Orbit Options</h3>
+          <table id="orbit_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Orbit Draw Length</th>
               <td>
@@ -1046,9 +1078,10 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
           </table>
+          <hr id="orbit_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>Trace Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="trace_options_table" data-collapse_show="trace_options_hr">Trace Options</h3>
+          <table id="trace_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of the main cardioid.">Highlight Trace Path</th>
               <td>
@@ -1074,9 +1107,10 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
           </table>
+          <hr id="trace_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>UI Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="ui_options_table" data-collapse_show="ui_options_hr">UI Options</h3>
+          <table id="ui_options_table" class="collapse_target">
             <tr class="hidden">
               <th class="tt ttright" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">Step</th>
               <td>
@@ -1096,11 +1130,12 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
           </table>
+          <hr id="ui_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <div id="julia_options" class="optionbox obleft">
-          <h3>Julia Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="julia_options_table" data-collapse_show="julia_options_hr">Julia Options</h3>
+          <table id="julia_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Show the Julia set in a box surrounding the currently rendered Mandelbrot orbit. WARNING: significantly increasres the amount of computation that is recomputed every time the orbit changes (i.e. every time the mouse moves)">Show Nearby Julia</th>
               <td>
@@ -1164,9 +1199,10 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
           </table>
+          <hr id="julia_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>Mandelbrot Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="mandelbrot_options_table" data-collapse_show="mandelbrot_options_hr">Mandelbrot Options</h3>
+          <table id="mandelbrot_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">
@@ -1222,13 +1258,14 @@ td.name[contenteditable=true]:focus {
               <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
             </tr>
           </table>
+          <hr id="mandelbrot_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <hr class="clear_both"></hr>
 
         <div id="orbit_options" class="optionbox obleft">
-          <h3>Miscellaneous</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="miscellaneous_options_table" data-collapse_show="miscellaneous_options_hr">Miscellaneous</h3>
+          <table id="micellaneous_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Clears all localStorage data and resets the values back to their default values.">Clear Persistant Storage</th>
               <td>
@@ -1236,6 +1273,7 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
           </table>
+          <hr id="miscellaneous_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <div class="clear_both"></div>
@@ -2936,7 +2974,7 @@ td.name[contenteditable=true]:focus {
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
+      var fmtfloatopts, hdr, j, k, len, len1, ref, ref1, ref2, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
       this.content_el = this.context.getElementById('content');
@@ -2945,6 +2983,11 @@ td.name[contenteditable=true]:focus {
       this.msgbox = this.context.getElementById('msgbox');
       this.msg = this.context.getElementById('msg');
       this.msg_visible = false;
+      ref = this.context.querySelectorAll('.collapse_header');
+      for (j = 0, len = ref.length; j < len; j++) {
+        hdr = ref[j];
+        hdr.addEventListener('click', this.on_collapse_header_click);
+      }
       this.theme = {};
       this.theme.mandel = new Color.Theme('linear_greyscale', 'mandel_external_color');
       this.theme.mandel.set_colors({
@@ -2990,9 +3033,9 @@ td.name[contenteditable=true]:focus {
       });
       this.resize_canvas(900, 600);
       this.fit_canvas_to_width();
-      ref = this.context.querySelectorAll('.tabbutton');
-      for (j = 0, len = ref.length; j < len; j++) {
-        tabbutton = ref[j];
+      ref1 = this.context.querySelectorAll('.tabbutton');
+      for (k = 0, len1 = ref1.length; k < len1; k++) {
+        tabbutton = ref1[k];
         tabbutton.addEventListener('click', this.on_tabbutton_click);
       }
       this.loc_c = this.context.getElementById('loc_c');
@@ -3157,9 +3200,9 @@ td.name[contenteditable=true]:focus {
       this.highlight_prev = this.context.getElementById('highlight_prev');
       this.highlight_next = this.context.getElementById('highlight_next');
       this.highlight_list = this.context.getElementById('highlight_list');
-      ref1 = Highlight.sequences;
-      for (seq_id in ref1) {
-        seq = ref1[seq_id];
+      ref2 = Highlight.sequences;
+      for (seq_id in ref2) {
+        seq = ref2[seq_id];
         seq.add_to_groups(this.option.highlight_group.el);
       }
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
@@ -3276,6 +3319,24 @@ td.name[contenteditable=true]:focus {
     MandelIter.prototype.warn = function(msg) {
       console.log("WARNING", msg);
       return this.set_highlight_msg("WARNING: " + msg);
+    };
+
+    MandelIter.prototype.on_collapse_header_click = function(event) {
+      var hdr, hide, hide_id, show, show_id;
+      hdr = event.target;
+      hide_id = hdr.dataset.collapse_hide;
+      show_id = hdr.dataset.collapse_show;
+      hide = document.getElementById(hide_id);
+      show = document.getElementById(show_id);
+      if (hdr.classList.contains('collapsed')) {
+        hdr.classList.remove('collapsed');
+        hide.classList.remove('hidden');
+        return show.classList.add('hidden');
+      } else {
+        hdr.classList.add('collapsed');
+        hide.classList.add('hidden');
+        return show.classList.remove('hidden');
+      }
     };
 
     MandelIter.prototype.on_tabbutton_click = function(event) {

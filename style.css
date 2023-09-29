@@ -139,6 +139,10 @@ footer {
   margin-left: 0.2rem;
 }
 
+#buttonbox_hr {
+  margin-bottom: 0;
+}
+
 .buttonbox > button {
   background-color: #d2d2d2;
   border: 2px outset #cccccc;
@@ -194,7 +198,6 @@ footer {
 }
 
 .optionbox {
-  margin: 0.2rem;
   padding: 0.3rem;
 }
 
@@ -671,4 +674,31 @@ td.name[contenteditable=true]:focus {
   width: 10px;
   height: 17px;
   background: linear-gradient(to bottom left, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 100%);
+}
+
+.collapse_header {
+  cursor: pointer;
+}
+
+.collapse_header:not(.collapsed):hover {
+  background-color: #eee;
+}
+
+.collapse_header.collapsed {
+  border-style: inset;
+  background-color: #c0c0c0;
+  font-weight: normal;
+  font-style: italic;
+}
+
+.collapse_header.collapsed::after {
+  content: " ...";
+}
+
+.collapse_hr {
+  clear: both;
+  border: 1px dashed #aaa;
+  margin: 0 1em;
+  position: relative;
+  top: -3px;
 }
