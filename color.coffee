@@ -125,6 +125,7 @@ class Color.Stop extends Color.RGB
   on_editor_input_change: (event) =>
     @set_string(@editor_input.value)
     @update_editor_bg()
+    APP.repaint_mandelbrot()
 
   on_editor_dblclick: (event) =>
     @editor_input.click()
@@ -255,7 +256,11 @@ class Color.Theme
 
   build_lookup_table: (size = @default_table_size) ->
     if size > @table_size or !@table?
-      @table = new Uint8ClampedArray(size * 3)
+      bytes = size * 3
+      console.log("building lookup table (size=#{size}, #{bytes} bytes)")
+      console.log('stops', @stops)
+      console.log('positions', @stops.map (x) -> x.position)
+      @table = new Uint8ClampedArray(bytes)
       @table_size = size
 
     stop_index = 0
@@ -267,13 +272,19 @@ class Color.Theme
     delta = next.position
 
     while pos < 1.0
-      if pos >= next.position
+      if next? and pos >= next.position
         prev = next
         next = @stops[stop_index++]
-        delta = next.position - prev.position
+        if next?
+          delta = next.position - prev.position
+        else
+          delta = 0
 
-      t = (pos - prev.position) / delta
-      rgb = prev.linear_blend_rgb(next, t)
+      rgb = if next? and delta > 0
+        t =(pos - prev.position) / delta
+        prev.linear_blend_rgb(next, t)
+      else
+        prev.rgb()
 
       @table[offset    ] = rgb[0]
       @table[offset + 1] = rgb[1]
@@ -360,6 +371,7 @@ class Color.Theme
       for el in document.querySelectorAll("##{@editor_id} .color_stop.drag")
         el.classList.remove('drag')
       @drag = null
+      APP.repaint_mandelbrot()
 
   on_editor_mousemove: (event) =>
     if @drag?

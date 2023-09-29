@@ -984,13 +984,12 @@ class MandelIter
       value = Math.pow(value, 0.5) * 25
       rgb = @current_theme.lookup(value)
       @current_image.data[offset    ] = rgb[0]
-      @current_image.data[offset + 1] = rgb[2]
-      @current_image.data[offset + 2] = rgb[1]
+      @current_image.data[offset + 1] = rgb[1]
+      @current_image.data[offset + 2] = rgb[2]
 
   repaint_canvas: (ctx, values, theme) ->
     return unless ctx? and values?
 
-    #@current_image = ctx.createImageData(@graph_width, @graph_height)
     @current_image = @graph_mandel_ctx.getImageData(0, 0, @graph_width, @graph_height)
     @current_theme = theme
     @current_internal_color = @current_theme.named_color.internal

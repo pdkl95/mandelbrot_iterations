@@ -186,7 +186,8 @@
 
     Stop.prototype.on_editor_input_change = function(event) {
       this.set_string(this.editor_input.value);
-      return this.update_editor_bg();
+      this.update_editor_bg();
+      return APP.repaint_mandelbrot();
     };
 
     Stop.prototype.on_editor_dblclick = function(event) {
@@ -393,12 +394,18 @@
     };
 
     Theme.prototype.build_lookup_table = function(size) {
-      var delta, next, offset, pos, prev, results, rgb, step, stop_index, t;
+      var bytes, delta, next, offset, pos, prev, results, rgb, step, stop_index, t;
       if (size == null) {
         size = this.default_table_size;
       }
       if (size > this.table_size || (this.table == null)) {
-        this.table = new Uint8ClampedArray(size * 3);
+        bytes = size * 3;
+        console.log("building lookup table (size=" + size + ", " + bytes + " bytes)");
+        console.log('stops', this.stops);
+        console.log('positions', this.stops.map(function(x) {
+          return x.position;
+        }));
+        this.table = new Uint8ClampedArray(bytes);
         this.table_size = size;
       }
       stop_index = 0;
@@ -410,13 +417,16 @@
       delta = next.position;
       results = [];
       while (pos < 1.0) {
-        if (pos >= next.position) {
+        if ((next != null) && pos >= next.position) {
           prev = next;
           next = this.stops[stop_index++];
-          delta = next.position - prev.position;
+          if (next != null) {
+            delta = next.position - prev.position;
+          } else {
+            delta = 0;
+          }
         }
-        t = (pos - prev.position) / delta;
-        rgb = prev.linear_blend_rgb(next, t);
+        rgb = (next != null) && delta > 0 ? (t = (pos - prev.position) / delta, prev.linear_blend_rgb(next, t)) : prev.rgb();
         this.table[offset] = rgb[0];
         this.table[offset + 1] = rgb[1];
         this.table[offset + 2] = rgb[2];
@@ -521,7 +531,8 @@
           el = ref[j];
           el.classList.remove('drag');
         }
-        return this.drag = null;
+        this.drag = null;
+        return APP.repaint_mandelbrot();
       }
     };
 

@@ -1264,8 +1264,8 @@
         value = Math.pow(value, 0.5) * 25;
         rgb = this.current_theme.lookup(value);
         this.current_image.data[offset] = rgb[0];
-        this.current_image.data[offset + 1] = rgb[2];
-        return this.current_image.data[offset + 2] = rgb[1];
+        this.current_image.data[offset + 1] = rgb[1];
+        return this.current_image.data[offset + 2] = rgb[2];
       }
     };
 
