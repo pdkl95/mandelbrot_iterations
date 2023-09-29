@@ -400,11 +400,6 @@
       }
       if (size > this.table_size || (this.table == null)) {
         bytes = size * 3;
-        console.log("building lookup table (size=" + size + ", " + bytes + " bytes)");
-        console.log('stops', this.stops);
-        console.log('positions', this.stops.map(function(x) {
-          return x.position;
-        }));
         this.table = new Uint8ClampedArray(bytes);
         this.table_size = size;
       }

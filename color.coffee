@@ -257,9 +257,6 @@ class Color.Theme
   build_lookup_table: (size = @default_table_size) ->
     if size > @table_size or !@table?
       bytes = size * 3
-      console.log("building lookup table (size=#{size}, #{bytes} bytes)")
-      console.log('stops', @stops)
-      console.log('positions', @stops.map (x) -> x.position)
       @table = new Uint8ClampedArray(bytes)
       @table_size = size
 

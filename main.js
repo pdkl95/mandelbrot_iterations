@@ -166,8 +166,6 @@
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
         mandel_color_internal: new UI.ColorOption('mandel_color_internal'),
-        mandel_color_escape_min: new UI.ColorOption('mandel_color_escape_min'),
-        mandel_color_escape_max: new UI.ColorOption('mandel_color_escape_max'),
         highlight_group: new UI.SelectOption('highlight_group')
       };
       this.option.orbit_skip_initial.register_callback({
@@ -209,25 +207,10 @@
       this.option.julia_local_pixel_size.set_label_text_formater(function(value) {
         return value + "x";
       });
-      this.option.mandel_color_internal.register_callback({
-        on_change: this.on_mandel_color_change
-      });
-      this.option.mandel_color_escape_min.register_callback({
-        on_change: this.on_mandel_color_change
-      });
-      this.option.mandel_color_escape_max.register_callback({
-        on_change: this.on_mandel_color_change
-      });
       this.option.highlight_group.register_callback({
         on_change: this.on_highlight_group_changed
       });
       this.option.mandel_color_internal.register_callback({
-        on_change: this.on_mandel_color_changed
-      });
-      this.option.mandel_color_escape_min.register_callback({
-        on_change: this.on_mandel_color_changed
-      });
-      this.option.mandel_color_escape_max.register_callback({
         on_change: this.on_mandel_color_changed
       });
       this.pointer_angle = 0;
@@ -1317,15 +1300,12 @@
 
     MandelIter.prototype.theme_mandel_update = function() {
       this.theme.mandel.set_colors({
-        internal: this.option.mandel_color_internal.value,
-        escape_min: this.option.mandel_color_escape_min.value,
-        escape_max: this.option.mandel_color_escape_max.value
+        internal: this.option.mandel_color_internal.value
       });
       return this.theme.mandel.rebuild();
     };
 
     MandelIter.prototype.on_mandel_color_changed = function() {
-      console.log('COLOR CHANGED');
       this.theme_mandel_update();
       return this.repaint_mandelbrot();
     };

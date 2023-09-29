@@ -353,30 +353,6 @@ undivert(`style.css')
               </td>
             </tr>
             <tr>
-              <th class="tt ttright" data-title="Color to use for complex values _outside_ the Mandelbrot Set with the _lowest_ escape count. (values of C that took the fewest iterations to have a magnitude greater than 2.">
-                External Color
-                <br />
-                Lowest Escape Count
-              </th>
-              <td class="color_picker">
-                <label for="mandel_color_escape_min" id="mandel_color_escape_min_label">#000000</label>
-                <input id="mandel_color_escape_min" name="mandel_color_escape_min"
-                       type="color" value="#000000" autocomplete="off">
-              </td>
-            </tr>
-            <tr>
-              <th class="tt ttright" data-title="Color to use for complex values _outside_ the Mandelbrot Set with the _highest_ escape count. (values of C that took the largest number of iterations to have a magnitude greater than 2.">
-                External Color
-                <br />
-                Highest Escape Count
-              </th>
-              <td class="color_picker">
-                <label for="mandel_color_escape_max" id="mandel_color_escape_max_label">#FFFFFF</label>
-                <input id="mandel_color_escape_max" name="mandel_color_escape_max"
-                       type="color" value="#FFFFFF" autocomplete="off">
-              </td>
-            </tr>
-            <tr>
               <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
             </tr>
           </table>

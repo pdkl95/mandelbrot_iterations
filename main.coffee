@@ -126,8 +126,6 @@ class MandelIter
       mandel_antialias:         new UI.SelectOption('mandel_antialias');
       mandel_max_iterations:    new UI.IntOption('mandel_max_iterations', 120)
       mandel_color_internal:    new UI.ColorOption('mandel_color_internal')
-      mandel_color_escape_min:  new UI.ColorOption('mandel_color_escape_min')
-      mandel_color_escape_max:  new UI.ColorOption('mandel_color_escape_max')
       highlight_group:          new UI.SelectOption('highlight_group');
 
     @option.orbit_skip_initial.register_callback on_change: @schedule_ui_draw
@@ -153,15 +151,8 @@ class MandelIter
 
     @option.julia_local_pixel_size.set_label_text_formater (value) -> "#{value}x"
 
-    @option.mandel_color_internal.register_callback   on_change: @on_mandel_color_change
-    @option.mandel_color_escape_min.register_callback on_change: @on_mandel_color_change
-    @option.mandel_color_escape_max.register_callback on_change: @on_mandel_color_change
-
-    @option.highlight_group.register_callback on_change: @on_highlight_group_changed
-
+    @option.highlight_group.register_callback       on_change: @on_highlight_group_changed
     @option.mandel_color_internal.register_callback on_change: @on_mandel_color_changed
-    @option.mandel_color_escape_min.register_callback on_change: @on_mandel_color_changed
-    @option.mandel_color_escape_max.register_callback on_change: @on_mandel_color_changed
 
     @pointer_angle = 0
     @pointer_angle_step = TAU/96
@@ -212,7 +203,6 @@ class MandelIter
     @julia_max_rendertime = 200
     @defer_highres_timeout = 
     @defer_highres_timeout_length = 650
-
     @rendering_note          = @context.getElementById('rendering_note')
     @rendering_note_hdr      = @context.getElementById('rendering_note_hdr')
     @rendering_note_value    = @context.getElementById('rendering_note_value')
@@ -1028,12 +1018,9 @@ class MandelIter
   theme_mandel_update: ->
     @theme.mandel.set_colors
       internal:   @option.mandel_color_internal.value
-      escape_min: @option.mandel_color_escape_min.value
-      escape_max: @option.mandel_color_escape_max.value
     @theme.mandel.rebuild()
 
   on_mandel_color_changed: =>
-    console.log('COLOR CHANGED')
     @theme_mandel_update()
     @repaint_mandelbrot()
 
