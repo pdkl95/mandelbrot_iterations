@@ -68,21 +68,21 @@
         hdr.addEventListener('click', this.on_collapse_header_click);
       }
       this.theme = {};
-      this.theme.mandel = new Color.Theme('linear_greyscale', 'mandel_external_color');
+      this.theme.mandel = new Color.Theme('mandelbrot', 'mandel_external_color');
       this.theme.mandel.set_colors({
         internal: '#000000',
         escape_min: '#000000',
         escape_max: '#FFFFFF'
       });
-      this.theme.julis = new Color.Theme('greyish_purple');
-      this.theme.julis.set_colors({
+      this.theme.julia = new Color.Theme('julia');
+      this.theme.julia.set_colors({
         internal: '#000000',
         escape_min: '#000000',
         escape_max: '#FFFFFF'
       });
-      this.theme.julis.add_stop(0.2, '#280A28');
-      this.theme.julis.add_stop(0.6, '#8D008D');
-      this.theme.julis.add_stop(0.8, '#AE64AE');
+      this.theme.julia.add_stop(0.2, '#280A28');
+      this.theme.julia.add_stop(0.6, '#8D008D');
+      this.theme.julia.add_stop(0.8, '#AE64AE');
       fmtfloatopts = {
         notation: 'standard',
         style: 'decimal',
@@ -310,6 +310,8 @@
           this.reset_julia_rendering();
         }
       }
+      this.theme.mandel.mark_default_and_load();
+      this.theme.julia.mark_default_and_load();
       this.theme_mandel_update();
       console.log('init() completed!');
       return this.draw_background();

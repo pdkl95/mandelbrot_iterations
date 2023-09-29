@@ -87,7 +87,7 @@ class Color.RGB
 
   to_rgba: (a) ->
     "rgbs(#{@r},#{@g},#{@b},#{a})"
-    
+
 class Color.Stop extends Color.RGB
   @compare: (a, b) ->
     a.position - b.position
@@ -124,6 +124,7 @@ class Color.Stop extends Color.RGB
 
   on_editor_input_change: (event) =>
     @set_string(@editor_input.value)
+    @theme.save()
     @update_editor_bg()
     APP.repaint_mandelbrot()
 
@@ -164,7 +165,15 @@ class Color.Stop extends Color.RGB
 
     @theme.rebuild()
 
+  serialize: ->
+    return
+      position: @position
+      color: @to_hex()
+
 class Color.Theme
+  @storage_id: (name) ->
+    "color_theme[#{name}]"
+
   constructor: (@name, @editor_id = null) ->
     @default_table_size = 256
     @named_color = {}
@@ -172,6 +181,58 @@ class Color.Theme
     @table_size = 0
 
     @construct_editor() if @editor_id?
+
+  mark_default_and_load: ->
+    @default_state = @serialize()
+    @load()
+
+  reset: ->
+    @remove_storage()
+    @deserialize(@default_state)
+    @rebuild()
+
+  serialize: ->
+    named = {}
+    for name, color of @named_color
+      named[name] = color.to_hex()
+
+    obj =
+      table_size: @table_size
+      named_color: named
+      stops: @stops.map (s) -> s.serialize()
+
+    JSON.stringify(obj)
+
+  deserialize: (str) ->
+    obj = JSON.parse(str)
+
+    if obj.named_color?
+      @named_color = {}
+      for name, hex of obj.named_color
+        @named_color[name] = new Color.RGB(hex)
+
+    if obj.stops?
+      while @stops.length > 0
+        @stops[0].remove()
+
+      @stops = []
+      for s in obj.stops
+        @add_stop(s.position, s.color)
+
+  save: ->
+    if @default_state?
+      state = @serialize()
+      if state == @default_state
+        @remove_storage()
+      else
+        APP.storage_set(Color.Theme.storage_id(@name), state)
+
+  load: ->
+    str = APP.storage_get(Color.Theme.storage_id(@name))
+    @deserialize(str) if str?
+
+  remove_storage: ->
+    APP.storage_remove(Color.Theme.storage_id(@name))
 
   find_stop_index: (pos) ->
     i = 0
@@ -205,6 +266,7 @@ class Color.Theme
       for stop in @stops
         stop.prepare_editor()
 
+    @save()
     @rebuild()
     color
 
@@ -361,6 +423,7 @@ class Color.Theme
     new_offset = start_offset + event.movementX
     new_pos = new_offset / width
     @drag.set_position(new_pos)
+    @save()
 
   on_editor_mouseup: (event) =>
     if @drag?

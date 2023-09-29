@@ -26,20 +26,20 @@ class MandelIter
       hdr.addEventListener('click', @on_collapse_header_click)
 
     @theme = {}
-    @theme.mandel = new Color.Theme('linear_greyscale', 'mandel_external_color')
+    @theme.mandel = new Color.Theme('mandelbrot', 'mandel_external_color')
     @theme.mandel.set_colors
       internal:   '#000000'
       escape_min: '#000000'
       escape_max: '#FFFFFF'
 
-    @theme.julis = new Color.Theme('greyish_purple')
-    @theme.julis.set_colors
+    @theme.julia = new Color.Theme('julia')
+    @theme.julia.set_colors
       internal:   '#000000'
       escape_min: '#000000'
       escape_max: '#FFFFFF'
-    @theme.julis.add_stop 0.2, '#280A28'
-    @theme.julis.add_stop 0.6, '#8D008D'
-    @theme.julis.add_stop 0.8, '#AE64AE'
+    @theme.julia.add_stop 0.2, '#280A28'
+    @theme.julia.add_stop 0.6, '#8D008D'
+    @theme.julia.add_stop 0.8, '#AE64AE'
 
     fmtfloatopts =
       notation:    'standard'
@@ -261,8 +261,10 @@ class MandelIter
         @set_mouse_position(stored_x, stored_y, true)
         @reset_julia_rendering()
 
+    @theme.mandel.mark_default_and_load()
+    @theme.julia.mark_default_and_load()
     @theme_mandel_update()
-
+    
     console.log('init() completed!')
 
     @draw_background()

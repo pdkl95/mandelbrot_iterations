@@ -186,6 +186,7 @@
 
     Stop.prototype.on_editor_input_change = function(event) {
       this.set_string(this.editor_input.value);
+      this.theme.save();
       this.update_editor_bg();
       return APP.repaint_mandelbrot();
     };
@@ -251,11 +252,22 @@
       return this.theme.rebuild();
     };
 
+    Stop.prototype.serialize = function() {
+      return {
+        position: this.position,
+        color: this.to_hex()
+      };
+    };
+
     return Stop;
 
   })(Color.RGB);
 
   Color.Theme = (function() {
+    Theme.storage_id = function(name) {
+      return "color_theme[" + name + "]";
+    };
+
     function Theme(name1, editor_id) {
       this.name = name1;
       this.editor_id = editor_id != null ? editor_id : null;
@@ -270,6 +282,85 @@
         this.construct_editor();
       }
     }
+
+    Theme.prototype.mark_default_and_load = function() {
+      this.default_state = this.serialize();
+      return this.load();
+    };
+
+    Theme.prototype.reset = function() {
+      this.remove_storage();
+      this.deserialize(this.default_state);
+      return this.rebuild();
+    };
+
+    Theme.prototype.serialize = function() {
+      var color, name, named, obj, ref;
+      named = {};
+      ref = this.named_color;
+      for (name in ref) {
+        color = ref[name];
+        named[name] = color.to_hex();
+      }
+      obj = {
+        table_size: this.table_size,
+        named_color: named,
+        stops: this.stops.map(function(s) {
+          return s.serialize();
+        })
+      };
+      return JSON.stringify(obj);
+    };
+
+    Theme.prototype.deserialize = function(str) {
+      var hex, j, len, name, obj, ref, ref1, results, s;
+      obj = JSON.parse(str);
+      if (obj.named_color != null) {
+        this.named_color = {};
+        ref = obj.named_color;
+        for (name in ref) {
+          hex = ref[name];
+          this.named_color[name] = new Color.RGB(hex);
+        }
+      }
+      if (obj.stops != null) {
+        while (this.stops.length > 0) {
+          this.stops[0].remove();
+        }
+        this.stops = [];
+        ref1 = obj.stops;
+        results = [];
+        for (j = 0, len = ref1.length; j < len; j++) {
+          s = ref1[j];
+          results.push(this.add_stop(s.position, s.color));
+        }
+        return results;
+      }
+    };
+
+    Theme.prototype.save = function() {
+      var state;
+      if (this.default_state != null) {
+        state = this.serialize();
+        if (state === this.default_state) {
+          return this.remove_storage();
+        } else {
+          return APP.storage_set(Color.Theme.storage_id(this.name), state);
+        }
+      }
+    };
+
+    Theme.prototype.load = function() {
+      var str;
+      str = APP.storage_get(Color.Theme.storage_id(this.name));
+      if (str != null) {
+        return this.deserialize(str);
+      }
+    };
+
+    Theme.prototype.remove_storage = function() {
+      return APP.storage_remove(Color.Theme.storage_id(this.name));
+    };
 
     Theme.prototype.find_stop_index = function(pos) {
       var i, stop;
@@ -312,6 +403,7 @@
           stop.prepare_editor();
         }
       }
+      this.save();
       this.rebuild();
       return color;
     };
@@ -514,7 +606,8 @@
       start_offset = this.drag.position * width;
       new_offset = start_offset + event.movementX;
       new_pos = new_offset / width;
-      return this.drag.set_position(new_pos);
+      this.drag.set_position(new_pos);
+      return this.save();
     };
 
     Theme.prototype.on_editor_mouseup = function(event) {
