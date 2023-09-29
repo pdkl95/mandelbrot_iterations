@@ -285,7 +285,8 @@
 
     Theme.prototype.mark_default_and_load = function() {
       this.default_state = this.serialize();
-      return this.load();
+      this.load();
+      return this.require_lookup_table();
     };
 
     Theme.prototype.reset = function() {
@@ -483,6 +484,12 @@
         size = this.default_table_size;
       }
       return this.table = this.build_lookup_table(size);
+    };
+
+    Theme.prototype.require_lookup_table = function() {
+      if (this.table == null) {
+        return this.build_lookup_table();
+      }
     };
 
     Theme.prototype.build_lookup_table = function(size) {

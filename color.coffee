@@ -185,6 +185,7 @@ class Color.Theme
   mark_default_and_load: ->
     @default_state = @serialize()
     @load()
+    @require_lookup_table()
 
   reset: ->
     @remove_storage()
@@ -315,6 +316,9 @@ class Color.Theme
 
   reset_lookup_table: (size = @default_table_size) ->
     @table = @build_lookup_table(size)
+
+  require_lookup_table: ->
+    @build_lookup_table() unless @table?
 
   build_lookup_table: (size = @default_table_size) ->
     if size > @table_size or !@table?

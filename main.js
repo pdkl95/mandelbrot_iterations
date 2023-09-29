@@ -1653,7 +1653,8 @@
         }
       }
       this.current_image = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
-      this.current_theme = this.theme.julis;
+      this.current_theme = this.theme.julia;
+      this.current_internal_color = this.current_theme.named_color.internal;
       return true;
     };
 
@@ -1685,7 +1686,6 @@
           } else {
             val = this.julia_color_value(this.ljopt.c, xx, yy);
           }
-          val /= 255;
           for (py = q = 0, ref9 = this.ljopt.pixelsize; 0 <= ref9 ? q <= ref9 : q >= ref9; py = 0 <= ref9 ? ++q : --q) {
             rowcount++;
             for (px = s = 0, ref10 = this.ljopt.pixelsize; 0 <= ref10 ? s <= ref10 : s >= ref10; px = 0 <= ref10 ? ++s : --s) {

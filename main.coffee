@@ -1370,7 +1370,8 @@ class MandelIter
       @local_julia.y = maxy if @local_julia.y > maxy
 
     @current_image = @graph_julia_ctx.createImageData(@local_julia.width, @local_julia.height)
-    @current_theme = @theme.julis
+    @current_theme = @theme.julia
+    @current_internal_color = @current_theme.named_color.internal
 
     return true
 
@@ -1399,8 +1400,6 @@ class MandelIter
 
         else
           val = @julia_color_value(@ljopt.c, xx, yy)
-
-        val /= 255
 
         for py in [0..@ljopt.pixelsize]
           rowcount++
