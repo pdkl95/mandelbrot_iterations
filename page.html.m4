@@ -355,6 +355,14 @@ undivert(`style.css')
             <tr>
               <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
             </tr>
+            <tr>
+              <th>Color Presets</th>
+              <td>
+                <select name="mandel_color_preset" id="mandel_color_preset" autocomplete="off">
+                </select>
+                <button id="mandel_use_color_preset">Use</button>
+              </td>
+            </tr>
           </table>
           <hr id="mandelbrot_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>

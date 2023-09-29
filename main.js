@@ -43,6 +43,7 @@
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.set_highlight_msg = bind(this.set_highlight_msg, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_mandel_use_color_preset_click = bind(this.on_mandel_use_color_preset_click, this);
       this.on_mandel_color_change = bind(this.on_mandel_color_change, this);
       this.on_load_from_file_upload = bind(this.on_load_from_file_upload, this);
       this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
@@ -129,6 +130,7 @@
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.save_to_file = this.context.getElementById('save_to_file');
+      this.mandel_use_color_preset = this.context.getElementById('mandel_use_color_preset');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
@@ -138,6 +140,7 @@
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
+      this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
@@ -166,6 +169,7 @@
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
         mandel_color_internal: new UI.ColorOption('mandel_color_internal'),
+        mandel_color_preset: new UI.SelectOption('mandel_color_preset'),
         highlight_group: new UI.SelectOption('highlight_group')
       };
       this.option.orbit_skip_initial.register_callback({
@@ -213,6 +217,7 @@
       this.option.mandel_color_internal.register_callback({
         on_change: this.on_mandel_color_changed
       });
+      Color.Theme.prepare_presets(this.option.mandel_color_preset);
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -468,6 +473,8 @@
         opt = ref[name];
         opt.reset();
       }
+      this.theme.mandel.reset();
+      this.theme.julia.reset();
       return this.on_mandel_color_changed();
     };
 
@@ -517,6 +524,11 @@
     };
 
     MandelIter.prototype.on_mandel_color_change = function() {
+      return this.repaint_mandelbrot();
+    };
+
+    MandelIter.prototype.on_mandel_use_color_preset_click = function() {
+      this.theme.mandel.load_preset_by_index(this.option.mandel_color_preset.value);
       return this.repaint_mandelbrot();
     };
 

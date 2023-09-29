@@ -328,10 +328,16 @@
     };
 
     SelectOption.prototype.get = function(element) {
+      var opt;
       if (element == null) {
         element = this.el;
       }
-      return element.options[element.selectedIndex].value;
+      opt = element.options[element.selectedIndex];
+      if (opt != null) {
+        return opt.value;
+      } else {
+        return null;
+      }
     };
 
     SelectOption.prototype.set = function(option_name, update_element) {
@@ -364,6 +370,21 @@
         }
       }
       return null;
+    };
+
+    SelectOption.prototype.add_option = function(value, text, selected) {
+      var opt;
+      if (selected == null) {
+        selected = false;
+      }
+      opt = document.createElement('option');
+      opt.value = value;
+      opt.text = text;
+      this.el.add(opt, null);
+      if (selected) {
+        opt.selected = true;
+      }
+      return this.set(this.get());
     };
 
     return SelectOption;

@@ -1233,6 +1233,14 @@ td.name[contenteditable=true]:focus {
             <tr>
               <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
             </tr>
+            <tr>
+              <th>Color Presets</th>
+              <td>
+                <select name="mandel_color_preset" id="mandel_color_preset" autocomplete="off">
+                </select>
+                <button id="mandel_use_color_preset">Use</button>
+              </td>
+            </tr>
           </table>
           <hr id="mandelbrot_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
@@ -1589,10 +1597,16 @@ td.name[contenteditable=true]:focus {
     };
 
     SelectOption.prototype.get = function(element) {
+      var opt;
       if (element == null) {
         element = this.el;
       }
-      return element.options[element.selectedIndex].value;
+      opt = element.options[element.selectedIndex];
+      if (opt != null) {
+        return opt.value;
+      } else {
+        return null;
+      }
     };
 
     SelectOption.prototype.set = function(option_name, update_element) {
@@ -1625,6 +1639,21 @@ td.name[contenteditable=true]:focus {
         }
       }
       return null;
+    };
+
+    SelectOption.prototype.add_option = function(value, text, selected) {
+      var opt;
+      if (selected == null) {
+        selected = false;
+      }
+      opt = document.createElement('option');
+      opt.value = value;
+      opt.text = text;
+      this.el.add(opt, null);
+      if (selected) {
+        opt.selected = true;
+      }
+      return this.set(this.get());
     };
 
     return SelectOption;
@@ -2600,6 +2629,24 @@ td.name[contenteditable=true]:focus {
   })(Color.RGB);
 
   Color.Theme = (function() {
+    Theme.preset = {};
+
+    Theme.preset_index = {};
+
+    Theme.prepare_presets = function(select_opt) {
+      var data, index, name, ref, results;
+      index = 1;
+      ref = Color.Theme.preset;
+      results = [];
+      for (name in ref) {
+        data = ref[name];
+        this.preset_index[index] = data;
+        select_opt.add_option(index, name, index === 1);
+        results.push(index++);
+      }
+      return results;
+    };
+
     Theme.storage_id = function(name) {
       return "color_theme[" + name + "]";
     };
@@ -2640,7 +2687,6 @@ td.name[contenteditable=true]:focus {
         named[name] = color.to_hex();
       }
       obj = {
-        table_size: this.table_size,
         named_color: named,
         stops: this.stops.map(function(s) {
           return s.serialize();
@@ -2692,6 +2738,26 @@ td.name[contenteditable=true]:focus {
       str = APP.storage_get(Color.Theme.storage_id(this.name));
       if (str != null) {
         return this.deserialize(str);
+      }
+    };
+
+    Theme.prototype.load_preset_by_name = function(name) {
+      var str;
+      str = Color.Theme.preset[name];
+      if (str != null) {
+        return this.deserialize(str);
+      } else {
+        return APP.warn("No color preset with name \"" + name + "\"");
+      }
+    };
+
+    Theme.prototype.load_preset_by_index = function(index) {
+      var str;
+      str = Color.Theme.preset_index[parseInt(index)];
+      if (str != null) {
+        return this.deserialize(str);
+      } else {
+        return APP.warn("No color preset with index \"" + index + "\"");
       }
     };
 
@@ -2988,6 +3054,12 @@ td.name[contenteditable=true]:focus {
 
   })();
 
+  Color.Theme.preset['Greyscale'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"position":0,"color":"#000000"},{"position":1,"color":"#ffffff"}]}';
+
+  Color.Theme.preset['Blue to Yellow/White'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"position":0,"color":"#000000"},{"position":0.5020000203450524,"color":"#3465a4"},{"position":0.8053333536783853,"color":"#fce94f"},{"position":1,"color":"#ffffff"}]}';
+
+  Color.Theme.preset['Wikipedia Shading'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"color":"#421e0f","position":0},{"color":"#19071a","position":0.06},{"color":"#09012f","position":0.13},{"color":"#040449","position":0.2},{"color":"#000764","position":0.26},{"color":"#0c2c8a","position":0.33},{"color":"#1852b1","position":0.40},{"color":"#397dd1","position":0.46},{"color":"#86b5e5","position":0.53},{"color":"#d3ecf8","position":0.60},{"color":"#f1e9bf","position":0.66},{"color":"#f8c95f","position":0.73},{"color":"#ffaa00","position":0.80},{"color":"#cc8000","position":0.86},{"color":"#995700","position":0.93},{"color":"#6a3403","position":1}]}';
+
 }).call(this);
 
 (function() {
@@ -3035,6 +3107,7 @@ td.name[contenteditable=true]:focus {
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.set_highlight_msg = bind(this.set_highlight_msg, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_mandel_use_color_preset_click = bind(this.on_mandel_use_color_preset_click, this);
       this.on_mandel_color_change = bind(this.on_mandel_color_change, this);
       this.on_load_from_file_upload = bind(this.on_load_from_file_upload, this);
       this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
@@ -3121,6 +3194,7 @@ td.name[contenteditable=true]:focus {
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.save_to_file = this.context.getElementById('save_to_file');
+      this.mandel_use_color_preset = this.context.getElementById('mandel_use_color_preset');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
@@ -3130,6 +3204,7 @@ td.name[contenteditable=true]:focus {
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
+      this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
@@ -3158,6 +3233,7 @@ td.name[contenteditable=true]:focus {
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
         mandel_color_internal: new UI.ColorOption('mandel_color_internal'),
+        mandel_color_preset: new UI.SelectOption('mandel_color_preset'),
         highlight_group: new UI.SelectOption('highlight_group')
       };
       this.option.orbit_skip_initial.register_callback({
@@ -3205,6 +3281,7 @@ td.name[contenteditable=true]:focus {
       this.option.mandel_color_internal.register_callback({
         on_change: this.on_mandel_color_changed
       });
+      Color.Theme.prepare_presets(this.option.mandel_color_preset);
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -3460,6 +3537,8 @@ td.name[contenteditable=true]:focus {
         opt = ref[name];
         opt.reset();
       }
+      this.theme.mandel.reset();
+      this.theme.julia.reset();
       return this.on_mandel_color_changed();
     };
 
@@ -3509,6 +3588,11 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.on_mandel_color_change = function() {
+      return this.repaint_mandelbrot();
+    };
+
+    MandelIter.prototype.on_mandel_use_color_preset_click = function() {
+      this.theme.mandel.load_preset_by_index(this.option.mandel_color_preset.value);
       return this.repaint_mandelbrot();
     };
 

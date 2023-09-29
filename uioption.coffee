@@ -150,7 +150,11 @@ class UI.SelectOption extends UI.Option
     # skip input event
 
   get: (element = @el) ->
-    element.options[element.selectedIndex].value
+    opt = element.options[element.selectedIndex]
+    if opt?
+      opt.value
+    else
+      null
 
   set: (option_name, update_element = true) ->
     opt = @option_with_name(option_name)
@@ -166,6 +170,14 @@ class UI.SelectOption extends UI.Option
       if opt.value is name
         return opt
     return null
+
+  add_option: (value, text, selected=false) ->
+    opt = document.createElement('option')
+    opt.value = value
+    opt.text = text
+    @el.add(opt, null)
+    opt.selected = true if selected
+    @set(@get())
 
 class UI.ColorOption extends UI.Option
   get: (element = @el) ->

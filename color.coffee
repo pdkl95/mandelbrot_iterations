@@ -171,6 +171,16 @@ class Color.Stop extends Color.RGB
       color: @to_hex()
 
 class Color.Theme
+  @preset = {}
+  @preset_index = {}
+
+  @prepare_presets: (select_opt) ->
+    index = 1
+    for name, data of Color.Theme.preset
+      @preset_index[index] = data
+      select_opt.add_option(index, name, index == 1)
+      index++
+
   @storage_id: (name) ->
     "color_theme[#{name}]"
 
@@ -198,7 +208,6 @@ class Color.Theme
       named[name] = color.to_hex()
 
     obj =
-      table_size: @table_size
       named_color: named
       stops: @stops.map (s) -> s.serialize()
 
@@ -231,6 +240,20 @@ class Color.Theme
   load: ->
     str = APP.storage_get(Color.Theme.storage_id(@name))
     @deserialize(str) if str?
+
+  load_preset_by_name: (name) ->
+    str = Color.Theme.preset[name]
+    if str?
+      @deserialize(str)
+    else
+      APP.warn("No color preset with name \"#{name}\"")
+
+  load_preset_by_index: (index) ->
+    str = Color.Theme.preset_index[parseInt(index)]
+    if str?
+      @deserialize(str)
+    else
+      APP.warn("No color preset with index \"#{index}\"")
 
   remove_storage: ->
     APP.storage_remove(Color.Theme.storage_id(@name))
@@ -449,3 +472,10 @@ class Color.Theme
     pos = (x - start) / width
     color = @rgb_hex_at(pos)
     @add_stop(pos, color)
+
+Color.Theme.preset['Greyscale'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"position":0,"color":"#000000"},{"position":1,"color":"#ffffff"}]}'
+
+Color.Theme.preset['Blue to Yellow/White'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"position":0,"color":"#000000"},{"position":0.5020000203450524,"color":"#3465a4"},{"position":0.8053333536783853,"color":"#fce94f"},{"position":1,"color":"#ffffff"}]}'
+
+Color.Theme.preset['Wikipedia Shading'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"color":"#421e0f","position":0},{"color":"#19071a","position":0.06},{"color":"#09012f","position":0.13},{"color":"#040449","position":0.2},{"color":"#000764","position":0.26},{"color":"#0c2c8a","position":0.33},{"color":"#1852b1","position":0.40},{"color":"#397dd1","position":0.46},{"color":"#86b5e5","position":0.53},{"color":"#d3ecf8","position":0.60},{"color":"#f1e9bf","position":0.66},{"color":"#f8c95f","position":0.73},{"color":"#ffaa00","position":0.80},{"color":"#cc8000","position":0.86},{"color":"#995700","position":0.93},{"color":"#6a3403","position":1}]}'
+

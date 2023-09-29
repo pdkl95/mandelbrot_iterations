@@ -264,6 +264,24 @@
   })(Color.RGB);
 
   Color.Theme = (function() {
+    Theme.preset = {};
+
+    Theme.preset_index = {};
+
+    Theme.prepare_presets = function(select_opt) {
+      var data, index, name, ref, results;
+      index = 1;
+      ref = Color.Theme.preset;
+      results = [];
+      for (name in ref) {
+        data = ref[name];
+        this.preset_index[index] = data;
+        select_opt.add_option(index, name, index === 1);
+        results.push(index++);
+      }
+      return results;
+    };
+
     Theme.storage_id = function(name) {
       return "color_theme[" + name + "]";
     };
@@ -304,7 +322,6 @@
         named[name] = color.to_hex();
       }
       obj = {
-        table_size: this.table_size,
         named_color: named,
         stops: this.stops.map(function(s) {
           return s.serialize();
@@ -356,6 +373,26 @@
       str = APP.storage_get(Color.Theme.storage_id(this.name));
       if (str != null) {
         return this.deserialize(str);
+      }
+    };
+
+    Theme.prototype.load_preset_by_name = function(name) {
+      var str;
+      str = Color.Theme.preset[name];
+      if (str != null) {
+        return this.deserialize(str);
+      } else {
+        return APP.warn("No color preset with name \"" + name + "\"");
+      }
+    };
+
+    Theme.prototype.load_preset_by_index = function(index) {
+      var str;
+      str = Color.Theme.preset_index[parseInt(index)];
+      if (str != null) {
+        return this.deserialize(str);
+      } else {
+        return APP.warn("No color preset with index \"" + index + "\"");
       }
     };
 
@@ -651,5 +688,11 @@
     return Theme;
 
   })();
+
+  Color.Theme.preset['Greyscale'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"position":0,"color":"#000000"},{"position":1,"color":"#ffffff"}]}';
+
+  Color.Theme.preset['Blue to Yellow/White'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"position":0,"color":"#000000"},{"position":0.5020000203450524,"color":"#3465a4"},{"position":0.8053333536783853,"color":"#fce94f"},{"position":1,"color":"#ffffff"}]}';
+
+  Color.Theme.preset['Wikipedia Shading'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"color":"#421e0f","position":0},{"color":"#19071a","position":0.06},{"color":"#09012f","position":0.13},{"color":"#040449","position":0.2},{"color":"#000764","position":0.26},{"color":"#0c2c8a","position":0.33},{"color":"#1852b1","position":0.40},{"color":"#397dd1","position":0.46},{"color":"#86b5e5","position":0.53},{"color":"#d3ecf8","position":0.60},{"color":"#f1e9bf","position":0.66},{"color":"#f8c95f","position":0.73},{"color":"#ffaa00","position":0.80},{"color":"#cc8000","position":0.86},{"color":"#995700","position":0.93},{"color":"#6a3403","position":1}]}';
 
 }).call(this);
