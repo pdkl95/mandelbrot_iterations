@@ -245,6 +245,7 @@
       this.antialias = true;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
+      this.rendering_mode = false;
       this.shift_step_accel = 0.333;
       this.ctrl_step_accel = 0.1;
       this.alt_step_accel = 0.01;
@@ -766,7 +767,10 @@
     };
 
     MandelIter.prototype.zoom_mode_on = function() {
-      return this.zoom_mode = true;
+      this.zoom_mode = true;
+      if (this.pause_mode) {
+        return this.zoom_save_pause_position = this.canvas_to_complex(this.orbit_mouse.x, this.orbit_mouse.y);
+      }
     };
 
     MandelIter.prototype.zoom_mode_off = function() {
@@ -848,24 +852,33 @@
       return w;
     };
 
+    MandelIter.prototype.zoom_to_window = function() {
+      var newend, newstart, w, zpos;
+      w = this.get_zoom_window();
+      newstart = this.canvas_to_complex(w.x, w.y);
+      newend = this.canvas_to_complex(w.x + w.w, w.y + w.h);
+      this.renderbox.start = newstart;
+      this.renderbox.end = newend;
+      zpos = this.zoom_save_pause_position;
+      this.zoom_mode_off();
+      this.zoom_save_pause_position = zpos;
+      this.zoom_save_julia_draw_local = this.option.julia_draw_local.value;
+      this.option.julia_draw_local.set(false);
+      return this.draw_background();
+    };
+
     MandelIter.prototype.on_graph_click = function(event) {
-      var newend, newstart, w;
       if (this.zoom_mode) {
-        w = this.get_zoom_window();
-        newstart = this.canvas_to_complex(w.x, w.y);
-        newend = this.canvas_to_complex(w.x + w.w, w.y + w.h);
-        this.renderbox.start = newstart;
-        this.renderbox.end = newend;
-        this.zoom_mode = false;
-        this.option.julia_draw_local.set(false);
-        return this.draw_background();
+        return this.zoom_to_window();
       } else {
         return this.pause_mode_toggle();
       }
     };
 
     MandelIter.prototype.on_mousemove = function(event) {
-      return this.set_mouse_position(event.layerX, event.layerY);
+      if (!this.rendering_mode) {
+        return this.set_mouse_position(event.layerX, event.layerY);
+      }
     };
 
     MandelIter.prototype.set_mouse_position = function(newx, newy, force) {
@@ -1151,6 +1164,7 @@
 
     MandelIter.prototype.draw_background = function() {
       this.set_status('rendering');
+      this.rendering_mode = true;
       this.graph_julia_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
       this.graph_mandel_ctx.fillStyle = 'rgb(0,0,0)';
       this.graph_mandel_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
@@ -1191,7 +1205,7 @@
     };
 
     MandelIter.prototype.deferred_background_render_callback = function() {
-      var dirtyheight, elapsed, lastline;
+      var dirtyheight, elapsed, lastline, pos;
       elapsed = 0;
       while ((this.lines_finished < this.graph_height) && (elapsed < 1000)) {
         lastline = this.render_mandelbrot(this.render_pixel_size, this.do_antialias());
@@ -1207,8 +1221,17 @@
         this.lines_finished = 0;
         return this.schedule_background_render_pass();
       } else {
+        this.rendering_mode = false;
         this.hide_rendering_note();
-        return this.restore_normal_status();
+        this.restore_normal_status();
+        if (this.zoom_save_pause_position != null) {
+          pos = this.complex_to_canvas(this.zoom_save_pause_position);
+          console.log('zoom restore', this.zoom_save_pause_position, pos);
+          this.zoom_save_pause_position = null;
+          this.pause_mode_on();
+          this.option.julia_draw_local.set(this.zoom_save_julia_draw_local);
+          return this.animate_to(pos);
+        }
       }
     };
 

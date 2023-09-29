@@ -190,6 +190,7 @@ class MandelIter
     @antialias = true
     @reset_renderbox()
     @draw_ui_scheduled = false
+    @rendering_mode = false
 
     @shift_step_accel = 0.333
     @ctrl_step_accel  = 0.1
@@ -609,6 +610,8 @@ class MandelIter
 
   zoom_mode_on: ->
     @zoom_mode = true
+    if @pause_mode
+      @zoom_save_pause_position = @canvas_to_complex(@orbit_mouse.x, @orbit_mouse.y)
 
   zoom_mode_off: ->
     @zoom_mode = false
@@ -673,21 +676,30 @@ class MandelIter
 
     return w
 
+  zoom_to_window: ->
+    w = @get_zoom_window()
+    newstart = @canvas_to_complex(w.x, w.y)
+    newend   = @canvas_to_complex(w.x + w.w, w.y + w.h)
+    @renderbox.start = newstart
+    @renderbox.end   = newend
+
+    zpos = @zoom_save_pause_position
+    @zoom_mode_off()
+    @zoom_save_pause_position = zpos
+
+    @zoom_save_julia_draw_local = @option.julia_draw_local.value
+    @option.julia_draw_local.set(false)
+    @draw_background()
+
   on_graph_click: (event) =>
     if @zoom_mode
-      w = @get_zoom_window()
-      newstart = @canvas_to_complex(w.x, w.y)
-      newend   = @canvas_to_complex(w.x + w.w, w.y + w.h)
-      @renderbox.start = newstart
-      @renderbox.end   = newend
-      @zoom_mode = false
-      @option.julia_draw_local.set(false)
-      @draw_background()
+      @zoom_to_window()
     else
       @pause_mode_toggle()
 
   on_mousemove: (event) =>
-    @set_mouse_position(event.layerX, event.layerY)
+    unless @rendering_mode
+      @set_mouse_position(event.layerX, event.layerY)
 
   set_mouse_position: (newx, newy, force = false) ->
     oldx = @mouse.x
@@ -886,6 +898,7 @@ class MandelIter
 
   draw_background: ->
     @set_status('rendering')
+    @rendering_mode = true
 
     @graph_julia_ctx.clearRect(0, 0, @graph_width, @graph_height)
 
@@ -936,8 +949,16 @@ class MandelIter
       @lines_finished = 0
       @schedule_background_render_pass()
     else
+      @rendering_mode = false
       @hide_rendering_note()
       @restore_normal_status()
+      if @zoom_save_pause_position?
+        pos = @complex_to_canvas(@zoom_save_pause_position)
+        console.log('zoom restore', @zoom_save_pause_position, pos)
+        @zoom_save_pause_position = null
+        @pause_mode_on()
+        @option.julia_draw_local.set(@zoom_save_julia_draw_local)
+        @animate_to(pos)
 
   render_mandelbrot: (pixelsize, do_antialias) ->
     @mandel_maxiter = @option.mandel_max_iterations.value
