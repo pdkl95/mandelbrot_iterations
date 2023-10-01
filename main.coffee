@@ -100,7 +100,7 @@ class MandelIter
     @save_to_file.addEventListener(  'click',  @on_save_to_file_click)
     @mandel_use_color_preset.addEventListener('click', @on_mandel_use_color_preset_click)
 
-    @mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color')
+    @mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color')
 
     @option =
       show_tooltips:            new UI.BoolOption('show_tooltips', true)

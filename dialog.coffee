@@ -7,6 +7,8 @@ class Dialog.PopOut #extends Dialog.Base
   constructor: (@content_id, @title) ->
     @move_to_dialog_id = "#{@content_id}_move_to_dialog"
 
+    @mousewrap_margin = 40
+
     @content_el = document.getElementById(@content_id)
     unless @content_el?
       APP.warn("Cannot find Dialog.Wrap target ##{@content_id}")
@@ -23,13 +25,13 @@ class Dialog.PopOut #extends Dialog.Base
   popout: ->
     @move_to_dialog_el.classList.add('hidden')
 
-    rect = @content_el.getBoundingClientRect()
-    #@x = rect.left + window.scrollX
-    #@y = rect.top  + window.scrollY
     @x = 0
     @y = 0
 
     @original_parent = @content_el.parentNode
+
+    @mousewrap_el = document.createElement('div')
+    @mousewrap_el.classList.add('dialog_mousewrap')
 
     @wrap_el = document.createElement('div')
     @wrap_el.classList.add('dialog_box')
@@ -37,8 +39,9 @@ class Dialog.PopOut #extends Dialog.Base
 
     @close_el = document.createElement('button')
     @close_el.classList.add('dialog_close')
+    @close_el.innerHTML = '&times;'
 
-    @title_el = document.createElement('h3')
+    @title_el = document.createElement('h4')
     @title_el.classList.add('dialog_title')
     @title_el.innerText = @title
 
@@ -50,21 +53,24 @@ class Dialog.PopOut #extends Dialog.Base
     @body_el = document.createElement('div')
     @body_el.classList.add('dialog_body')
 
-    @original_parent.insertBefore(@wrap_el, @content_el)
+    @original_parent.insertBefore(@mousewrap_el, @content_el)
+    @mousewrap_el.appendChild(@wrap_el)
     @wrap_el.appendChild(@header_el)
-    @wrap_el.appendChild(@content_el)
+    @body_el.appendChild(@content_el)
+    @wrap_el.appendChild(@body_el)
 
     @close_el.addEventListener('click', @on_close_click)
 
-    @header_el.addEventListener('mousedown', @on_header_mousedown)
-    @header_el.addEventListener('mouseup',   @on_header_mouseup)
-    @header_el.addEventListener('mousemove', @on_header_mousemove)
+    @header_el.addEventListener('mousedown',  @on_header_mousedown)
+    @mousewrap_el.addEventListener('mouseup',    @on_header_mouseup)
+    @mousewrap_el.addEventListener('mousemove',  @on_header_mousemove)
+    @mousewrap_el.addEventListener("mouseleave", @on_header_mouseleave)
 
     @set_position()
 
   unpopout: ->
-    if @wrap_el? and @original_parent? and @content_el?
-      @original_parent.insertBefore(@content_el, @wrap_el)
+    if @mousewrap_el? and @original_parent? and @content_el?
+      @original_parent.insertBefore(@content_el, @mousewrap_el)
 
     if @title_el?
       @title_el.remove()
@@ -86,6 +92,10 @@ class Dialog.PopOut #extends Dialog.Base
       @wrap_el.remove()
       @wrap_el = null
 
+    if @mousewrap_el?
+      @mousewrap_el.remove()
+      @mousewrap_el = null
+
     @move_to_dialog_el.classList.remove('hidden')
 
   on_close_click: (event) =>
@@ -93,30 +103,44 @@ class Dialog.PopOut #extends Dialog.Base
 
   on_header_mousedown: (event) =>
     @drag = true
-    @drag_start_x = event.pageX
-    @drag_start_y = event.pageY
+    @drag_x = event.pageX
+    @drag_y = event.pageY
 
   update_drag_position: (event) ->
-    delta_x = event.pageX - @drag_start_x
-    delta_y = event.pageY - @drag_start_y
+    delta_x = event.pageX - @drag_x
+    delta_y = event.pageY - @drag_y
+    ox = @x
+    oy = @y
     @x += delta_x
     @y += delta_y
+    #console.log("delta: (#{delta_x},#{delta_y}), pos: (#{ox},#{oy})->(#{@x},#{@y})")
+    @set_position()
+
+    @drag_x = event.pageX
+    @drag_y = event.pageY
 
   on_header_mouseup: (event) =>
     @update_drag_position(event)
     @drag = false
 
   on_header_mousemove: (event) =>
-    @update_drag_position(event)
+    if @drag
+      @update_drag_position(event)
+
+  on_header_mouseleave: (event) ->
+    @drag = false
 
   set_position: ->
-    maxwidth  = document.body.clientWidth  - @wrap_el.clientWidth
-    maxheight = document.body.clientHeight - @wrap_el.clientHeigh
+    maxwidth  = document.body.clientWidth  - @wrap_el.clientWidth  + @mousewrap_margin
+    maxheight = document.body.clientHeight - @wrap_el.clientHeight + @mousewrap_margin
 
     @x = maxwidth  if @x > maxwidth
     @x = maxheight if @x > maxheight
     @x = 0         if @x < 0
     @y = 0         if @y < 0
-    
-    @wrap_el.style.left = "#{parseInt(@x, 10)}px"
-    @wrap_el.style.top  = "#{parseInt(@y, 10)}px"
+
+    x = parseInt(@x - @mousewrap_margin, 10)
+    y = parseInt(@y - @mousewrap_margin, 10)
+
+    @mousewrap_el.style.left = "#{x}px"
+    @mousewrap_el.style.top  = "#{y}px"

@@ -141,7 +141,7 @@
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
       this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
-      this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color');
+      this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color');
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),

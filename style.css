@@ -735,44 +735,77 @@ td.name[contenteditable=true]:focus {
   border: 1px inset #666;
 }
 
-.dialog_box {
+.dialog_mousewrap {
   position: fixed;
-  top: 0px;
-  left: 0px;
+  top: -40px;
+  left: -40px;
+  padding: 40px;
+}
 
+.dialog_box {
+  position: relative;
   border: 1px outset #999;
   border-radius: 6px;
   background: #bbb;
 }
 
 .dialog_box .dialog_close {
-  width: 22px;
-  height: 22px;
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 7px;
 }
 
 .dialog_box .dialog_title {
-  font-size: larger;
+  display: inline-block;
+  margin-top: 3px;
+  margin-bottom: 3px;
+  margin-left: 5px;
+  margin-right: 2em;
 }
-
+ 
 .dialog_box .dialog_header {
+ position: relative;
   cursor: pointer;
   background: #AAB8D9;
-  border: 1px outset #A2A9B
+  border: 1px outset #A2A9BF;
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
 
+.dialog_box .dialog_header:hover {
+  background-color: #CBD8F4;
+}
+
+.dialog_box .dialog_header:active {
+  background-color: #A6AFCA;
+}
+
 .dialog_box .dialog_body {
-  padding-right: 2em;
-  padding-left: 2em;
+  clear: both;
+  margin-left: 2px;
+  margin-right: 2px;
+  margin-bottom: 1px;
+  margin-top: 0;
   background: #f0f2f6;
   border: 1px inset #ddd;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
   box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
 }
 
+.dialog_box .dialog_body > .gradient_editor {
+  padding-top: 5px;
+  padding-left: 4px;
+  padding-right: 1.85em;
+  padding-bottom: 5px;
+}

@@ -918,47 +918,80 @@ td.name[contenteditable=true]:focus {
   border: 1px inset #666;
 }
 
-.dialog_box {
+.dialog_mousewrap {
   position: fixed;
-  top: 0px;
-  left: 0px;
+  top: -40px;
+  left: -40px;
+  padding: 40px;
+}
 
+.dialog_box {
+  position: relative;
   border: 1px outset #999;
   border-radius: 6px;
   background: #bbb;
 }
 
 .dialog_box .dialog_close {
-  width: 22px;
-  height: 22px;
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 7px;
 }
 
 .dialog_box .dialog_title {
-  font-size: larger;
+  display: inline-block;
+  margin-top: 3px;
+  margin-bottom: 3px;
+  margin-left: 5px;
+  margin-right: 2em;
 }
-
+ 
 .dialog_box .dialog_header {
+ position: relative;
   cursor: pointer;
   background: #AAB8D9;
-  border: 1px outset #A2A9B
+  border: 1px outset #A2A9BF;
   border-top-left-radius: 6px;
   border-top-right-radius: 6px;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
 
+.dialog_box .dialog_header:hover {
+  background-color: #CBD8F4;
+}
+
+.dialog_box .dialog_header:active {
+  background-color: #A6AFCA;
+}
+
 .dialog_box .dialog_body {
-  padding-right: 2em;
-  padding-left: 2em;
+  clear: both;
+  margin-left: 2px;
+  margin-right: 2px;
+  margin-bottom: 1px;
+  margin-top: 0;
   background: #f0f2f6;
   border: 1px inset #ddd;
-  border-top-left-radius: 3px;
-  border-top-right-radius: 3px;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
   box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
 }
 
+.dialog_box .dialog_body > .gradient_editor {
+  padding-top: 5px;
+  padding-left: 4px;
+  padding-right: 1.85em;
+  padding-bottom: 5px;
+}
 
     </style>
   </head>
@@ -2455,6 +2488,7 @@ td.name[contenteditable=true]:focus {
       this.on_close_click = bind(this.on_close_click, this);
       this.on_move_to_dialog_click = bind(this.on_move_to_dialog_click, this);
       this.move_to_dialog_id = this.content_id + "_move_to_dialog";
+      this.mousewrap_margin = 40;
       this.content_el = document.getElementById(this.content_id);
       if (this.content_el == null) {
         APP.warn("Cannot find Dialog.Wrap target #" + this.content_id);
@@ -2471,18 +2505,19 @@ td.name[contenteditable=true]:focus {
     };
 
     PopOut.prototype.popout = function() {
-      var rect;
       this.move_to_dialog_el.classList.add('hidden');
-      rect = this.content_el.getBoundingClientRect();
       this.x = 0;
       this.y = 0;
       this.original_parent = this.content_el.parentNode;
+      this.mousewrap_el = document.createElement('div');
+      this.mousewrap_el.classList.add('dialog_mousewrap');
       this.wrap_el = document.createElement('div');
       this.wrap_el.classList.add('dialog_box');
       this.wrap_el.classList.add('dialog_wrap');
       this.close_el = document.createElement('button');
       this.close_el.classList.add('dialog_close');
-      this.title_el = document.createElement('h3');
+      this.close_el.innerHTML = '&times;';
+      this.title_el = document.createElement('h4');
       this.title_el.classList.add('dialog_title');
       this.title_el.innerText = this.title;
       this.header_el = document.createElement('div');
@@ -2491,19 +2526,22 @@ td.name[contenteditable=true]:focus {
       this.header_el.appendChild(this.close_el);
       this.body_el = document.createElement('div');
       this.body_el.classList.add('dialog_body');
-      this.original_parent.insertBefore(this.wrap_el, this.content_el);
+      this.original_parent.insertBefore(this.mousewrap_el, this.content_el);
+      this.mousewrap_el.appendChild(this.wrap_el);
       this.wrap_el.appendChild(this.header_el);
-      this.wrap_el.appendChild(this.content_el);
+      this.body_el.appendChild(this.content_el);
+      this.wrap_el.appendChild(this.body_el);
       this.close_el.addEventListener('click', this.on_close_click);
       this.header_el.addEventListener('mousedown', this.on_header_mousedown);
-      this.header_el.addEventListener('mouseup', this.on_header_mouseup);
-      this.header_el.addEventListener('mousemove', this.on_header_mousemove);
+      this.mousewrap_el.addEventListener('mouseup', this.on_header_mouseup);
+      this.mousewrap_el.addEventListener('mousemove', this.on_header_mousemove);
+      this.mousewrap_el.addEventListener("mouseleave", this.on_header_mouseleave);
       return this.set_position();
     };
 
     PopOut.prototype.unpopout = function() {
-      if ((this.wrap_el != null) && (this.original_parent != null) && (this.content_el != null)) {
-        this.original_parent.insertBefore(this.content_el, this.wrap_el);
+      if ((this.mousewrap_el != null) && (this.original_parent != null) && (this.content_el != null)) {
+        this.original_parent.insertBefore(this.content_el, this.mousewrap_el);
       }
       if (this.title_el != null) {
         this.title_el.remove();
@@ -2525,6 +2563,10 @@ td.name[contenteditable=true]:focus {
         this.wrap_el.remove();
         this.wrap_el = null;
       }
+      if (this.mousewrap_el != null) {
+        this.mousewrap_el.remove();
+        this.mousewrap_el = null;
+      }
       return this.move_to_dialog_el.classList.remove('hidden');
     };
 
@@ -2534,16 +2576,21 @@ td.name[contenteditable=true]:focus {
 
     PopOut.prototype.on_header_mousedown = function(event) {
       this.drag = true;
-      this.drag_start_x = event.pageX;
-      return this.drag_start_y = event.pageY;
+      this.drag_x = event.pageX;
+      return this.drag_y = event.pageY;
     };
 
     PopOut.prototype.update_drag_position = function(event) {
-      var delta_x, delta_y;
-      delta_x = event.pageX - this.drag_start_x;
-      delta_y = event.pageY - this.drag_start_y;
+      var delta_x, delta_y, ox, oy;
+      delta_x = event.pageX - this.drag_x;
+      delta_y = event.pageY - this.drag_y;
+      ox = this.x;
+      oy = this.y;
       this.x += delta_x;
-      return this.y += delta_y;
+      this.y += delta_y;
+      this.set_position();
+      this.drag_x = event.pageX;
+      return this.drag_y = event.pageY;
     };
 
     PopOut.prototype.on_header_mouseup = function(event) {
@@ -2552,13 +2599,19 @@ td.name[contenteditable=true]:focus {
     };
 
     PopOut.prototype.on_header_mousemove = function(event) {
-      return this.update_drag_position(event);
+      if (this.drag) {
+        return this.update_drag_position(event);
+      }
+    };
+
+    PopOut.prototype.on_header_mouseleave = function(event) {
+      return this.drag = false;
     };
 
     PopOut.prototype.set_position = function() {
-      var maxheight, maxwidth;
-      maxwidth = document.body.clientWidth - this.wrap_el.clientWidth;
-      maxheight = document.body.clientHeight - this.wrap_el.clientHeigh;
+      var maxheight, maxwidth, x, y;
+      maxwidth = document.body.clientWidth - this.wrap_el.clientWidth + this.mousewrap_margin;
+      maxheight = document.body.clientHeight - this.wrap_el.clientHeight + this.mousewrap_margin;
       if (this.x > maxwidth) {
         this.x = maxwidth;
       }
@@ -2571,8 +2624,10 @@ td.name[contenteditable=true]:focus {
       if (this.y < 0) {
         this.y = 0;
       }
-      this.wrap_el.style.left = (parseInt(this.x, 10)) + "px";
-      return this.wrap_el.style.top = (parseInt(this.y, 10)) + "px";
+      x = parseInt(this.x - this.mousewrap_margin, 10);
+      y = parseInt(this.y - this.mousewrap_margin, 10);
+      this.mousewrap_el.style.left = x + "px";
+      return this.mousewrap_el.style.top = y + "px";
     };
 
     return PopOut;
@@ -3423,7 +3478,7 @@ td.name[contenteditable=true]:focus {
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
       this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
-      this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color');
+      this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color');
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
