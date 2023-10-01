@@ -69,7 +69,7 @@ class MandelIter
     @resize_canvas(900, 600)
     @fit_canvas_to_width()
 
-    #window.addEventListener('resize', @on_content_wrapper_resize)
+    window.addEventListener('resize', @on_content_wrapper_resize)
 
     for tabbutton in @context.querySelectorAll('.tabbutton')
       tabbutton.addEventListener('click', @on_tabbutton_click)
@@ -562,18 +562,24 @@ class MandelIter
     @resize_canvas(w, h)
 
   deferred_fit_canvas_to_width: =>
-    console.log('deferred')
+    if performance.now() < @deferred_fit_time
+      console.log('waiting for deferrewd fit timeout...')
+      return
+
+    console.log('deferred - REDRAWING MANDELBROT')
     @fit_canvas_to_width()
     @draw_background()
     @defer_resize = false
 
   on_content_wrapper_resize: (event) =>
     if @defer_resize
-      console.log("already deferred")
+      console.log("already deferred, resetting timeout")
+      @deferred_fit_time = performance.now() + 200
     else
-      console.log('setting defferred fit timeout')
+      console.log('setting deferred fit timeout')
       @defer_resise = true
-      setTimeout(@deferred_fit_canvas_to_width, 5000)
+      @deferred_fit_time = performance.now() + 500
+      setTimeout(@deferred_fit_canvas_to_width, 510)
 
   reset_renderbox: ->
     @renderbox =

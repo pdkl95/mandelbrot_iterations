@@ -3450,6 +3450,7 @@ td.name[contenteditable=true]:focus {
       });
       this.resize_canvas(900, 600);
       this.fit_canvas_to_width();
+      window.addEventListener('resize', this.on_content_wrapper_resize);
       ref1 = this.context.querySelectorAll('.tabbutton');
       for (k = 0, len1 = ref1.length; k < len1; k++) {
         tabbutton = ref1[k];
@@ -4037,7 +4038,11 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.deferred_fit_canvas_to_width = function() {
-      console.log('deferred');
+      if (performance.now() < this.deferred_fit_time) {
+        console.log('waiting for deferrewd fit timeout...');
+        return;
+      }
+      console.log('deferred - REDRAWING MANDELBROT');
       this.fit_canvas_to_width();
       this.draw_background();
       return this.defer_resize = false;
@@ -4045,11 +4050,13 @@ td.name[contenteditable=true]:focus {
 
     MandelIter.prototype.on_content_wrapper_resize = function(event) {
       if (this.defer_resize) {
-        return console.log("already deferred");
+        console.log("already deferred, resetting timeout");
+        return this.deferred_fit_time = performance.now() + 200;
       } else {
-        console.log('setting defferred fit timeout');
+        console.log('setting deferred fit timeout');
         this.defer_resise = true;
-        return setTimeout(this.deferred_fit_canvas_to_width, 5000);
+        this.deferred_fit_time = performance.now() + 500;
+        return setTimeout(this.deferred_fit_canvas_to_width, 510);
       }
     };
 
