@@ -353,7 +353,10 @@ undivert(`style.css')
               </td>
             </tr>
             <tr>
-              <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
+              <td colspan="2" class="dialog_container">
+                <button id="mandel_external_color_move_to_dialog" class="move_to_dialog tt ttleft" data-title="Pop out the color editor into a movable window.">&nearr;</button>
+                <div id="mandel_external_color" class="gradient_editor"></div>
+              </td>
             </tr>
             <tr>
               <th>Color Presets</th>
@@ -393,6 +396,7 @@ undivert(`uioption.js')
 undivert(`motion.js')
 undivert(`highlight.js')
 undivert(`fileio.js')
+undivert(`dialog.js')
 undivert(`color.js')
 undivert(`main.js')
     </script>

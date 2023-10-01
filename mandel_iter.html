@@ -886,6 +886,80 @@ td.name[contenteditable=true]:focus {
   top: -3px;
 }
 
+.dialog_container {
+  position: relative;
+}
+
+.move_to_dialog {
+  float: right;
+  position: absolute;
+  top: -2px;
+  right: -13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  font-size: 16px;
+  border: 1px dashed #666;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.move_to_dialog.hidden {
+  display: none;
+}
+
+.move_to_dialog:hover {
+  opacity: 1;
+}
+
+.move_to_dialog:active {
+  border: 1px inset #666;
+}
+
+.dialog_box {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+
+  border: 1px outset #999;
+  border-radius: 6px;
+  background: #bbb;
+}
+
+.dialog_box .dialog_close {
+  width: 22px;
+  height: 22px;
+}
+
+.dialog_box .dialog_title {
+  font-size: larger;
+}
+
+.dialog_box .dialog_header {
+  cursor: pointer;
+  background: #AAB8D9;
+  border: 1px outset #A2A9B
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dialog_box .dialog_body {
+  padding-right: 2em;
+  padding-left: 2em;
+  background: #f0f2f6;
+  border: 1px inset #ddd;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+}
+
+
     </style>
   </head>
   <body>
@@ -1231,7 +1305,10 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
             <tr>
-              <td colspan="2" id="mandel_external_color" class="gradient_editor"></td>
+              <td colspan="2" class="dialog_container">
+                <button id="mandel_external_color_move_to_dialog" class="move_to_dialog tt ttleft" data-title="Pop out the color editor into a movable window.">&nearr;</button>
+                <div id="mandel_external_color" class="gradient_editor"></div>
+              </td>
             </tr>
             <tr>
               <th>Color Presets</th>
@@ -2364,6 +2441,147 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  window.Dialog || (window.Dialog = {});
+
+  Dialog.PopOut = (function() {
+    function PopOut(content_id, title) {
+      this.content_id = content_id;
+      this.title = title;
+      this.on_header_mousemove = bind(this.on_header_mousemove, this);
+      this.on_header_mouseup = bind(this.on_header_mouseup, this);
+      this.on_header_mousedown = bind(this.on_header_mousedown, this);
+      this.on_close_click = bind(this.on_close_click, this);
+      this.on_move_to_dialog_click = bind(this.on_move_to_dialog_click, this);
+      this.move_to_dialog_id = this.content_id + "_move_to_dialog";
+      this.content_el = document.getElementById(this.content_id);
+      if (this.content_el == null) {
+        APP.warn("Cannot find Dialog.Wrap target #" + this.content_id);
+      }
+      this.move_to_dialog_el = document.getElementById(this.move_to_dialog_id);
+      if (this.move_to_dialog_el == null) {
+        APP.warn("Cannot find Dialog.Wrap move_to_dialog button #" + this.content_id);
+      }
+      this.move_to_dialog_el.addEventListener('click', this.on_move_to_dialog_click);
+    }
+
+    PopOut.prototype.on_move_to_dialog_click = function(event) {
+      return this.popout();
+    };
+
+    PopOut.prototype.popout = function() {
+      var rect;
+      this.move_to_dialog_el.classList.add('hidden');
+      rect = this.content_el.getBoundingClientRect();
+      this.x = 0;
+      this.y = 0;
+      this.original_parent = this.content_el.parentNode;
+      this.wrap_el = document.createElement('div');
+      this.wrap_el.classList.add('dialog_box');
+      this.wrap_el.classList.add('dialog_wrap');
+      this.close_el = document.createElement('button');
+      this.close_el.classList.add('dialog_close');
+      this.title_el = document.createElement('h3');
+      this.title_el.classList.add('dialog_title');
+      this.title_el.innerText = this.title;
+      this.header_el = document.createElement('div');
+      this.header_el.classList.add('dialog_header');
+      this.header_el.appendChild(this.title_el);
+      this.header_el.appendChild(this.close_el);
+      this.body_el = document.createElement('div');
+      this.body_el.classList.add('dialog_body');
+      this.original_parent.insertBefore(this.wrap_el, this.content_el);
+      this.wrap_el.appendChild(this.header_el);
+      this.wrap_el.appendChild(this.content_el);
+      this.close_el.addEventListener('click', this.on_close_click);
+      this.header_el.addEventListener('mousedown', this.on_header_mousedown);
+      this.header_el.addEventListener('mouseup', this.on_header_mouseup);
+      this.header_el.addEventListener('mousemove', this.on_header_mousemove);
+      return this.set_position();
+    };
+
+    PopOut.prototype.unpopout = function() {
+      if ((this.wrap_el != null) && (this.original_parent != null) && (this.content_el != null)) {
+        this.original_parent.insertBefore(this.content_el, this.wrap_el);
+      }
+      if (this.title_el != null) {
+        this.title_el.remove();
+        this.title_el = null;
+      }
+      if (this.close_el != null) {
+        this.close_el.remove();
+        this.close_el = null;
+      }
+      if (this.header_el != null) {
+        this.header_el.remove();
+        this.header_el = null;
+      }
+      if (this.body_el != null) {
+        this.body_el.remove();
+        this.body_el = null;
+      }
+      if (this.wrap_el != null) {
+        this.wrap_el.remove();
+        this.wrap_el = null;
+      }
+      return this.move_to_dialog_el.classList.remove('hidden');
+    };
+
+    PopOut.prototype.on_close_click = function(event) {
+      return this.unpopout();
+    };
+
+    PopOut.prototype.on_header_mousedown = function(event) {
+      this.drag = true;
+      this.drag_start_x = event.pageX;
+      return this.drag_start_y = event.pageY;
+    };
+
+    PopOut.prototype.update_drag_position = function(event) {
+      var delta_x, delta_y;
+      delta_x = event.pageX - this.drag_start_x;
+      delta_y = event.pageY - this.drag_start_y;
+      this.x += delta_x;
+      return this.y += delta_y;
+    };
+
+    PopOut.prototype.on_header_mouseup = function(event) {
+      this.update_drag_position(event);
+      return this.drag = false;
+    };
+
+    PopOut.prototype.on_header_mousemove = function(event) {
+      return this.update_drag_position(event);
+    };
+
+    PopOut.prototype.set_position = function() {
+      var maxheight, maxwidth;
+      maxwidth = document.body.clientWidth - this.wrap_el.clientWidth;
+      maxheight = document.body.clientHeight - this.wrap_el.clientHeigh;
+      if (this.x > maxwidth) {
+        this.x = maxwidth;
+      }
+      if (this.x > maxheight) {
+        this.x = maxheight;
+      }
+      if (this.x < 0) {
+        this.x = 0;
+      }
+      if (this.y < 0) {
+        this.y = 0;
+      }
+      this.wrap_el.style.left = (parseInt(this.x, 10)) + "px";
+      return this.wrap_el.style.top = (parseInt(this.y, 10)) + "px";
+    };
+
+    return PopOut;
+
+  })();
+
+}).call(this);
+
+(function() {
   var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     hasProp = {}.hasOwnProperty,
@@ -3205,6 +3423,7 @@ td.name[contenteditable=true]:focus {
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
       this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
+      this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color');
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),

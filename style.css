@@ -702,3 +702,77 @@ td.name[contenteditable=true]:focus {
   position: relative;
   top: -3px;
 }
+
+.dialog_container {
+  position: relative;
+}
+
+.move_to_dialog {
+  float: right;
+  position: absolute;
+  top: -2px;
+  right: -13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  font-size: 16px;
+  border: 1px dashed #666;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.move_to_dialog.hidden {
+  display: none;
+}
+
+.move_to_dialog:hover {
+  opacity: 1;
+}
+
+.move_to_dialog:active {
+  border: 1px inset #666;
+}
+
+.dialog_box {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+
+  border: 1px outset #999;
+  border-radius: 6px;
+  background: #bbb;
+}
+
+.dialog_box .dialog_close {
+  width: 22px;
+  height: 22px;
+}
+
+.dialog_box .dialog_title {
+  font-size: larger;
+}
+
+.dialog_box .dialog_header {
+  cursor: pointer;
+  background: #AAB8D9;
+  border: 1px outset #A2A9B
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dialog_box .dialog_body {
+  padding-right: 2em;
+  padding-left: 2em;
+  background: #f0f2f6;
+  border: 1px inset #ddd;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+}
+

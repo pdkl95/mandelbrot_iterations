@@ -100,6 +100,8 @@ class MandelIter
     @save_to_file.addEventListener(  'click',  @on_save_to_file_click)
     @mandel_use_color_preset.addEventListener('click', @on_mandel_use_color_preset_click)
 
+    @mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color')
+
     @option =
       show_tooltips:            new UI.BoolOption('show_tooltips', true)
       confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true)
