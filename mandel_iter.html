@@ -859,6 +859,24 @@ td.name[contenteditable=true]:focus {
   background: linear-gradient(to bottom left, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 100%);
 }
 
+.shift_mode .gradient_editor .stop_container > .color_stop:hover::before {
+  left: -2px;
+  top: -18px;
+  opacity: 0.7;
+  box-shadow: 1px 1px 7px #a22
+  border-top-right-radius: 6px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.shift_mode .gradient_editor .stop_container > .color_stop {
+  cursor: crosshair;
+}
+
+.shift_mode .gradient_editor .stop_container > .color_stop:hover {
+  border: 2px dashed #F00;
+}
+
 .collapse_header {
   cursor: pointer;
 }
@@ -2784,6 +2802,7 @@ td.name[contenteditable=true]:focus {
       var position, rest, theme;
       theme = arguments[0], position = arguments[1], rest = 3 <= arguments.length ? slice.call(arguments, 2) : [];
       this.theme = theme;
+      this.on_editor_contextmenu = bind(this.on_editor_contextmenu, this);
       this.on_editor_mousedown = bind(this.on_editor_mousedown, this);
       this.on_editor_dblclick = bind(this.on_editor_dblclick, this);
       this.on_editor_input_change = bind(this.on_editor_input_change, this);
@@ -2819,7 +2838,8 @@ td.name[contenteditable=true]:focus {
       this.update_editor_position();
       this.editor_input.addEventListener('change', this.on_editor_input_change);
       this.editor_el.addEventListener('dblclick', this.on_editor_dblclick);
-      return this.editor_el.addEventListener('mousedown', this.on_editor_mousedown);
+      this.editor_el.addEventListener('mousedown', this.on_editor_mousedown);
+      return this.editor_el.addEventListener('contextmenu', this.on_editor_contextmenu);
     };
 
     Stop.prototype.on_editor_input_change = function(event) {
@@ -2830,7 +2850,9 @@ td.name[contenteditable=true]:focus {
     };
 
     Stop.prototype.on_editor_dblclick = function(event) {
-      return this.editor_input.click();
+      if (event.button === 0 && !event.shiftKey) {
+        return this.editor_input.click();
+      }
     };
 
     Stop.prototype.update_editor_input = function() {
@@ -2840,7 +2862,23 @@ td.name[contenteditable=true]:focus {
     };
 
     Stop.prototype.on_editor_mousedown = function(event) {
-      return this.theme.start_drag(this, event);
+      if (event.button === 0 && event.shiftKey) {
+        this.remove();
+        this.theme.save();
+        this.theme.update_editor_gradient();
+        return APP.repaint_mandelbrot();
+      } else if (event.button === 2 && !event.shiftKey) {
+        this.editor_input.click();
+        return event.preventDefault();
+      } else if (event.button === 0 && !event.shiftKey) {
+        return this.theme.start_drag(this, event);
+      }
+    };
+
+    Stop.prototype.on_editor_contextmenu = function(event) {
+      if (event.button === 2 && !event.shiftKey) {
+        return event.preventDefault();
+      }
     };
 
     Stop.prototype.position_percent = function() {
@@ -3387,6 +3425,7 @@ td.name[contenteditable=true]:focus {
       this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
       this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
+      this.on_keyup = bind(this.on_keyup, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
@@ -3644,6 +3683,7 @@ td.name[contenteditable=true]:focus {
         y: 0
       };
       document.addEventListener('keydown', this.on_keydown);
+      document.addEventListener('keyup', this.on_keyup);
       this.draw_local_julia_init();
       this.on_highlight_group_changed();
       if (this.storage_get('pause_mode')) {
@@ -3675,13 +3715,17 @@ td.name[contenteditable=true]:focus {
       if (event.shiftKey) {
         accel = this.shift_step_accel;
       }
-      if (event.ctrlKey) {
+      if (event.ctrlKey || event.metaKey) {
         accel = this.ctrl_step_accel;
       }
       if (event.altKey) {
         accel = this.alt_step_accel;
       }
       switch (event.code) {
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          this.shift_mode_on();
+          break;
         case 'KeyP':
         case 'Backspace':
           this.highlight_prev_item();
@@ -3710,6 +3754,22 @@ td.name[contenteditable=true]:focus {
           return;
       }
       return event.preventDefault();
+    };
+
+    MandelIter.prototype.on_keyup = function(event) {
+      var j, len, ref, type;
+      ref = ['INPUT', 'TD'];
+      for (j = 0, len = ref.length; j < len; j++) {
+        type = ref[j];
+        if (event.target.nodeName === type) {
+          return;
+        }
+      }
+      switch (event.code) {
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          return this.shift_mode_off();
+      }
     };
 
     MandelIter.prototype.debug = function(msg) {
@@ -4087,6 +4147,16 @@ td.name[contenteditable=true]:focus {
       } else {
         return this.set_status('normal');
       }
+    };
+
+    MandelIter.prototype.shift_mode_on = function() {
+      this.shift_mode = true;
+      return this.content_el.classList.add('shift_mode');
+    };
+
+    MandelIter.prototype.shift_mode_off = function() {
+      this.shift_mode = false;
+      return this.content_el.classList.remove('shift_mode');
     };
 
     MandelIter.prototype.pause_mode_on = function(persist) {

@@ -121,6 +121,7 @@ class Color.Stop extends Color.RGB
     @editor_input.addEventListener('change', @on_editor_input_change)
     @editor_el.addEventListener('dblclick', @on_editor_dblclick)
     @editor_el.addEventListener('mousedown', @on_editor_mousedown)
+    @editor_el.addEventListener('contextmenu', @on_editor_contextmenu)
 
   on_editor_input_change: (event) =>
     @set_string(@editor_input.value)
@@ -129,14 +130,35 @@ class Color.Stop extends Color.RGB
     APP.repaint_mandelbrot()
 
   on_editor_dblclick: (event) =>
-    @editor_input.click()
+    if event.button is 0 and not event.shiftKey
+      # (same as Right-Single-Click)
+      @editor_input.click()
 
   update_editor_input: ->
     if @editor_input?
       @editor_input.value = @to_hex()
 
   on_editor_mousedown: (event) =>
-    @theme.start_drag(this, event)
+    if event.button is 0 and event.shiftKey
+      # <SHIFT>+LeftClick
+      @remove()
+      @theme.save()
+      @theme.update_editor_gradient()
+      APP.repaint_mandelbrot()
+
+    else if event.button is 2 and not event.shiftKey
+      # RightClick
+      # (same as dblclick)
+      @editor_input.click()
+      event.preventDefault()
+
+    else if event.button is 0 and not event.shiftKey
+      # LeftClick
+      @theme.start_drag(this, event)
+
+  on_editor_contextmenu: (event) =>
+    if event.button is 2 and not event.shiftKey
+      event.preventDefault()
 
   position_percent: ->
     "#{@position * 100}%"

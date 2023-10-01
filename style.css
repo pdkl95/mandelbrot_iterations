@@ -676,6 +676,24 @@ td.name[contenteditable=true]:focus {
   background: linear-gradient(to bottom left, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 100%);
 }
 
+.shift_mode .gradient_editor .stop_container > .color_stop:hover::before {
+  left: -2px;
+  top: -18px;
+  opacity: 0.7;
+  box-shadow: 1px 1px 7px #a22
+  border-top-right-radius: 6px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.shift_mode .gradient_editor .stop_container > .color_stop {
+  cursor: crosshair;
+}
+
+.shift_mode .gradient_editor .stop_container > .color_stop:hover {
+  border: 2px dashed #F00;
+}
+
 .collapse_header {
   cursor: pointer;
 }

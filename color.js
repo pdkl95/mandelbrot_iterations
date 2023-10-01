@@ -146,6 +146,7 @@
       var position, rest, theme;
       theme = arguments[0], position = arguments[1], rest = 3 <= arguments.length ? slice.call(arguments, 2) : [];
       this.theme = theme;
+      this.on_editor_contextmenu = bind(this.on_editor_contextmenu, this);
       this.on_editor_mousedown = bind(this.on_editor_mousedown, this);
       this.on_editor_dblclick = bind(this.on_editor_dblclick, this);
       this.on_editor_input_change = bind(this.on_editor_input_change, this);
@@ -181,7 +182,8 @@
       this.update_editor_position();
       this.editor_input.addEventListener('change', this.on_editor_input_change);
       this.editor_el.addEventListener('dblclick', this.on_editor_dblclick);
-      return this.editor_el.addEventListener('mousedown', this.on_editor_mousedown);
+      this.editor_el.addEventListener('mousedown', this.on_editor_mousedown);
+      return this.editor_el.addEventListener('contextmenu', this.on_editor_contextmenu);
     };
 
     Stop.prototype.on_editor_input_change = function(event) {
@@ -192,7 +194,9 @@
     };
 
     Stop.prototype.on_editor_dblclick = function(event) {
-      return this.editor_input.click();
+      if (event.button === 0 && !event.shiftKey) {
+        return this.editor_input.click();
+      }
     };
 
     Stop.prototype.update_editor_input = function() {
@@ -202,7 +206,23 @@
     };
 
     Stop.prototype.on_editor_mousedown = function(event) {
-      return this.theme.start_drag(this, event);
+      if (event.button === 0 && event.shiftKey) {
+        this.remove();
+        this.theme.save();
+        this.theme.update_editor_gradient();
+        return APP.repaint_mandelbrot();
+      } else if (event.button === 2 && !event.shiftKey) {
+        this.editor_input.click();
+        return event.preventDefault();
+      } else if (event.button === 0 && !event.shiftKey) {
+        return this.theme.start_drag(this, event);
+      }
+    };
+
+    Stop.prototype.on_editor_contextmenu = function(event) {
+      if (event.button === 2 && !event.shiftKey) {
+        return event.preventDefault();
+      }
     };
 
     Stop.prototype.position_percent = function() {

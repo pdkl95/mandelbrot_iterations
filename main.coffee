@@ -256,6 +256,7 @@ class MandelIter
       y: 0
 
     document.addEventListener('keydown', @on_keydown)
+    document.addEventListener('keyup',   @on_keyup)
 
     @draw_local_julia_init()
 
@@ -284,10 +285,13 @@ class MandelIter
 
     accel = 1.0
     accel = @shift_step_accel if event.shiftKey
-    accel =  @ctrl_step_accel if event.ctrlKey
+    accel =  @ctrl_step_accel if event.ctrlKey or event.metaKey
     accel =   @alt_step_accel if event.altKey
 
     switch event.code
+      when 'ShiftLeft', 'ShiftRight'
+        @shift_mode_on()
+
       when 'KeyP', 'Backspace'
         @highlight_prev_item()
 
@@ -310,6 +314,14 @@ class MandelIter
     # it IS our event, so kill the event
     #event.stopPropagation()
     event.preventDefault()
+
+  on_keyup: (event) =>
+    for type in ['INPUT', 'TD']
+      return if event.target.nodeName is type
+
+    switch event.code
+      when 'ShiftLeft', 'ShiftRight'
+        @shift_mode_off()
 
   debug: (msg) ->
     unless @debugbox?
@@ -601,6 +613,14 @@ class MandelIter
       @set_status('paused')
     else
       @set_status('normal')
+
+  shift_mode_on: ->
+    @shift_mode = true
+    @content_el.classList.add('shift_mode')
+
+  shift_mode_off: ->
+    @shift_mode = false
+    @content_el.classList.remove('shift_mode')
 
   pause_mode_on: (persist = true) ->
     @pause_mode = true

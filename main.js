@@ -50,6 +50,7 @@
       this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
       this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
+      this.on_keyup = bind(this.on_keyup, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
@@ -307,6 +308,7 @@
         y: 0
       };
       document.addEventListener('keydown', this.on_keydown);
+      document.addEventListener('keyup', this.on_keyup);
       this.draw_local_julia_init();
       this.on_highlight_group_changed();
       if (this.storage_get('pause_mode')) {
@@ -338,13 +340,17 @@
       if (event.shiftKey) {
         accel = this.shift_step_accel;
       }
-      if (event.ctrlKey) {
+      if (event.ctrlKey || event.metaKey) {
         accel = this.ctrl_step_accel;
       }
       if (event.altKey) {
         accel = this.alt_step_accel;
       }
       switch (event.code) {
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          this.shift_mode_on();
+          break;
         case 'KeyP':
         case 'Backspace':
           this.highlight_prev_item();
@@ -373,6 +379,22 @@
           return;
       }
       return event.preventDefault();
+    };
+
+    MandelIter.prototype.on_keyup = function(event) {
+      var j, len, ref, type;
+      ref = ['INPUT', 'TD'];
+      for (j = 0, len = ref.length; j < len; j++) {
+        type = ref[j];
+        if (event.target.nodeName === type) {
+          return;
+        }
+      }
+      switch (event.code) {
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          return this.shift_mode_off();
+      }
     };
 
     MandelIter.prototype.debug = function(msg) {
@@ -750,6 +772,16 @@
       } else {
         return this.set_status('normal');
       }
+    };
+
+    MandelIter.prototype.shift_mode_on = function() {
+      this.shift_mode = true;
+      return this.content_el.classList.add('shift_mode');
+    };
+
+    MandelIter.prototype.shift_mode_off = function() {
+      this.shift_mode = false;
+      return this.content_el.classList.remove('shift_mode');
     };
 
     MandelIter.prototype.pause_mode_on = function(persist) {
