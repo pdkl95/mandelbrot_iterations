@@ -240,6 +240,10 @@ h1 {
   overflow: hidden;
 }
 
+.noselect {
+  user-select: none;
+}
+
 .hidden {
   display: none;
 }
@@ -318,6 +322,10 @@ footer {
   margin-left: 0.2rem;
 }
 
+#buttonbox_hr {
+  margin-bottom: 0;
+}
+
 .buttonbox > button {
   background-color: #d2d2d2;
   border: 2px outset #cccccc;
@@ -342,7 +350,7 @@ footer {
   float: right;
 }
 
-.buttonbox.bbright ~ hr {\
+.buttonbox.bbright ~ hr {
   margin-top: 4px;
   margin-bottom: 4px;
   opacity: 0.15;
@@ -373,7 +381,6 @@ footer {
 }
 
 .optionbox {
-  margin: 0.2rem;
   padding: 0.3rem;
 }
 
@@ -788,6 +795,222 @@ td.name[contenteditable=true]:focus {
   border: 1px solid #4A90D9;
 }
 
+.color_picker > label {
+  width: 5em;
+  display: inline-block;
+  font-family: monospace;
+  text-align: center;
+}
+
+.gradient_editor {
+  padding: 1em;
+}
+
+.gradient_editor .editor_bg_container {
+  width: 302px;
+  height: 42px
+}
+
+.gradient_editor .editor_bg {
+  width: 300px;
+  height: 40px;
+  border-top: 1px solid #555;
+  border-left: 1px solid #555;
+  border-right: 1px solid #555;
+  border-bottom: none;
+  cursor: pointer;
+}
+
+.gradient_editor .stop_container {
+  position: relative;
+  height: 50px;
+  width: 300px;
+  /* cursor: pointer; */
+  /* border-bottom: 1px dashed #888; */
+  /* background-color: #f7f8f9; */
+  /* box-shadow: inset 1px -2px 5px -6px rgba(0,0,0,0.7); */
+}
+
+.gradient_editor .stop_container > .color_stop {
+  position: absolute;
+  cursor: grab;
+  width: 19px;
+  height: 21px;
+  background: rgb(0,0,0) none repeat scroll 0% 0%;
+  top: 14px;
+  z-index: 1;
+  border-top-right-radius: 3px;
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+  box-shadow: 1px 1px 2px rgba(0,0,0,0.6), 1px 1px 1px rgba(255,255,255,0.3);
+}
+
+.gradient_editor .stop_container > .color_stop.drag {
+  cursor: grabbing;
+}
+
+.gradient_editor .stop_container > .color_stop::before {
+  content: " ";
+  position: absolute;
+  display: block;
+  top: -16px;
+  width: 10px;
+  height: 17px;
+  background: linear-gradient(to bottom left, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,1) 50%, rgba(0,0,0,1) 100%);
+}
+
+.shift_mode .gradient_editor .stop_container > .color_stop:hover::before {
+  left: -2px;
+  top: -18px;
+  opacity: 0.7;
+  box-shadow: 1px 1px 7px #a22
+  border-top-right-radius: 6px;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.shift_mode .gradient_editor .stop_container > .color_stop {
+  cursor: crosshair;
+}
+
+.shift_mode .gradient_editor .stop_container > .color_stop:hover {
+  border: 2px dashed #F00;
+}
+
+.collapse_header {
+  cursor: pointer;
+}
+
+.collapse_header:not(.collapsed):hover {
+  background-color: #eee;
+}
+
+.collapse_header.collapsed {
+  border-style: inset;
+  background-color: #c0c0c0;
+  font-weight: normal;
+  font-style: italic;
+}
+
+.collapse_header.collapsed::after {
+  content: " ...";
+}
+
+.collapse_hr {
+  clear: both;
+  border: 1px dashed #aaa;
+  margin: 0 1em;
+  position: relative;
+  top: -3px;
+}
+
+.dialog_container {
+  position: relative;
+}
+
+.move_to_dialog {
+  float: right;
+  position: absolute;
+  top: -2px;
+  right: -13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  font-size: 16px;
+  border: 1px dashed #666;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.move_to_dialog.hidden {
+  display: none;
+}
+
+.move_to_dialog:hover {
+  opacity: 1;
+}
+
+.move_to_dialog:active {
+  border: 1px inset #666;
+}
+
+.dialog_mousewrap {
+  position: fixed;
+  top: -40px;
+  left: -40px;
+  padding: 40px;
+}
+
+.dialog_box {
+  position: relative;
+  border: 1px outset #999;
+  border-radius: 6px;
+  background: #bbb;
+}
+
+.dialog_box .dialog_close {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 7px;
+}
+
+.dialog_box .dialog_title {
+  display: inline-block;
+  margin-top: 3px;
+  margin-bottom: 3px;
+  margin-left: 5px;
+  margin-right: 2em;
+}
+ 
+.dialog_box .dialog_header {
+ position: relative;
+  cursor: pointer;
+  background: #AAB8D9;
+  border: 1px outset #A2A9BF;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.dialog_box .dialog_header:hover {
+  background-color: #CBD8F4;
+}
+
+.dialog_box .dialog_header:active {
+  background-color: #A6AFCA;
+}
+
+.dialog_box .dialog_body {
+  clear: both;
+  margin-left: 2px;
+  margin-right: 2px;
+  margin-bottom: 1px;
+  margin-top: 0;
+  background: #f0f2f6;
+  border: 1px inset #ddd;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+  box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+}
+
+.dialog_box .dialog_body > .gradient_editor {
+  padding-top: 5px;
+  padding-left: 4px;
+  padding-right: 1.85em;
+  padding-bottom: 5px;
+}
+
     </style>
   </head>
   <body>
@@ -850,11 +1073,11 @@ td.name[contenteditable=true]:focus {
           <span id="msg"></span>
         </div>
 
-        <hr class="clear_both"></hr>
+        <hr id="buttonbox_hr" class="clear_both"></hr>
 
         <div class="coordbox optionbox obright">
-          <h3>Pointer Location</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="pointer_location_table" data-collapse_show="pointer_location_hr">Pointer Location</h3>
+          <table id="pointer_location_table">
             <tr>
               <th>C =</th>
               <td><code id="loc_c" class="numfloat complex"></code></td>
@@ -873,9 +1096,10 @@ td.name[contenteditable=true]:focus {
                 <button id="copy_loc_to_set_c">&darr; Copy To Set C &darr;</button>
                 <button id="save_loc">Save &darr;</button>
               </td>
-          </table>
-
-          <table>
+            </tr>
+            <tr>
+              <th colspan="2">&nbsp;</th>
+            </tr>
             <tr>
               <th class="tt ttleft" data-title="Set the real part of the cursor position C.">Real</th>
               <td><input id="set_c_real" value="0"></td>
@@ -891,7 +1115,8 @@ td.name[contenteditable=true]:focus {
                 <button id="save_c">Save &darr;</button>
               </td>
             </tr>
-          </table> 
+          </table>
+          <hr id="pointer_location_hr" class="clear_both hidden collapse_hr"></hr>
 
           <div class="tabs">
             <div class="tabheader">
@@ -932,8 +1157,8 @@ td.name[contenteditable=true]:focus {
         </div>
 
         <div id="orbit_options" class="optionbox obleft">
-          <h3>Orbit Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="orbit_options_table" data-collapse_show="orbit_options_hr">Orbit Options</h3>
+          <table id="orbit_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="The number of iterations to draw when rendering an orbit.">Orbit Draw Length</th>
               <td>
@@ -966,7 +1191,7 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
             <tr>
-              <th class="tt ttright" data-title="Skip the first few results when drawing orbits.">Skip Initial<br>Iterations</th>
+              <th class="tt ttright" data-title="Skip the first few results when drawing orbits.">Skip Initial<br />Iterations</th>
               <td>
                 <input id="orbit_skip_initial_results" type="checkbox" autocomplete="off">
               </td>
@@ -977,10 +1202,17 @@ td.name[contenteditable=true]:focus {
                 <input id="orbit_skip_initial_num" type="number" min="0" max="100" step="10" value="20" autocomplete="off">
               </td>
             </tr>
+	    <tr>
+              <th>Cursor Color</th>
+              <td>
+                <select name="cursor_color" id="cursor_color" autocomplete="off"></select>
+              </td>
+            </tr>
           </table>
+          <hr id="orbit_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>Trace Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="trace_options_table" data-collapse_show="trace_options_hr">Trace Options</h3>
+          <table id="trace_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Show the cardioid curve that will be traced. It is a path inside the Mandelbrot Ser, very close to the edge of the main cardioid.">Highlight Trace Path</th>
               <td>
@@ -1006,9 +1238,10 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
           </table>
+          <hr id="trace_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>UI Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="ui_options_table" data-collapse_show="ui_options_hr">UI Options</h3>
+          <table id="ui_options_table" class="collapse_target">
             <tr class="hidden">
               <th class="tt ttright" data-title="Cursor movement step size for each arrow key keypress. Useful for fine-tuning the cursor more accurately than the mouse. Holding <shift>, <ctrl>, or <alt> slows down movement. <shift> slows the least, <alt> slows the most.">Step</th>
               <td>
@@ -1022,17 +1255,18 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
             <tr>
-              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br>Saved Locations</th>
+              <th class="tt ttright" data-title="Confirm with a popup box when removing saved locations.">Confirm Removing<br />Saved Locations</th>
               <td>
                 <input id="confirm_remove_saved_loc" type="checkbox" checked="checked">
               </td>
             </tr>
           </table>
+          <hr id="ui_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <div id="julia_options" class="optionbox obleft">
-          <h3>Julia Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="julia_options_table" data-collapse_show="julia_options_hr">Julia Options</h3>
+          <table id="julia_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Show the Julia set in a box surrounding the currently rendered Mandelbrot orbit. WARNING: significantly increasres the amount of computation that is recomputed every time the orbit changes (i.e. every time the mouse moves)">Show Nearby Julia</th>
               <td>
@@ -1096,9 +1330,10 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
           </table>
+          <hr id="julia_options_hr" class="clear_both hidden collapse_hr"></hr>
 
-          <h3>Mandelbrot Options</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="mandelbrot_options_table" data-collapse_show="mandelbrot_options_hr">Mandelbrot Options</h3>
+          <table id="mandelbrot_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">
@@ -1116,41 +1351,39 @@ td.name[contenteditable=true]:focus {
                 </select>
               </td>
             </tr>
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor red">Red</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color red"> -->
-            <!--     <label for="mandel_color_scale_r" id="mandel_color_scale_r_label"></label> -->
-            <!--     <input id="mandel_color_scale_r" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor green">Green</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color green"> -->
-            <!--     <label for="mandel_color_scale_g" id="mandel_color_scale_g_label"></label> -->
-            <!--     <input id="mandel_color_scale_g" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
-            <!-- <tr> -->
-            <!--   <th> -->
-            <!--     Color Scale <span class="textcolor blue">Blue</span> -->
-            <!--   </th> -->
-            <!--   <td class="slider color blue"> -->
-            <!--     <label for="mandel_color_scale_b" id="mandel_color_scale_b_label"></label> -->
-            <!--     <input id="mandel_color_scale_b" type="range" value="1.0" min="0.05" max="4.0" step="0.05" autocomplete="off"> -->
-            <!--   </td> -->
-            <!-- </tr> -->
+            <tr>
+              <th class="tt ttright" data-title="Color for compllex values inside the Mandelbrot Set. (traditionally black)">
+                Internal Color
+              </th>
+              <td class="color_picker">
+                <label for="mandel_color_internal" id="mandel_color_internal_label">#000000</label>
+                <input id="mandel_color_internal" name="mandel_color_internal"
+                       type="color" value="#000000" autocomplete="off">
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" class="dialog_container">
+                <button id="mandel_external_color_move_to_dialog" class="move_to_dialog tt ttleft" data-title="Pop out the color editor into a movable window.">&nearr;</button>
+                <div id="mandel_external_color" class="gradient_editor"></div>
+              </td>
+            </tr>
+            <tr>
+              <th>Color Presets</th>
+              <td>
+                <select name="mandel_color_preset" id="mandel_color_preset" autocomplete="off">
+                </select>
+                <button id="mandel_use_color_preset">Use</button>
+              </td>
+            </tr>
           </table>
+          <hr id="mandelbrot_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <hr class="clear_both"></hr>
 
         <div id="orbit_options" class="optionbox obleft">
-          <h3>Miscellaneous</h3>
-          <table>
+          <h3 class="collapse_header" data-collapse_hide="miscellaneous_options_table" data-collapse_show="miscellaneous_options_hr">Miscellaneous</h3>
+          <table id="micellaneous_options_table" class="collapse_target">
             <tr>
               <th class="tt ttright" data-title="Clears all localStorage data and resets the values back to their default values.">Clear Persistant Storage</th>
               <td>
@@ -1158,6 +1391,7 @@ td.name[contenteditable=true]:focus {
               </td>
             </tr>
           </table>
+          <hr id="miscellaneous_options_hr" class="clear_both hidden collapse_hr"></hr>
         </div>
 
         <div class="clear_both"></div>
@@ -1497,10 +1731,16 @@ td.name[contenteditable=true]:focus {
     };
 
     SelectOption.prototype.get = function(element) {
+      var opt;
       if (element == null) {
         element = this.el;
       }
-      return element.options[element.selectedIndex].value;
+      opt = element.options[element.selectedIndex];
+      if (opt != null) {
+        return opt.value;
+      } else {
+        return null;
+      }
     };
 
     SelectOption.prototype.set = function(option_name, update_element) {
@@ -1535,7 +1775,51 @@ td.name[contenteditable=true]:focus {
       return null;
     };
 
+    SelectOption.prototype.add_option = function(value, text, selected) {
+      var opt;
+      if (selected == null) {
+        selected = false;
+      }
+      opt = document.createElement('option');
+      opt.value = value;
+      opt.text = text;
+      this.el.add(opt, null);
+      if (selected) {
+        opt.selected = true;
+      }
+      return this.set(this.get());
+    };
+
     return SelectOption;
+
+  })(UI.Option);
+
+  UI.ColorOption = (function(superClass) {
+    extend(ColorOption, superClass);
+
+    function ColorOption() {
+      return ColorOption.__super__.constructor.apply(this, arguments);
+    }
+
+    ColorOption.prototype.get = function(element) {
+      if (element == null) {
+        element = this.el;
+      }
+      return element.value;
+    };
+
+    ColorOption.prototype.set = function(new_value, update_element) {
+      if (update_element == null) {
+        update_element = true;
+      }
+      this.set_value(new_value);
+      if (update_element) {
+        this.el.value = new_value;
+      }
+      return this.color;
+    };
+
+    return ColorOption;
 
   })(UI.Option);
 
@@ -1833,7 +2117,6 @@ td.name[contenteditable=true]:focus {
       el.id = this.id;
       el.classList.add('highlight_item');
       el.textContent = this.name;
-      console.log('create_li', el);
       return el;
     };
 
@@ -2034,7 +2317,6 @@ td.name[contenteditable=true]:focus {
         var child = new ctor, result = func.apply(child, args);
         return Object(result) === result ? result : child;
       })(Highlight.SequenceItem, item_args, function(){});
-      console.log('seqitem', item);
       return this.items.push(item);
     };
 
@@ -2216,6 +2498,888 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  window.Dialog || (window.Dialog = {});
+
+  Dialog.PopOut = (function() {
+    function PopOut(content_id, title) {
+      this.content_id = content_id;
+      this.title = title;
+      this.on_header_mousemove = bind(this.on_header_mousemove, this);
+      this.on_header_mouseup = bind(this.on_header_mouseup, this);
+      this.on_header_mousedown = bind(this.on_header_mousedown, this);
+      this.on_close_click = bind(this.on_close_click, this);
+      this.on_move_to_dialog_click = bind(this.on_move_to_dialog_click, this);
+      this.move_to_dialog_id = this.content_id + "_move_to_dialog";
+      this.mousewrap_margin = 40;
+      this.content_el = document.getElementById(this.content_id);
+      if (this.content_el == null) {
+        APP.warn("Cannot find Dialog.Wrap target #" + this.content_id);
+      }
+      this.move_to_dialog_el = document.getElementById(this.move_to_dialog_id);
+      if (this.move_to_dialog_el == null) {
+        APP.warn("Cannot find Dialog.Wrap move_to_dialog button #" + this.content_id);
+      }
+      this.move_to_dialog_el.addEventListener('click', this.on_move_to_dialog_click);
+    }
+
+    PopOut.prototype.on_move_to_dialog_click = function(event) {
+      return this.popout();
+    };
+
+    PopOut.prototype.popout = function() {
+      this.move_to_dialog_el.classList.add('hidden');
+      this.x = 0;
+      this.y = 0;
+      this.original_parent = this.content_el.parentNode;
+      this.mousewrap_el = document.createElement('div');
+      this.mousewrap_el.classList.add('dialog_mousewrap');
+      this.wrap_el = document.createElement('div');
+      this.wrap_el.classList.add('dialog_box');
+      this.wrap_el.classList.add('dialog_wrap');
+      this.close_el = document.createElement('button');
+      this.close_el.classList.add('dialog_close');
+      this.close_el.innerHTML = '&times;';
+      this.title_el = document.createElement('h4');
+      this.title_el.classList.add('dialog_title');
+      this.title_el.innerText = this.title;
+      this.header_el = document.createElement('div');
+      this.header_el.classList.add('dialog_header');
+      this.header_el.appendChild(this.title_el);
+      this.header_el.appendChild(this.close_el);
+      this.body_el = document.createElement('div');
+      this.body_el.classList.add('dialog_body');
+      this.original_parent.insertBefore(this.mousewrap_el, this.content_el);
+      this.mousewrap_el.appendChild(this.wrap_el);
+      this.wrap_el.appendChild(this.header_el);
+      this.body_el.appendChild(this.content_el);
+      this.wrap_el.appendChild(this.body_el);
+      this.close_el.addEventListener('click', this.on_close_click);
+      this.header_el.addEventListener('mousedown', this.on_header_mousedown);
+      this.mousewrap_el.addEventListener('mouseup', this.on_header_mouseup);
+      this.mousewrap_el.addEventListener('mousemove', this.on_header_mousemove);
+      this.mousewrap_el.addEventListener("mouseleave", this.on_header_mouseleave);
+      return this.set_position();
+    };
+
+    PopOut.prototype.unpopout = function() {
+      if ((this.mousewrap_el != null) && (this.original_parent != null) && (this.content_el != null)) {
+        this.original_parent.insertBefore(this.content_el, this.mousewrap_el);
+      }
+      if (this.title_el != null) {
+        this.title_el.remove();
+        this.title_el = null;
+      }
+      if (this.close_el != null) {
+        this.close_el.remove();
+        this.close_el = null;
+      }
+      if (this.header_el != null) {
+        this.header_el.remove();
+        this.header_el = null;
+      }
+      if (this.body_el != null) {
+        this.body_el.remove();
+        this.body_el = null;
+      }
+      if (this.wrap_el != null) {
+        this.wrap_el.remove();
+        this.wrap_el = null;
+      }
+      if (this.mousewrap_el != null) {
+        this.mousewrap_el.remove();
+        this.mousewrap_el = null;
+      }
+      return this.move_to_dialog_el.classList.remove('hidden');
+    };
+
+    PopOut.prototype.on_close_click = function(event) {
+      return this.unpopout();
+    };
+
+    PopOut.prototype.on_header_mousedown = function(event) {
+      this.drag = true;
+      this.drag_x = event.pageX;
+      return this.drag_y = event.pageY;
+    };
+
+    PopOut.prototype.update_drag_position = function(event) {
+      var delta_x, delta_y, ox, oy;
+      delta_x = event.pageX - this.drag_x;
+      delta_y = event.pageY - this.drag_y;
+      ox = this.x;
+      oy = this.y;
+      this.x += delta_x;
+      this.y += delta_y;
+      this.set_position();
+      this.drag_x = event.pageX;
+      return this.drag_y = event.pageY;
+    };
+
+    PopOut.prototype.on_header_mouseup = function(event) {
+      this.update_drag_position(event);
+      return this.drag = false;
+    };
+
+    PopOut.prototype.on_header_mousemove = function(event) {
+      if (this.drag) {
+        return this.update_drag_position(event);
+      }
+    };
+
+    PopOut.prototype.on_header_mouseleave = function(event) {
+      return this.drag = false;
+    };
+
+    PopOut.prototype.set_position = function() {
+      var maxheight, maxwidth, x, y;
+      maxwidth = document.body.clientWidth - this.wrap_el.clientWidth + this.mousewrap_margin;
+      maxheight = document.body.clientHeight - this.wrap_el.clientHeight + this.mousewrap_margin;
+      if (this.x > maxwidth) {
+        this.x = maxwidth;
+      }
+      if (this.x > maxheight) {
+        this.x = maxheight;
+      }
+      if (this.x < 0) {
+        this.x = 0;
+      }
+      if (this.y < 0) {
+        this.y = 0;
+      }
+      x = parseInt(this.x - this.mousewrap_margin, 10);
+      y = parseInt(this.y - this.mousewrap_margin, 10);
+      this.mousewrap_el.style.left = x + "px";
+      return this.mousewrap_el.style.top = y + "px";
+    };
+
+    return PopOut;
+
+  })();
+
+}).call(this);
+
+(function() {
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty,
+    slice = [].slice;
+
+  window.Color || (window.Color = {});
+
+  Color.RGB = (function() {
+    function RGB(value, gvalue, bvalue) {
+      if (value == null) {
+        value = '#000000';
+      }
+      if (gvalue == null) {
+        gvalue = null;
+      }
+      if (bvalue == null) {
+        bvalue = null;
+      }
+      if ((gvalue != null) && (bvalue != null)) {
+        this.r = value;
+        this.g = gvalue;
+        this.b = bvalue;
+      } else {
+        this.r = 0;
+        this.g = 0;
+        this.b = 0;
+        this.set(value);
+      }
+    }
+
+    RGB.prototype.set = function(value) {
+      switch (typeof value) {
+        case "string":
+          return this.set_string(value);
+        case 'object':
+          if ((value.r != null) && (value.g != null) && (value.b != null)) {
+            return this.set_rgb(value.r, value.g, value.b);
+          } else {
+            return APP.warn('Object is not Color.RGB-like', value);
+          }
+          break;
+        default:
+          return console.log('cannot interpret as a color', value);
+      }
+    };
+
+    RGB.prototype._parse_byte = function(x) {
+      var value;
+      value = (function() {
+        switch (typeof x) {
+          case 'number':
+            return parseInt(x, 10);
+          case 'string':
+            if (x.length === 1) {
+              x = "" + x + x;
+            }
+            return parseInt(x, 16);
+          default:
+            APP.warn('Not a byte value', x);
+            return 0;
+        }
+      })();
+      if (value < 0) {
+        return 0;
+      } else {
+        if (value > 255) {
+          return 255;
+        } else {
+          return value;
+        }
+      }
+    };
+
+    RGB.prototype.set_rgb = function(r, g, b) {
+      this.r = this._parse_byte(r);
+      this.g = this._parse_byte(g);
+      return this.b = this._parse_byte(b);
+    };
+
+    RGB.prototype.set_string = function(str) {
+      var md;
+      md = str.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      if (md != null) {
+        return this.set_rgb(md[1], md[2], md[3]);
+      }
+      md = str.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
+      if (md != null) {
+        return this.set_rgb(md[1], md[2], md[3]);
+      }
+      APP.warn("Invalid color string", str);
+      return this;
+    };
+
+    RGB.prototype.hexbyte = function(byte) {
+      var str;
+      if (byte < 0) {
+        byte = 0;
+      }
+      if (byte > 255) {
+        byte = 255;
+      }
+      str = byte.toString(16);
+      if (str.length < 2) {
+        str = "0" + str;
+      }
+      return str;
+    };
+
+    RGB.prototype.linear_blend_rgb = function(other, t) {
+      var b, g, r;
+      r = parseInt(((1 - t) * this.r) + (t * other.r));
+      g = parseInt(((1 - t) * this.g) + (t * other.g));
+      b = parseInt(((1 - t) * this.b) + (t * other.b));
+      return [r, g, b];
+    };
+
+    RGB.prototype.rgb = function() {
+      return [this.r, this.g, this.b];
+    };
+
+    RGB.prototype.to_hex = function() {
+      return ["#", this.hexbyte(this.r), this.hexbyte(this.g), this.hexbyte(this.b)].join('');
+    };
+
+    RGB.prototype.to_rgb = function() {
+      return "rgb(" + this.r + "," + this.g + "," + this.b + ")";
+    };
+
+    RGB.prototype.to_rgba = function(a) {
+      return "rgbs(" + this.r + "," + this.g + "," + this.b + "," + a + ")";
+    };
+
+    return RGB;
+
+  })();
+
+  Color.Stop = (function(superClass) {
+    extend(Stop, superClass);
+
+    Stop.compare = function(a, b) {
+      return a.position - b.position;
+    };
+
+    function Stop() {
+      var position, rest, theme;
+      theme = arguments[0], position = arguments[1], rest = 3 <= arguments.length ? slice.call(arguments, 2) : [];
+      this.theme = theme;
+      this.on_editor_contextmenu = bind(this.on_editor_contextmenu, this);
+      this.on_editor_mousedown = bind(this.on_editor_mousedown, this);
+      this.on_editor_dblclick = bind(this.on_editor_dblclick, this);
+      this.on_editor_input_change = bind(this.on_editor_input_change, this);
+      Stop.__super__.constructor.apply(this, rest);
+      this.set_position(position);
+    }
+
+    Stop.prototype.set_position = function(value) {
+      this.position = parseFloat(value);
+      if (this.position < 0) {
+        this.position = 0;
+      }
+      if (this.position > 1) {
+        this.position = 1;
+      }
+      if (this.editor_el != null) {
+        this.update_editor_position();
+      }
+      return this.position;
+    };
+
+    Stop.prototype.prepare_editor = function() {
+      this.editor_el = document.createElement('div');
+      this.editor_el.classList.add('color_stop');
+      this.editor_input = document.createElement('input');
+      this.editor_input.classList.add('hidden');
+      this.editor_input.setAttribute('type', 'color');
+      this.editor_input.setAttribute('tabindex', -1);
+      this.update_editor_input();
+      this.editor_el.appendChild(this.editor_input);
+      this.theme.editor_stop_container.appendChild(this.editor_el);
+      this.update_editor_bg(false);
+      this.update_editor_position();
+      this.editor_input.addEventListener('change', this.on_editor_input_change);
+      this.editor_el.addEventListener('dblclick', this.on_editor_dblclick);
+      this.editor_el.addEventListener('mousedown', this.on_editor_mousedown);
+      return this.editor_el.addEventListener('contextmenu', this.on_editor_contextmenu);
+    };
+
+    Stop.prototype.on_editor_input_change = function(event) {
+      this.set_string(this.editor_input.value);
+      this.theme.save();
+      this.update_editor_bg();
+      return APP.repaint_mandelbrot();
+    };
+
+    Stop.prototype.on_editor_dblclick = function(event) {
+      if (event.button === 0 && !event.shiftKey) {
+        return this.editor_input.click();
+      }
+    };
+
+    Stop.prototype.update_editor_input = function() {
+      if (this.editor_input != null) {
+        return this.editor_input.value = this.to_hex();
+      }
+    };
+
+    Stop.prototype.on_editor_mousedown = function(event) {
+      if (event.button === 0 && event.shiftKey) {
+        this.remove();
+        this.theme.save();
+        this.theme.update_editor_gradient();
+        return APP.repaint_mandelbrot();
+      } else if (event.button === 2 && !event.shiftKey) {
+        this.editor_input.click();
+        return event.preventDefault();
+      } else if (event.button === 0 && !event.shiftKey) {
+        return this.theme.start_drag(this, event);
+      }
+    };
+
+    Stop.prototype.on_editor_contextmenu = function(event) {
+      if (event.button === 2 && !event.shiftKey) {
+        return event.preventDefault();
+      }
+    };
+
+    Stop.prototype.position_percent = function() {
+      return (this.position * 100) + "%";
+    };
+
+    Stop.prototype.update_editor_position = function(update_theme) {
+      if (update_theme == null) {
+        update_theme = true;
+      }
+      this.editor_el.style.left = this.position_percent();
+      if (update_theme) {
+        return this.theme.update_editor_gradient();
+      }
+    };
+
+    Stop.prototype.update_editor_bg = function(update_theme) {
+      if (update_theme == null) {
+        update_theme = true;
+      }
+      this.editor_el.style.backgroundColor = this.to_rgb();
+      if (update_theme) {
+        return this.theme.update_editor_gradient();
+      }
+    };
+
+    Stop.prototype.set_rgb = function(r, g, b) {
+      Stop.__super__.set_rgb.call(this, r, g, b);
+      if (this.editor_bg_el != null) {
+        return this.update_editor_bg();
+      }
+    };
+
+    Stop.prototype.remove_editor = function() {
+      if (this.editor_el != null) {
+        return this.editor_el.remove();
+      }
+    };
+
+    Stop.prototype.remove = function() {
+      var index;
+      this.remove_editor();
+      index = this.theme.stops.indexOf(this);
+      if (index != null) {
+        this.theme.stops.splice(index, 1);
+      }
+      return this.theme.rebuild();
+    };
+
+    Stop.prototype.serialize = function() {
+      return {
+        position: this.position,
+        color: this.to_hex()
+      };
+    };
+
+    return Stop;
+
+  })(Color.RGB);
+
+  Color.Theme = (function() {
+    Theme.preset = {};
+
+    Theme.preset_index = {};
+
+    Theme.prepare_presets = function(select_opt) {
+      var data, index, name, ref, results;
+      index = 1;
+      ref = Color.Theme.preset;
+      results = [];
+      for (name in ref) {
+        data = ref[name];
+        this.preset_index[index] = data;
+        select_opt.add_option(index, name, index === 1);
+        results.push(index++);
+      }
+      return results;
+    };
+
+    Theme.storage_id = function(name) {
+      return "color_theme[" + name + "]";
+    };
+
+    function Theme(name1, editor_id) {
+      this.name = name1;
+      this.editor_id = editor_id != null ? editor_id : null;
+      this.on_editor_bg_click = bind(this.on_editor_bg_click, this);
+      this.on_editor_mousemove = bind(this.on_editor_mousemove, this);
+      this.on_editor_mouseup = bind(this.on_editor_mouseup, this);
+      this.default_table_size = 256;
+      this.named_color = {};
+      this.stops = [];
+      this.table_size = 0;
+      if (this.editor_id != null) {
+        this.construct_editor();
+      }
+    }
+
+    Theme.prototype.mark_default_and_load = function() {
+      this.default_state = this.serialize();
+      this.load();
+      return this.require_lookup_table();
+    };
+
+    Theme.prototype.reset = function() {
+      this.remove_storage();
+      this.deserialize(this.default_state);
+      return this.rebuild();
+    };
+
+    Theme.prototype.serialize = function() {
+      var color, name, named, obj, ref;
+      named = {};
+      ref = this.named_color;
+      for (name in ref) {
+        color = ref[name];
+        named[name] = color.to_hex();
+      }
+      obj = {
+        named_color: named,
+        stops: this.stops.map(function(s) {
+          return s.serialize();
+        })
+      };
+      return JSON.stringify(obj);
+    };
+
+    Theme.prototype.deserialize = function(str) {
+      var hex, j, len, name, obj, ref, ref1, results, s;
+      obj = JSON.parse(str);
+      if (obj.named_color != null) {
+        this.named_color = {};
+        ref = obj.named_color;
+        for (name in ref) {
+          hex = ref[name];
+          this.named_color[name] = new Color.RGB(hex);
+        }
+      }
+      if (obj.stops != null) {
+        while (this.stops.length > 0) {
+          this.stops[0].remove();
+        }
+        this.stops = [];
+        ref1 = obj.stops;
+        results = [];
+        for (j = 0, len = ref1.length; j < len; j++) {
+          s = ref1[j];
+          results.push(this.add_stop(s.position, s.color));
+        }
+        return results;
+      }
+    };
+
+    Theme.prototype.save = function() {
+      var state;
+      if (this.default_state != null) {
+        state = this.serialize();
+        if (state === this.default_state) {
+          return this.remove_storage();
+        } else {
+          return APP.storage_set(Color.Theme.storage_id(this.name), state);
+        }
+      }
+    };
+
+    Theme.prototype.load = function() {
+      var str;
+      str = APP.storage_get(Color.Theme.storage_id(this.name));
+      if (str != null) {
+        return this.deserialize(str);
+      }
+    };
+
+    Theme.prototype.load_preset_by_name = function(name) {
+      var str;
+      str = Color.Theme.preset[name];
+      if (str != null) {
+        return this.deserialize(str);
+      } else {
+        return APP.warn("No color preset with name \"" + name + "\"");
+      }
+    };
+
+    Theme.prototype.load_preset_by_index = function(index) {
+      var str;
+      str = Color.Theme.preset_index[parseInt(index)];
+      if (str != null) {
+        return this.deserialize(str);
+      } else {
+        return APP.warn("No color preset with index \"" + index + "\"");
+      }
+    };
+
+    Theme.prototype.remove_storage = function() {
+      return APP.storage_remove(Color.Theme.storage_id(this.name));
+    };
+
+    Theme.prototype.find_stop_index = function(pos) {
+      var i, stop;
+      i = 0;
+      while (i < this.stops.length) {
+        stop = this.stops[i];
+        if (stop.position === pos) {
+          return i;
+        }
+        i++;
+      }
+      return null;
+    };
+
+    Theme.prototype.add_stop = function(position, value) {
+      var color, index, j, k, len, len1, ref, ref1, stop;
+      if ((position < 0) || (position > 1)) {
+        APP.warn("Color positions in a Theme must satisfy 0 <= position <= 1");
+      }
+      if (this.editor != null) {
+        ref = this.stops;
+        for (j = 0, len = ref.length; j < len; j++) {
+          stop = ref[j];
+          stop.remove_editor();
+        }
+        this.editor_stop_container.replaceChildren();
+      }
+      color = new Color.Stop(this, position, value);
+      index = this.find_stop_index(position);
+      if (index != null) {
+        this.stops[index] = color;
+      } else {
+        this.stops.push(color);
+        this.sort_stops();
+      }
+      if (this.editor != null) {
+        ref1 = this.stops;
+        for (k = 0, len1 = ref1.length; k < len1; k++) {
+          stop = ref1[k];
+          stop.prepare_editor();
+        }
+      }
+      this.save();
+      this.rebuild();
+      return color;
+    };
+
+    Theme.prototype.sort_stops = function() {
+      var i, j, next, prev, ref, results;
+      this.stops.sort(Color.Stop.compare);
+      results = [];
+      for (i = j = 1, ref = this.stops.length; 1 <= ref ? j <= ref : j >= ref; i = 1 <= ref ? ++j : --j) {
+        prev = this.stops[i - 1];
+        next = this.stops[i];
+        prev.next = next;
+        if (next) {
+          results.push(next.prev = prev);
+        } else {
+          results.push(void 0);
+        }
+      }
+      return results;
+    };
+
+    Theme.prototype.set_color = function(name, value) {
+      var color;
+      color = new Color.RGB(value);
+      this.named_color[name] = color;
+      switch (name) {
+        case 'escape_min':
+          return this.add_stop(0, color);
+        case 'escape_max':
+          return this.add_stop(1, color);
+      }
+    };
+
+    Theme.prototype.set_colors = function(opt) {
+      var name, results, value;
+      results = [];
+      for (name in opt) {
+        value = opt[name];
+        results.push(this.set_color(name, value));
+      }
+      return results;
+    };
+
+    Theme.prototype.rgb_at = function(pos) {
+      var delta, next, prev, stop_index, t;
+      if (pos < 0) {
+        pos = 0;
+      }
+      if (pos > 1) {
+        pos = 1;
+      }
+      stop_index = 0;
+      prev = this.stops[stop_index++];
+      next = this.stops[stop_index++];
+      while (pos < prev.position) {
+        prev = next;
+        next = this.stops[stop_index++];
+      }
+      delta = next.position - prev.position;
+      t = (pos - prev.position) / delta;
+      return prev.linear_blend_rgb(next, t);
+    };
+
+    Theme.prototype.rgb_hex_at = function(pos) {
+      var color, rgb;
+      rgb = this.rgb_at(pos);
+      color = (function(func, args, ctor) {
+        ctor.prototype = func.prototype;
+        var child = new ctor, result = func.apply(child, args);
+        return Object(result) === result ? result : child;
+      })(Color.RGB, rgb, function(){});
+      return color.to_hex();
+    };
+
+    Theme.prototype.reset_lookup_table = function(size) {
+      if (size == null) {
+        size = this.default_table_size;
+      }
+      return this.table = this.build_lookup_table(size);
+    };
+
+    Theme.prototype.require_lookup_table = function() {
+      if (this.table == null) {
+        return this.build_lookup_table();
+      }
+    };
+
+    Theme.prototype.build_lookup_table = function(size) {
+      var bytes, delta, next, offset, pos, prev, results, rgb, step, stop_index, t;
+      if (size == null) {
+        size = this.default_table_size;
+      }
+      if (size > this.table_size || (this.table == null)) {
+        bytes = size * 3;
+        this.table = new Uint8ClampedArray(bytes);
+        this.table_size = size;
+      }
+      stop_index = 0;
+      prev = this.stops[stop_index++];
+      next = this.stops[stop_index++];
+      step = 1.0 / size;
+      pos = 0;
+      offset = 0;
+      delta = next.position;
+      results = [];
+      while (pos < 1.0) {
+        if ((next != null) && pos >= next.position) {
+          prev = next;
+          next = this.stops[stop_index++];
+          if (next != null) {
+            delta = next.position - prev.position;
+          } else {
+            delta = 0;
+          }
+        }
+        rgb = (next != null) && delta > 0 ? (t = (pos - prev.position) / delta, prev.linear_blend_rgb(next, t)) : prev.rgb();
+        this.table[offset] = rgb[0];
+        this.table[offset + 1] = rgb[1];
+        this.table[offset + 2] = rgb[2];
+        offset += 3;
+        results.push(pos += step);
+      }
+      return results;
+    };
+
+    Theme.prototype.lookup = function(value) {
+      if (this.table == null) {
+        this.build_lookup_table();
+      }
+      value = Math.floor(value);
+      value = value % this.table_size;
+      value *= 3;
+      return [this.table[value], this.table[value + 1], this.table[value + 2]];
+    };
+
+    Theme.prototype.rebuild = function(size) {
+      if (size == null) {
+        size = this.default_table_size;
+      }
+      if (this.stops.length < 2) {
+        return;
+      }
+      return this.table = null;
+    };
+
+    Theme.prototype.construct_editor = function() {
+      this.editor = document.getElementById(this.editor_id);
+      this.editor_bg_container = document.createElement('div');
+      this.editor_bg_container.classList.add('editor_bg_container');
+      this.editor_bg = document.createElement('div');
+      this.editor_bg.classList.add('editor_bg');
+      this.editor_bg.classList.add('noselect');
+      this.editor_bg.classList.add('clear_both');
+      this.editor_bg_container.appendChild(this.editor_bg);
+      this.editor.appendChild(this.editor_bg_container);
+      this.editor_stop_container = document.createElement('div');
+      this.editor_stop_container.classList.add('stop_container');
+      this.editor_stop_container.classList.add('noselect');
+      this.editor_stop_container.setAttribute('title', 'Click to add a color marker');
+      this.editor.appendChild(this.editor_stop_container);
+      this.editor_footer = document.createElement('div');
+      this.editor_footer.classList.add('clear_both');
+      this.editor.appendChild(this.editor_footer);
+      this.editor_bg.addEventListener('click', this.on_editor_bg_click);
+      this.drag = null;
+      this.editor.addEventListener('mouseup', this.on_editor_mouseup);
+      return this.editor.addEventListener('mousemove', this.on_editor_mousemove);
+    };
+
+    Theme.prototype.editor_gradient_stops_css = function() {
+      var stops;
+      stops = this.stops.map(function(stop) {
+        return (stop.to_rgb()) + " " + (stop.position_percent());
+      });
+      return stops.join(', ');
+    };
+
+    Theme.prototype.editor_linear_gradient_css = function() {
+      return "linear-gradient(to right, " + (this.editor_gradient_stops_css()) + ")";
+    };
+
+    Theme.prototype.editor_background_css = function() {
+      return "rgba(0,0,0,0) " + (this.editor_linear_gradient_css()) + " repeat scroll 0% 0%";
+    };
+
+    Theme.prototype.update_editor_gradient = function() {
+      this.editor_bg.style.background = this.editor_background_css();
+      return this.rebuild();
+    };
+
+    Theme.prototype.start_drag = function(stop, event) {
+      var rect;
+      rect = event.target.getBoundingClientRect();
+      this.drag = stop;
+      this.drag.editor_el.classList.add('drag');
+      this.drag_start_x = event.clientX - event.currentTarget.offsetLeft;
+      this.drag_start_y = event.clientY - event.currentTarget.offsetTop;
+      this.drag_x = this.drag_start_x;
+      return this.drag_y = this.drag_start_y;
+    };
+
+    Theme.prototype.update_drag_position = function(event) {
+      var new_offset, new_pos, rect, start_offset, width;
+      rect = this.editor_stop_container.getBoundingClientRect();
+      width = rect.width;
+      start_offset = this.drag.position * width;
+      new_offset = start_offset + event.movementX;
+      new_pos = new_offset / width;
+      this.drag.set_position(new_pos);
+      return this.save();
+    };
+
+    Theme.prototype.on_editor_mouseup = function(event) {
+      var el, j, len, ref;
+      if (this.drag != null) {
+        this.update_drag_position(event);
+        ref = document.querySelectorAll("#" + this.editor_id + " .color_stop.drag");
+        for (j = 0, len = ref.length; j < len; j++) {
+          el = ref[j];
+          el.classList.remove('drag');
+        }
+        this.drag = null;
+        return APP.repaint_mandelbrot();
+      }
+    };
+
+    Theme.prototype.on_editor_mousemove = function(event) {
+      if (this.drag != null) {
+        return this.update_drag_position(event);
+      }
+    };
+
+    Theme.prototype.on_editor_bg_click = function(event) {
+      var color, pos, rect, start, width, x;
+      rect = this.editor_bg.getBoundingClientRect();
+      start = rect.x;
+      width = rect.width;
+      x = event.clientX;
+      pos = (x - start) / width;
+      color = this.rgb_hex_at(pos);
+      return this.add_stop(pos, color);
+    };
+
+    return Theme;
+
+  })();
+
+  Color.Theme.preset['Greyscale'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"position":0,"color":"#000000"},{"position":1,"color":"#ffffff"}]}';
+
+  Color.Theme.preset['Blue to Yellow/White'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"position":0,"color":"#000000"},{"position":0.5020000203450524,"color":"#3465a4"},{"position":0.8053333536783853,"color":"#fce94f"},{"position":1,"color":"#ffffff"}]}';
+
+  Color.Theme.preset['Wikipedia Shading'] = '{"named_color":{"internal":"#000000","escape_min":"#000000","escape_max":"#ffffff"},"stops":[{"color":"#421e0f","position":0},{"color":"#19071a","position":0.06},{"color":"#09012f","position":0.13},{"color":"#040449","position":0.2},{"color":"#000764","position":0.26},{"color":"#0c2c8a","position":0.33},{"color":"#1852b1","position":0.40},{"color":"#397dd1","position":0.46},{"color":"#86b5e5","position":0.53},{"color":"#d3ecf8","position":0.60},{"color":"#f1e9bf","position":0.66},{"color":"#f8c95f","position":0.73},{"color":"#ffaa00","position":0.80},{"color":"#cc8000","position":0.86},{"color":"#995700","position":0.93},{"color":"#6a3403","position":1}]}';
+
+}).call(this);
+
+(function() {
   var MandelIter, TAU,
     bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -2233,6 +3397,7 @@ td.name[contenteditable=true]:focus {
       this.schedule_ui_draw = bind(this.schedule_ui_draw, this);
       this.draw_ui_callback = bind(this.draw_ui_callback, this);
       this.on_julia_changed = bind(this.on_julia_changed, this);
+      this.on_mandel_color_changed = bind(this.on_mandel_color_changed, this);
       this.canvas_to_complex = bind(this.canvas_to_complex, this);
       this.on_julia_more_when_paused_false = bind(this.on_julia_more_when_paused_false, this);
       this.on_julia_more_when_paused_true = bind(this.on_julia_more_when_paused_true, this);
@@ -2257,25 +3422,73 @@ td.name[contenteditable=true]:focus {
       this.on_highlight_next_click = bind(this.on_highlight_next_click, this);
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
+      this.set_highlight_msg = bind(this.set_highlight_msg, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
+      this.on_mandel_use_color_preset_click = bind(this.on_mandel_use_color_preset_click, this);
+      this.on_mandel_color_change = bind(this.on_mandel_color_change, this);
       this.on_load_from_file_upload = bind(this.on_load_from_file_upload, this);
       this.on_save_to_file_click = bind(this.on_save_to_file_click, this);
       this.saved_locations_serialize = bind(this.saved_locations_serialize, this);
       this.on_reset_storage_click = bind(this.on_reset_storage_click, this);
       this.on_tabbutton_click = bind(this.on_tabbutton_click, this);
+      this.on_keyup = bind(this.on_keyup, this);
       this.on_keydown = bind(this.on_keydown, this);
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, j, len, ref, ref1, seq, seq_id, stored_x, stored_y, tabbutton;
+      var cc_index, cursor_index, fmtfloatopts, hdr, j, k, len, len1, opt, ref, ref1, ref2, ref3, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
-      this.colorize_themes = {
-        linear_greyscale: [1, 1, 1],
-        greyish_purple: [2, 0.8, 2]
+      this.content_el = this.context.getElementById('content');
+      this.status = this.context.getElementById('status');
+      this.status_current = 'loading';
+      this.msgbox = this.context.getElementById('msgbox');
+      this.msg = this.context.getElementById('msg');
+      this.msg_visible = false;
+      ref = this.context.querySelectorAll('.collapse_header');
+      for (j = 0, len = ref.length; j < len; j++) {
+        hdr = ref[j];
+        hdr.addEventListener('click', this.on_collapse_header_click);
+      }
+      this.cursor_color = {
+        light_orange: {
+          selected: true,
+          name: 'Light Orange',
+          stroke: '#F2CE72',
+          fill: 'rgba(255,249,187, 0.2)'
+        },
+        deep_sky_blue: {
+          name: 'Deep Sky Blue',
+          stroke: '#00BFFF',
+          fill: 'rgba(176,224,230, 0.2)'
+        },
+        chartreuse: {
+          name: 'Chartreuse',
+          stroke: '#7FFF00',
+          fill: 'rgba(194,241,146, 0.2)'
+        },
+        hot_pink: {
+          name: 'Hot Pink',
+          stroke: '#FF69B4',
+          fill: 'rgba(247,195,221, 0.2)'
+        }
       };
-      this.default_mandel_theme = 'linear_greyscale';
-      this.default_julia_theme = 'greyish_purple';
+      this.theme = {};
+      this.theme.mandel = new Color.Theme('mandelbrot', 'mandel_external_color');
+      this.theme.mandel.set_colors({
+        internal: '#000000',
+        escape_min: '#000000',
+        escape_max: '#FFFFFF'
+      });
+      this.theme.julia = new Color.Theme('julia');
+      this.theme.julia.set_colors({
+        internal: '#000000',
+        escape_min: '#000000',
+        escape_max: '#FFFFFF'
+      });
+      this.theme.julia.add_stop(0.2, '#280A28');
+      this.theme.julia.add_stop(0.6, '#8D008D');
+      this.theme.julia.add_stop(0.8, '#AE64AE');
       fmtfloatopts = {
         notation: 'standard',
         style: 'decimal',
@@ -2287,12 +3500,6 @@ td.name[contenteditable=true]:focus {
       this.fmtfloat = new Intl.NumberFormat(void 0, fmtfloatopts);
       fmtfloatopts['signDisplay'] = 'never';
       this.fmtfloatnosign = new Intl.NumberFormat(void 0, fmtfloatopts);
-      this.content_el = this.context.getElementById('content');
-      this.status = this.context.getElementById('status');
-      this.status_current = 'loading';
-      this.msgbox = this.context.getElementById('msgbox');
-      this.msg = this.context.getElementById('msg');
-      this.msg_visible = false;
       this.show_tooltips = this.context.getElementById('show_tooltips');
       this.show_tooltips.addEventListener('change', this.on_show_tooltips_change);
       this.show_tooltips.checked = true;
@@ -2311,9 +3518,10 @@ td.name[contenteditable=true]:focus {
       });
       this.resize_canvas(900, 600);
       this.fit_canvas_to_width();
-      ref = this.context.querySelectorAll('.tabbutton');
-      for (j = 0, len = ref.length; j < len; j++) {
-        tabbutton = ref[j];
+      window.addEventListener('resize', this.on_content_wrapper_resize);
+      ref1 = this.context.querySelectorAll('.tabbutton');
+      for (k = 0, len1 = ref1.length; k < len1; k++) {
+        tabbutton = ref1[k];
         tabbutton.addEventListener('click', this.on_tabbutton_click);
       }
       this.loc_c = this.context.getElementById('loc_c');
@@ -2328,6 +3536,7 @@ td.name[contenteditable=true]:focus {
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.save_to_file = this.context.getElementById('save_to_file');
+      this.mandel_use_color_preset = this.context.getElementById('mandel_use_color_preset');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
       this.zoom_amount.addEventListener('change', this.on_zoom_amount_change);
@@ -2337,6 +3546,8 @@ td.name[contenteditable=true]:focus {
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
+      this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
+      this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color');
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
         confirm_remove_saved_loc: new UI.BoolOption('confirm_remove_saved_loc', true),
@@ -2364,7 +3575,10 @@ td.name[contenteditable=true]:focus {
         julia_antialias: new UI.SelectOption('julia_antialias'),
         mandel_antialias: new UI.SelectOption('mandel_antialias'),
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
-        highlight_group: new UI.SelectOption('highlight_group')
+        mandel_color_internal: new UI.ColorOption('mandel_color_internal'),
+        mandel_color_preset: new UI.SelectOption('mandel_color_preset'),
+        highlight_group: new UI.SelectOption('highlight_group'),
+        cursor_color: new UI.SelectOption('cursor_color')
       };
       this.option.orbit_skip_initial.register_callback({
         on_change: this.schedule_ui_draw
@@ -2408,6 +3622,17 @@ td.name[contenteditable=true]:focus {
       this.option.highlight_group.register_callback({
         on_change: this.on_highlight_group_changed
       });
+      this.option.mandel_color_internal.register_callback({
+        on_change: this.on_mandel_color_changed
+      });
+      Color.Theme.prepare_presets(this.option.mandel_color_preset);
+      cursor_index = 1;
+      ref2 = this.cursor_color;
+      for (cc_index in ref2) {
+        opt = ref2[cc_index];
+        this.option.cursor_color.add_option(cc_index, opt.name, opt != null ? opt.selected : void 0);
+        cursor_index++;
+      }
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -2440,6 +3665,7 @@ td.name[contenteditable=true]:focus {
       this.antialias = true;
       this.reset_renderbox();
       this.draw_ui_scheduled = false;
+      this.rendering_mode = false;
       this.shift_step_accel = 0.333;
       this.ctrl_step_accel = 0.1;
       this.alt_step_accel = 0.01;
@@ -2457,9 +3683,9 @@ td.name[contenteditable=true]:focus {
       this.highlight_prev = this.context.getElementById('highlight_prev');
       this.highlight_next = this.context.getElementById('highlight_next');
       this.highlight_list = this.context.getElementById('highlight_list');
-      ref1 = Highlight.sequences;
-      for (seq_id in ref1) {
-        seq = ref1[seq_id];
+      ref3 = Highlight.sequences;
+      for (seq_id in ref3) {
+        seq = ref3[seq_id];
         seq.add_to_groups(this.option.highlight_group.el);
       }
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
@@ -2494,6 +3720,7 @@ td.name[contenteditable=true]:focus {
         y: 0
       };
       document.addEventListener('keydown', this.on_keydown);
+      document.addEventListener('keyup', this.on_keyup);
       this.draw_local_julia_init();
       this.on_highlight_group_changed();
       if (this.storage_get('pause_mode')) {
@@ -2505,6 +3732,9 @@ td.name[contenteditable=true]:focus {
           this.reset_julia_rendering();
         }
       }
+      this.theme.mandel.mark_default_and_load();
+      this.theme.julia.mark_default_and_load();
+      this.theme_mandel_update();
       console.log('init() completed!');
       return this.draw_background();
     };
@@ -2522,13 +3752,17 @@ td.name[contenteditable=true]:focus {
       if (event.shiftKey) {
         accel = this.shift_step_accel;
       }
-      if (event.ctrlKey) {
+      if (event.ctrlKey || event.metaKey) {
         accel = this.ctrl_step_accel;
       }
       if (event.altKey) {
         accel = this.alt_step_accel;
       }
       switch (event.code) {
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          this.shift_mode_on();
+          break;
         case 'KeyP':
         case 'Backspace':
           this.highlight_prev_item();
@@ -2559,6 +3793,22 @@ td.name[contenteditable=true]:focus {
       return event.preventDefault();
     };
 
+    MandelIter.prototype.on_keyup = function(event) {
+      var j, len, ref, type;
+      ref = ['INPUT', 'TD'];
+      for (j = 0, len = ref.length; j < len; j++) {
+        type = ref[j];
+        if (event.target.nodeName === type) {
+          return;
+        }
+      }
+      switch (event.code) {
+        case 'ShiftLeft':
+        case 'ShiftRight':
+          return this.shift_mode_off();
+      }
+    };
+
     MandelIter.prototype.debug = function(msg) {
       var timestamp;
       if (this.debugbox == null) {
@@ -2573,7 +3823,26 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.warn = function(msg) {
+      console.log("WARNING", msg);
       return this.set_highlight_msg("WARNING: " + msg);
+    };
+
+    MandelIter.prototype.on_collapse_header_click = function(event) {
+      var hdr, hide, hide_id, show, show_id;
+      hdr = event.target;
+      hide_id = hdr.dataset.collapse_hide;
+      show_id = hdr.dataset.collapse_show;
+      hide = document.getElementById(hide_id);
+      show = document.getElementById(show_id);
+      if (hdr.classList.contains('collapsed')) {
+        hdr.classList.remove('collapsed');
+        hide.classList.remove('hidden');
+        return show.classList.add('hidden');
+      } else {
+        hdr.classList.add('collapsed');
+        hide.classList.add('hidden');
+        return show.classList.remove('hidden');
+      }
     };
 
     MandelIter.prototype.on_tabbutton_click = function(event) {
@@ -2628,7 +3897,7 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.on_reset_storage_click = function() {
-      var name, opt, ref, results;
+      var name, opt, ref;
       if (!window.confirm("Remove ALL persistent storage and reset ALL values back to defaults?")) {
         return;
       }
@@ -2636,12 +3905,13 @@ td.name[contenteditable=true]:focus {
       this.storage_remove('orbit_mouse_x');
       this.storage_remove('orbit_mouse_y');
       ref = this.option;
-      results = [];
       for (name in ref) {
         opt = ref[name];
-        results.push(opt.reset());
+        opt.reset();
       }
-      return results;
+      this.theme.mandel.reset();
+      this.theme.julia.reset();
+      return this.on_mandel_color_changed();
     };
 
     MandelIter.prototype.saved_locations_serialize = function() {
@@ -2666,12 +3936,36 @@ td.name[contenteditable=true]:focus {
       }
     };
 
-    MandelIter.prototype.current_mandel_theme = function() {
-      return this.colorize_themes[this.default_mandel_theme];
+    MandelIter.prototype.use_fractal_colors = function(opt) {
+      if (opt == null) {
+        opt = {};
+      }
+      if (opt.internal != null) {
+        this.fract_color_internal = opt.internal;
+      }
+      if (opt.escape_min != null) {
+        this.fract_color_escape_min = opt.escape_min;
+      }
+      if (opt.escape_max != null) {
+        return this.fract_color_escape_max = opt.escape_max;
+      }
     };
 
-    MandelIter.prototype.current_julia_theme = function() {
-      return this.colorize_themes[this.default_julia_theme];
+    MandelIter.prototype.use_mandel_colors = function() {
+      return this.use_fractal_colors(this.default_mandel_colors);
+    };
+
+    MandelIter.prototype.use_julia_colors = function() {
+      return this.use_fractal_colors(this.default_julia_colors);
+    };
+
+    MandelIter.prototype.on_mandel_color_change = function() {
+      return this.repaint_mandelbrot();
+    };
+
+    MandelIter.prototype.on_mandel_use_color_preset_click = function() {
+      this.theme.mandel.load_preset_by_index(this.option.mandel_color_preset.value);
+      return this.repaint_mandelbrot();
     };
 
     MandelIter.prototype.complex_to_string = function(z) {
@@ -2841,7 +4135,11 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.deferred_fit_canvas_to_width = function() {
-      console.log('deferred');
+      if (performance.now() < this.deferred_fit_time) {
+        console.log('waiting for deferrewd fit timeout...');
+        return;
+      }
+      console.log('deferred - REDRAWING MANDELBROT');
       this.fit_canvas_to_width();
       this.draw_background();
       return this.defer_resize = false;
@@ -2849,11 +4147,13 @@ td.name[contenteditable=true]:focus {
 
     MandelIter.prototype.on_content_wrapper_resize = function(event) {
       if (this.defer_resize) {
-        return console.log("already deferred");
+        console.log("already deferred, resetting timeout");
+        return this.deferred_fit_time = performance.now() + 200;
       } else {
-        console.log('setting defferred fit timeout');
+        console.log('setting deferred fit timeout');
         this.defer_resise = true;
-        return setTimeout(this.deferred_fit_canvas_to_width, 5000);
+        this.deferred_fit_time = performance.now() + 500;
+        return setTimeout(this.deferred_fit_canvas_to_width, 510);
       }
     };
 
@@ -2884,6 +4184,16 @@ td.name[contenteditable=true]:focus {
       } else {
         return this.set_status('normal');
       }
+    };
+
+    MandelIter.prototype.shift_mode_on = function() {
+      this.shift_mode = true;
+      return this.content_el.classList.add('shift_mode');
+    };
+
+    MandelIter.prototype.shift_mode_off = function() {
+      this.shift_mode = false;
+      return this.content_el.classList.remove('shift_mode');
     };
 
     MandelIter.prototype.pause_mode_on = function(persist) {
@@ -2921,7 +4231,10 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.zoom_mode_on = function() {
-      return this.zoom_mode = true;
+      this.zoom_mode = true;
+      if (this.pause_mode) {
+        return this.zoom_save_pause_position = this.canvas_to_complex(this.orbit_mouse.x, this.orbit_mouse.y);
+      }
     };
 
     MandelIter.prototype.zoom_mode_off = function() {
@@ -3003,24 +4316,33 @@ td.name[contenteditable=true]:focus {
       return w;
     };
 
+    MandelIter.prototype.zoom_to_window = function() {
+      var newend, newstart, w, zpos;
+      w = this.get_zoom_window();
+      newstart = this.canvas_to_complex(w.x, w.y);
+      newend = this.canvas_to_complex(w.x + w.w, w.y + w.h);
+      this.renderbox.start = newstart;
+      this.renderbox.end = newend;
+      zpos = this.zoom_save_pause_position;
+      this.zoom_mode_off();
+      this.zoom_save_pause_position = zpos;
+      this.zoom_save_julia_draw_local = this.option.julia_draw_local.value;
+      this.option.julia_draw_local.set(false);
+      return this.draw_background();
+    };
+
     MandelIter.prototype.on_graph_click = function(event) {
-      var newend, newstart, w;
       if (this.zoom_mode) {
-        w = this.get_zoom_window();
-        newstart = this.canvas_to_complex(w.x, w.y);
-        newend = this.canvas_to_complex(w.x + w.w, w.y + w.h);
-        this.renderbox.start = newstart;
-        this.renderbox.end = newend;
-        this.zoom_mode = false;
-        this.option.julia_draw_local.set(false);
-        return this.draw_background();
+        return this.zoom_to_window();
       } else {
         return this.pause_mode_toggle();
       }
     };
 
     MandelIter.prototype.on_mousemove = function(event) {
-      return this.set_mouse_position(event.layerX, event.layerY);
+      if (!this.rendering_mode) {
+        return this.set_mouse_position(event.layerX, event.layerY);
+      }
     };
 
     MandelIter.prototype.set_mouse_position = function(newx, newy, force) {
@@ -3306,6 +4628,7 @@ td.name[contenteditable=true]:focus {
 
     MandelIter.prototype.draw_background = function() {
       this.set_status('rendering');
+      this.rendering_mode = true;
       this.graph_julia_ctx.clearRect(0, 0, this.graph_width, this.graph_height);
       this.graph_mandel_ctx.fillStyle = 'rgb(0,0,0)';
       this.graph_mandel_ctx.fillRect(0, 0, this.graph_width, this.graph_height);
@@ -3346,7 +4669,7 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.deferred_background_render_callback = function() {
-      var dirtyheight, elapsed, lastline;
+      var dirtyheight, elapsed, lastline, pos;
       elapsed = 0;
       while ((this.lines_finished < this.graph_height) && (elapsed < 1000)) {
         lastline = this.render_mandelbrot(this.render_pixel_size, this.do_antialias());
@@ -3362,8 +4685,17 @@ td.name[contenteditable=true]:focus {
         this.lines_finished = 0;
         return this.schedule_background_render_pass();
       } else {
+        this.rendering_mode = false;
         this.hide_rendering_note();
-        return this.restore_normal_status();
+        this.restore_normal_status();
+        if (this.zoom_save_pause_position != null) {
+          pos = this.complex_to_canvas(this.zoom_save_pause_position);
+          console.log('zoom restore', this.zoom_save_pause_position, pos);
+          this.zoom_save_pause_position = null;
+          this.pause_mode_on();
+          this.option.julia_draw_local.set(this.zoom_save_julia_draw_local);
+          return this.animate_to(pos);
+        }
       }
     };
 
@@ -3374,8 +4706,9 @@ td.name[contenteditable=true]:focus {
       if (stopline >= this.graph_height) {
         stopline = this.graph_height;
       }
-      this.current_theme = this.current_mandel_theme();
+      this.current_theme = this.theme.mandel;
       this.current_image = this.render_mandel_img;
+      this.current_internal_color = this.current_theme.named_color.internal;
       aamult = this.option.mandel_antialias.value;
       aastep = 1.0 / aamult;
       if (aamult === 1) {
@@ -3411,17 +4744,24 @@ td.name[contenteditable=true]:focus {
       if (x < this.graph_width && y < this.graph_height) {
         pos1x = x + (y * this.graph_width);
         pos4x = 4 * pos1x;
-        value /= this.mandel_maxiter;
         this.mandel_values[pos1x] = value;
         return this.colorize_pixel(value, pos4x);
       }
     };
 
     MandelIter.prototype.colorize_pixel = function(value, offset) {
-      value = Math.pow(value, 0.5) * 255;
-      this.current_image.data[offset] = value * this.current_theme[0];
-      this.current_image.data[offset + 1] = value * this.current_theme[1];
-      return this.current_image.data[offset + 2] = value * this.current_theme[2];
+      var rgb;
+      if (value === 0) {
+        this.current_image.data[offset] = this.current_internal_color.r;
+        this.current_image.data[offset + 1] = this.current_internal_color.g;
+        return this.current_image.data[offset + 2] = this.current_internal_color.b;
+      } else {
+        value = Math.pow(value, 0.5) * 25;
+        rgb = this.current_theme.lookup(value);
+        this.current_image.data[offset] = rgb[0];
+        this.current_image.data[offset + 1] = rgb[1];
+        return this.current_image.data[offset + 2] = rgb[2];
+      }
     };
 
     MandelIter.prototype.repaint_canvas = function(ctx, values, theme) {
@@ -3431,6 +4771,7 @@ td.name[contenteditable=true]:focus {
       }
       this.current_image = this.graph_mandel_ctx.getImageData(0, 0, this.graph_width, this.graph_height);
       this.current_theme = theme;
+      this.current_internal_color = this.current_theme.named_color.internal;
       for (y = j = 0, ref = this.graph_height; 0 <= ref ? j <= ref : j >= ref; y = 0 <= ref ? ++j : --j) {
         for (x = k = 0, ref1 = this.graph_width; 0 <= ref1 ? k <= ref1 : k >= ref1; x = 0 <= ref1 ? ++k : --k) {
           pos1x = x + (y * this.graph_width);
@@ -3443,11 +4784,23 @@ td.name[contenteditable=true]:focus {
     };
 
     MandelIter.prototype.repaint_mandelbrot = function() {
-      return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.current_mandel_theme());
+      return this.repaint_canvas(this.graph_mandel_ctx, this.mandel_values, this.theme.mandel);
+    };
+
+    MandelIter.prototype.theme_mandel_update = function() {
+      this.theme.mandel.set_colors({
+        internal: this.option.mandel_color_internal.value
+      });
+      return this.theme.mandel.rebuild();
+    };
+
+    MandelIter.prototype.on_mandel_color_changed = function() {
+      this.theme_mandel_update();
+      return this.repaint_mandelbrot();
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
-      var do_skip, draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, skip, skip_first_line, step;
+      var cc_index, do_skip, draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, skip, skip_first_line, step;
       mx = c.x;
       my = c.y;
       pos = this.canvas_to_complex(mx, my);
@@ -3524,13 +4877,11 @@ td.name[contenteditable=true]:focus {
       this.graph_ui_ctx.lineTo(mx - isize, my + isize);
       this.graph_ui_ctx.lineTo(mx, my + osize);
       this.graph_ui_ctx.lineTo(mx + isize, my + isize);
-      this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.2)';
+      cc_index = this.option.cursor_color.value;
+      this.graph_ui_ctx.fillStyle = this.cursor_color[cc_index].fill;
       this.graph_ui_ctx.fill();
       this.graph_ui_ctx.lineWidth = 1;
-      this.graph_ui_ctx.strokeStyle = '#F09456';
-      this.graph_ui_ctx.stroke();
-      this.graph_ui_ctx.lineWidth = 1;
-      this.graph_ui_ctx.strokeStyle = '#F2CE72';
+      this.graph_ui_ctx.strokeStyle = this.cursor_color[cc_index].stroke;
       this.graph_ui_ctx.stroke();
       this.graph_ui_ctx.restore();
       return this.graph_ui_ctx.restore();
@@ -3787,7 +5138,8 @@ td.name[contenteditable=true]:focus {
         }
       }
       this.current_image = this.graph_julia_ctx.createImageData(this.local_julia.width, this.local_julia.height);
-      this.current_theme = this.current_julia_theme();
+      this.current_theme = this.theme.julia;
+      this.current_internal_color = this.current_theme.named_color.internal;
       return true;
     };
 
@@ -3819,7 +5171,6 @@ td.name[contenteditable=true]:focus {
           } else {
             val = this.julia_color_value(this.ljopt.c, xx, yy);
           }
-          val /= 255;
           for (py = q = 0, ref9 = this.ljopt.pixelsize; 0 <= ref9 ? q <= ref9 : q >= ref9; py = 0 <= ref9 ? ++q : --q) {
             rowcount++;
             for (px = s = 0, ref10 = this.ljopt.pixelsize; 0 <= ref10 ? s <= ref10 : s >= ref10; px = 0 <= ref10 ? ++s : --s) {
