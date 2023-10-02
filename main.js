@@ -55,7 +55,7 @@
     }
 
     MandelIter.prototype.init = function() {
-      var fmtfloatopts, hdr, j, k, len, len1, ref, ref1, ref2, seq, seq_id, stored_x, stored_y, tabbutton;
+      var cc_index, cursor_index, fmtfloatopts, hdr, j, k, len, len1, opt, ref, ref1, ref2, ref3, seq, seq_id, stored_x, stored_y, tabbutton;
       console.log('Starting init()...');
       this.running = false;
       this.content_el = this.context.getElementById('content');
@@ -69,6 +69,29 @@
         hdr = ref[j];
         hdr.addEventListener('click', this.on_collapse_header_click);
       }
+      this.cursor_color = {
+        light_orange: {
+          selected: true,
+          name: 'Light Orange',
+          stroke: '#F2CE72',
+          fill: 'rgba(255,249,187, 0.2)'
+        },
+        deep_sky_blue: {
+          name: 'Deep Sky Blue',
+          stroke: '#00BFFF',
+          fill: 'rgba(176,224,230, 0.2)'
+        },
+        chartreuse: {
+          name: 'Chartreuse',
+          stroke: '#7FFF00',
+          fill: 'rgba(194,241,146, 0.2)'
+        },
+        hot_pink: {
+          name: 'Hot Pink',
+          stroke: '#FF69B4',
+          fill: 'rgba(247,195,221, 0.2)'
+        }
+      };
       this.theme = {};
       this.theme.mandel = new Color.Theme('mandelbrot', 'mandel_external_color');
       this.theme.mandel.set_colors({
@@ -173,7 +196,8 @@
         mandel_max_iterations: new UI.IntOption('mandel_max_iterations', 120),
         mandel_color_internal: new UI.ColorOption('mandel_color_internal'),
         mandel_color_preset: new UI.SelectOption('mandel_color_preset'),
-        highlight_group: new UI.SelectOption('highlight_group')
+        highlight_group: new UI.SelectOption('highlight_group'),
+        cursor_color: new UI.SelectOption('cursor_color')
       };
       this.option.orbit_skip_initial.register_callback({
         on_change: this.schedule_ui_draw
@@ -221,6 +245,13 @@
         on_change: this.on_mandel_color_changed
       });
       Color.Theme.prepare_presets(this.option.mandel_color_preset);
+      cursor_index = 1;
+      ref2 = this.cursor_color;
+      for (cc_index in ref2) {
+        opt = ref2[cc_index];
+        this.option.cursor_color.add_option(cc_index, opt.name, opt != null ? opt.selected : void 0);
+        cursor_index++;
+      }
       this.pointer_angle = 0;
       this.pointer_angle_step = TAU / 96;
       this.trace_angle = 0;
@@ -271,9 +302,9 @@
       this.highlight_prev = this.context.getElementById('highlight_prev');
       this.highlight_next = this.context.getElementById('highlight_next');
       this.highlight_list = this.context.getElementById('highlight_list');
-      ref2 = Highlight.sequences;
-      for (seq_id in ref2) {
-        seq = ref2[seq_id];
+      ref3 = Highlight.sequences;
+      for (seq_id in ref3) {
+        seq = ref3[seq_id];
         seq.add_to_groups(this.option.highlight_group.el);
       }
       this.highlight_prev.addEventListener('click', this.on_highlight_prev_click);
@@ -1388,7 +1419,7 @@
     };
 
     MandelIter.prototype.draw_orbit = function(c) {
-      var do_skip, draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, skip, skip_first_line, step;
+      var cc_index, do_skip, draw_lines, draw_points, isize, julia_bb, mx, my, osize, p, point_size, pos, ref, skip, skip_first_line, step;
       mx = c.x;
       my = c.y;
       pos = this.canvas_to_complex(mx, my);
@@ -1465,13 +1496,11 @@
       this.graph_ui_ctx.lineTo(mx - isize, my + isize);
       this.graph_ui_ctx.lineTo(mx, my + osize);
       this.graph_ui_ctx.lineTo(mx + isize, my + isize);
-      this.graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.2)';
+      cc_index = this.option.cursor_color.value;
+      this.graph_ui_ctx.fillStyle = this.cursor_color[cc_index].fill;
       this.graph_ui_ctx.fill();
       this.graph_ui_ctx.lineWidth = 1;
-      this.graph_ui_ctx.strokeStyle = '#F09456';
-      this.graph_ui_ctx.stroke();
-      this.graph_ui_ctx.lineWidth = 1;
-      this.graph_ui_ctx.strokeStyle = '#F2CE72';
+      this.graph_ui_ctx.strokeStyle = this.cursor_color[cc_index].stroke;
       this.graph_ui_ctx.stroke();
       this.graph_ui_ctx.restore();
       return this.graph_ui_ctx.restore();

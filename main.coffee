@@ -25,6 +25,25 @@ class MandelIter
     for hdr in @context.querySelectorAll('.collapse_header')
       hdr.addEventListener('click', @on_collapse_header_click)
 
+    @cursor_color =
+      light_orange:
+        selected: true
+        name:   'Light Orange'
+        stroke: '#F2CE72'
+        fill:   'rgba(255,249,187, 0.2)'
+      deep_sky_blue:
+        name:   'Deep Sky Blue'
+        stroke: '#00BFFF'
+        fill:   'rgba(176,224,230, 0.2)'
+      chartreuse:
+        name:   'Chartreuse'
+        stroke: '#7FFF00'
+        fill:   'rgba(194,241,146, 0.2)'
+      hot_pink:
+        name:   'Hot Pink'
+        stroke: '#FF69B4'
+        fill:   'rgba(247,195,221, 0.2)'
+
     @theme = {}
     @theme.mandel = new Color.Theme('mandelbrot', 'mandel_external_color')
     @theme.mandel.set_colors
@@ -132,6 +151,7 @@ class MandelIter
       mandel_color_internal:    new UI.ColorOption('mandel_color_internal')
       mandel_color_preset:      new UI.SelectOption('mandel_color_preset');
       highlight_group:          new UI.SelectOption('highlight_group');
+      cursor_color:             new UI.SelectOption('cursor_color');
 
     @option.orbit_skip_initial.register_callback on_change: @schedule_ui_draw
     @option.orbit_skip_num.register_callback     on_change: @schedule_ui_draw
@@ -161,6 +181,11 @@ class MandelIter
 
     Color.Theme.prepare_presets(@option.mandel_color_preset)
 
+    cursor_index = 1
+    for cc_index, opt of @cursor_color
+      @option.cursor_color.add_option(cc_index, opt.name, opt?.selected)
+      cursor_index++
+
     @pointer_angle = 0
     @pointer_angle_step = TAU/96
 
@@ -171,7 +196,6 @@ class MandelIter
     @trace_slider = @context.getElementById('trace_slider')
     @trace_slider.addEventListener('input', @on_trace_slider_input)
     @trace_slider.value = @trace_angle
-
     @trace_animation_enabled = false
     @button_trace_cardioid = @context.getElementById('button_trace_cardioid')
     @button_trace_cardioid.addEventListener('click', @on_button_trace_cardioid_click)
@@ -1168,15 +1192,13 @@ class MandelIter
     @graph_ui_ctx.lineTo(mx,         my + osize)  #    B
     @graph_ui_ctx.lineTo(mx + isize, my + isize)  # BR
 
-    @graph_ui_ctx.fillStyle = 'rgba(255,249,187, 0.2)'
+    cc_index = @option.cursor_color.value
+
+    @graph_ui_ctx.fillStyle = @cursor_color[cc_index].fill
     @graph_ui_ctx.fill()
 
     @graph_ui_ctx.lineWidth = 1
-    @graph_ui_ctx.strokeStyle = '#F09456'
-    @graph_ui_ctx.stroke()
-
-    @graph_ui_ctx.lineWidth = 1
-    @graph_ui_ctx.strokeStyle = '#F2CE72'
+    @graph_ui_ctx.strokeStyle = @cursor_color[cc_index].stroke
     @graph_ui_ctx.stroke()
 
     @graph_ui_ctx.restore()

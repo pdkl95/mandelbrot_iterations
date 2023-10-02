@@ -199,6 +199,12 @@ undivert(`style.css')
                 <input id="orbit_skip_initial_num" type="number" min="0" max="100" step="10" value="20" autocomplete="off">
               </td>
             </tr>
+	    <tr>
+              <th>Cursor Color</th>
+              <td>
+                <select name="cursor_color" id="cursor_color" autocomplete="off"></select>
+              </td>
+            </tr>
           </table>
           <hr id="orbit_options_hr" class="clear_both hidden collapse_hr"></hr>
 
