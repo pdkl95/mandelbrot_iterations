@@ -33,6 +33,7 @@
       this.on_zoom_amount_change = bind(this.on_zoom_amount_change, this);
       this.on_button_zoom_click = bind(this.on_button_zoom_click, this);
       this.on_button_reset_click = bind(this.on_button_reset_click, this);
+      this.on_mandel_redraw_click = bind(this.on_mandel_redraw_click, this);
       this.on_trace_slider_input = bind(this.on_trace_slider_input, this);
       this.on_button_trace_cardioid_click = bind(this.on_button_trace_cardioid_click, this);
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
@@ -155,6 +156,7 @@
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.save_to_file = this.context.getElementById('save_to_file');
+      this.mandel_redraw = this.context.getElementById('mandel_redraw');
       this.mandel_use_color_preset = this.context.getElementById('mandel_use_color_preset');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
@@ -165,6 +167,7 @@
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
+      this.mandel_redraw.addEventListener('click', this.on_mandel_redraw_click);
       this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
       this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color');
       this.option = {
@@ -901,6 +904,10 @@
     MandelIter.prototype.on_trace_slider_input = function(event) {
       this.trace_angle = parseFloat(this.trace_slider.value);
       return this.schedule_ui_draw();
+    };
+
+    MandelIter.prototype.on_mandel_redraw_click = function() {
+      return this.draw_background();
     };
 
     MandelIter.prototype.on_button_reset_click = function(event) {

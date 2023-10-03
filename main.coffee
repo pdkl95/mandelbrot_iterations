@@ -106,6 +106,7 @@ class MandelIter
     @loc_to_set_c   = @context.getElementById('copy_loc_to_set_c')
     @reset_storage  = @context.getElementById('reset_all_storage')
     @save_to_file   = @context.getElementById('save_to_file')
+    @mandel_redraw  = @context.getElementById('mandel_redraw')
     @mandel_use_color_preset = @context.getElementById('mandel_use_color_preset')
 
     @button_reset.addEventListener(  'click',  @on_button_reset_click)
@@ -117,6 +118,7 @@ class MandelIter
     @loc_to_set_c.addEventListener(  'click',  @on_copy_loc_to_set_c_click)
     @reset_storage.addEventListener( 'click',  @on_reset_storage_click)
     @save_to_file.addEventListener(  'click',  @on_save_to_file_click)
+    @mandel_redraw.addEventListener( 'click',  @on_mandel_redraw_click)
     @mandel_use_color_preset.addEventListener('click', @on_mandel_use_color_preset_click)
 
     @mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color')
@@ -714,6 +716,9 @@ class MandelIter
   on_trace_slider_input: (event) =>
     @trace_angle = parseFloat(@trace_slider.value)
     @schedule_ui_draw()
+
+  on_mandel_redraw_click: () =>
+    @draw_background()
 
   on_button_reset_click: (event) =>
     @reset_renderbox()

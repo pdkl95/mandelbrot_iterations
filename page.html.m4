@@ -332,6 +332,12 @@ undivert(`style.css')
           <h3 class="collapse_header" data-collapse_hide="mandelbrot_options_table" data-collapse_show="mandelbrot_options_hr">Mandelbrot Options</h3>
           <table id="mandelbrot_options_table" class="collapse_target">
             <tr>
+              <th class="tt ttright" data-title="Redraw the Mandelbrot Set with the current Mandelbrot Option values.">Redraw</th>
+              <td>
+                <button id="mandel_redraw">Redraw</button>
+              </td>
+            </tr>
+            <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">
                 <label for="mandel_max_iterations" id="mandel_max_iterations_label">60%</label>
