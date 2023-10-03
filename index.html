@@ -1335,6 +1335,12 @@ td.name[contenteditable=true]:focus {
           <h3 class="collapse_header" data-collapse_hide="mandelbrot_options_table" data-collapse_show="mandelbrot_options_hr">Mandelbrot Options</h3>
           <table id="mandelbrot_options_table" class="collapse_target">
             <tr>
+              <th class="tt ttright" data-title="Redraw the Mandelbrot Set with the current Mandelbrot Option values.">Redraw</th>
+              <td>
+                <button id="mandel_redraw">Redraw</button>
+              </td>
+            </tr>
+            <tr>
               <th class="tt ttright" data-title="Maximum iterations when rendering the static (background) Mandelbrot fractal. Higher values significantly increase Mandelbrot rendering time, but this only happens when the page loads or you change the zoom factor. NOTE: extremely high values will not improve the quality of large zoom factors! All of the math is done using standard Javascript double precision floating point values, which have very limited precision.">Max Iterations</th>
               <td class="slider">
                 <label for="mandel_max_iterations" id="mandel_max_iterations_label">60%</label>
@@ -3414,6 +3420,7 @@ td.name[contenteditable=true]:focus {
       this.on_zoom_amount_change = bind(this.on_zoom_amount_change, this);
       this.on_button_zoom_click = bind(this.on_button_zoom_click, this);
       this.on_button_reset_click = bind(this.on_button_reset_click, this);
+      this.on_mandel_redraw_click = bind(this.on_mandel_redraw_click, this);
       this.on_trace_slider_input = bind(this.on_trace_slider_input, this);
       this.on_button_trace_cardioid_click = bind(this.on_button_trace_cardioid_click, this);
       this.on_content_wrapper_resize = bind(this.on_content_wrapper_resize, this);
@@ -3536,6 +3543,7 @@ td.name[contenteditable=true]:focus {
       this.loc_to_set_c = this.context.getElementById('copy_loc_to_set_c');
       this.reset_storage = this.context.getElementById('reset_all_storage');
       this.save_to_file = this.context.getElementById('save_to_file');
+      this.mandel_redraw = this.context.getElementById('mandel_redraw');
       this.mandel_use_color_preset = this.context.getElementById('mandel_use_color_preset');
       this.button_reset.addEventListener('click', this.on_button_reset_click);
       this.button_zoom.addEventListener('click', this.on_button_zoom_click);
@@ -3546,6 +3554,7 @@ td.name[contenteditable=true]:focus {
       this.loc_to_set_c.addEventListener('click', this.on_copy_loc_to_set_c_click);
       this.reset_storage.addEventListener('click', this.on_reset_storage_click);
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
+      this.mandel_redraw.addEventListener('click', this.on_mandel_redraw_click);
       this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
       this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color');
       this.option = {
@@ -4282,6 +4291,10 @@ td.name[contenteditable=true]:focus {
     MandelIter.prototype.on_trace_slider_input = function(event) {
       this.trace_angle = parseFloat(this.trace_slider.value);
       return this.schedule_ui_draw();
+    };
+
+    MandelIter.prototype.on_mandel_redraw_click = function() {
+      return this.draw_background();
     };
 
     MandelIter.prototype.on_button_reset_click = function(event) {
