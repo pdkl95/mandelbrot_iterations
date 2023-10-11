@@ -1,6 +1,6 @@
 top_srcdir ?= .
-srcdir     ?= $(top_srcdir)
-builddir   ?= $(top_srcdir)
+srcdir     ?= $(top_srcdir)/src
+builddir   ?= $(srcdir)
 
 #
 # config
@@ -9,13 +9,15 @@ builddir   ?= $(top_srcdir)
 COFFEE ?= coffee
 COFFEE_OPTIONS ?= --no-header --compile
 
-RM ?= rm -f
 M4 ?= m4
+M4OPTS = --include=$(builddir) --include=$(srcdir)
+
+RM ?= rm -f
 
 #
 # build deps
 
-MAIN_TARGET = $(builddir)/mandel_iter.html
+MAIN_TARGET = $(top_srcdir)/mandel_iter.html
 MAIN_TARGET_SRC = $(srcdir)/page.html.m4
 MAIN_TARGET_DEPS = $(MAIN_TARGET_SRC) \
         $(builddir)/uioption.js \
@@ -47,7 +49,10 @@ $(builddir)/%.js: $(srcdir)/%.coffee
 $(MAIN_TARGET): $(MAIN_TARGET_DEPS)
 	$(M4) $(M4OPTS) $(MAIN_TARGET_SRC) >$@
 
-clean:
-	$(RM) $(TARGETS)
+clean-builddir:
+	$(RM) $(JS_TARGETS)
 
-.PHONY: all build clean
+clean: clean-builddir
+	$(RM) $(MAIN_TARGET)
+
+.PHONY: all build clean clean-builddir

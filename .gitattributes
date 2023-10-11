@@ -1,10 +1,10 @@
-color.js linguist-generated
-dialog.js linguist-generated
-fileio.js linguist-generated
-highlight.js linguist-generated
 mandel_iter.html linguist-generated
-main.js linguist-generated
-motion.js linguist-generated
-uioption.js linguist-generated
+src/color.js linguist-generated
+src/dialog.js linguist-generated
+src/fileio.js linguist-generated
+src/highlight.js linguist-generated
+src/main.js linguist-generated
+src/motion.js linguist-generated
+src/uioption.js linguist-generated
 
-*.html.m4 linguist-language=HTML
+src/page.html.m4 linguist-language=HTML
