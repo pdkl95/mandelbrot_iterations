@@ -1003,6 +1003,8 @@ td.name[contenteditable=true]:focus {
   border-bottom-left-radius: 6px;
   border-bottom-right-radius: 6px;
   box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+  resize: both;
+  overflow: auto;
 }
 
 .dialog_box .dialog_body > .gradient_editor {
@@ -1012,8 +1014,24 @@ td.name[contenteditable=true]:focus {
   padding-bottom: 5px;
 }
 
+#keyhelp > table {
+  border: 1px inset rgba(0,0,0,0.4);
+  margin: 0.8em 1em;
+  padding: 2px;
+  border-radius: 5px;
+}
+
 #keyhelp .key {
   font-family: monospace;
+}
+
+#keyhelp th {
+  text-align: left;
+}
+
+#keyhelp th,
+#keyhelp td {
+  padding: 3px 5px;
 }
 
 #keyhelp tr:nth-child(even) td {
@@ -2693,8 +2711,10 @@ td.name[contenteditable=true]:focus {
     };
 
     Base.prototype.on_header_mouseup = function(event) {
-      this.update_drag_position(event);
-      return this.drag = false;
+      if (this.drag) {
+        this.update_drag_position(event);
+        return this.drag = false;
+      }
     };
 
     Base.prototype.on_header_mousemove = function(event) {

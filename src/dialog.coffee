@@ -126,8 +126,9 @@ class Dialog.Base
     @drag_y = event.pageY
 
   on_header_mouseup: (event) =>
-    @update_drag_position(event)
-    @drag = false
+    if @drag
+      @update_drag_position(event)
+      @drag = false
 
   on_header_mousemove: (event) =>
     if @drag
