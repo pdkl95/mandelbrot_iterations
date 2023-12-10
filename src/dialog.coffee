@@ -1,32 +1,32 @@
 window.Dialog or= {}
 
-#class Dialog.Base
-#  constructor: ->
-
-class Dialog.PopOut #extends Dialog.Base
-  constructor: (@content_id, @title) ->
-    @move_to_dialog_id = "#{@content_id}_move_to_dialog"
-
+class Dialog.Base
+  constructor: ->
     @mousewrap_margin = 40
 
     @content_el = document.getElementById(@content_id)
     unless @content_el?
       APP.warn("Cannot find Dialog.Wrap target ##{@content_id}")
 
-    @move_to_dialog_el = document.getElementById(@move_to_dialog_id)
-    unless @move_to_dialog_el?
-      APP.warn("Cannot find Dialog.Wrap move_to_dialog button ##{@content_id}")
+    @show_dialog_el = document.getElementById(@show_dialog_id)
+    unless @show_dialog_el?
+      APP.warn("Cannot find Dialog.Wrap show_dialog button ##{@show_dialogid}")
 
-    @move_to_dialog_el.addEventListener('click', @on_move_to_dialog_click)
+    @show_dialog_el.addEventListener('click', @on_show_dialog_click)
 
-  on_move_to_dialog_click: (event) =>
-    @popout()
+  on_show_dialog_click: (event) =>
+    if @wrap_el?
+      @hide()
+    else
+      @show()
 
-  popout: ->
-    @move_to_dialog_el.classList.add('hidden')
+  show: ->
+    return if @wrap_el?
 
-    @x = 0
-    @y = 0
+    @before_show() if @before_show?
+
+    @x ||= 0
+    @y ||= 0
 
     @original_parent = @content_el.parentNode
 
@@ -68,7 +68,13 @@ class Dialog.PopOut #extends Dialog.Base
 
     @set_position()
 
-  unpopout: ->
+    @after_show() if @after_show?
+
+  hide: ->
+    return unless @wrap_el?
+
+    @before_hide() if @before_hide?
+
     if @mousewrap_el? and @original_parent? and @content_el?
       @original_parent.insertBefore(@content_el, @mousewrap_el)
 
@@ -96,10 +102,10 @@ class Dialog.PopOut #extends Dialog.Base
       @mousewrap_el.remove()
       @mousewrap_el = null
 
-    @move_to_dialog_el.classList.remove('hidden')
+    @after_hide() if @after_hide?
 
   on_close_click: (event) =>
-    @unpopout()
+    @hide()
 
   on_header_mousedown: (event) =>
     @drag = true
@@ -144,3 +150,25 @@ class Dialog.PopOut #extends Dialog.Base
 
     @mousewrap_el.style.left = "#{x}px"
     @mousewrap_el.style.top  = "#{y}px"
+
+class Dialog.Static extends Dialog.Base
+  constructor: (@content_id, @title) ->
+    @show_dialog_id = "show_#{@content_id}"
+    super(@content_id, @title)
+
+  after_show: ->
+    @content_el.classList.remove('hidden')
+
+  before_hide: ->
+    @content_el.classList.add('hidden')
+
+class Dialog.PopOut extends Dialog.Base
+  constructor: (@content_id, @title) ->
+    @show_dialog_id = "#{@content_id}_move_to_dialog"
+    super(@content_id, @title)
+
+  before_show: ->
+    @show_dialog_el.classList.add('hidden')
+
+  after_hide: ->
+    @show_dialog_el.classList.remove('hidden')

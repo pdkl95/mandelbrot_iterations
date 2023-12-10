@@ -758,6 +758,7 @@ td.name[contenteditable=true]:focus {
   top: -40px;
   left: -40px;
   padding: 40px;
+  z-index: 1;
 }
 
 .dialog_box {
@@ -826,4 +827,12 @@ td.name[contenteditable=true]:focus {
   padding-left: 4px;
   padding-right: 1.85em;
   padding-bottom: 5px;
+}
+
+#keyhelp .key {
+  font-family: monospace;
+}
+
+#keyhelp tr:nth-child(even) td {
+  background: #DBDDE0;
 }

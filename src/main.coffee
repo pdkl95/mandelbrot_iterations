@@ -121,6 +121,7 @@ class MandelIter
     @mandel_redraw.addEventListener( 'click',  @on_mandel_redraw_click)
     @mandel_use_color_preset.addEventListener('click', @on_mandel_use_color_preset_click)
 
+    @keyhelp_dialog = new Dialog.Static('keyhelp', 'Keyboard Controls')
     @mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color')
 
     @option =

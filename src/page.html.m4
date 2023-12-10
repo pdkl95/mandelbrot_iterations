@@ -38,6 +38,47 @@ undivert(`style.css')
       </div>
 
       <div class="ui panel">
+        <div id="keyhelp" class="hidden">
+          <table>
+            <tr>
+              <th>Key</th>
+              <th>Function</th>
+            </tr>
+            <tr>
+              <td class="key">SPACE</td>
+              <td>Pause the C-cursor movement (same as Left-Click)</td>
+            </tr>
+            <tr>
+              <td class="key">UP / DOWN / LEFT / RIGHT</td>
+              <td>Move the C-cursor.</td>
+            </tr>
+            <tr>
+              <td class="key">SHIFT</td>
+              <td>Reducve arrow key movement speed by <strong>1/3</strong></td>
+            </tr>
+            <tr>
+              <td class="key">CTRL</td>
+              <td>Reducve arrow key movement speed by <strong>1/10</strong></td>
+            </tr>
+            <tr>
+              <td class="key">ALT</td>
+              <td>Reducve arrow key movement speed by <strong>1/100</strong></td>
+            </tr>
+            <tr>
+              <td class="key">N / ENTER</td>
+              <td>Show <strong>next</strong> highlight item</td>
+            </tr>
+            <tr>
+              <td class="key">P / BACKSPACE</td>
+              <td>Show <strong>previous</strong> highlight item</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="keyhelpbox buttonbox">
+          <button id="show_keyhelp" class="tt ttright" data-title="Show Keyboard Controls">Keys</button>
+        </div>
+
         <div class="zoombox buttonbox">
           <spasn class="title">Zoom</span>
           <button id="button_reset" class="tt ttright" data-title="Reset back to original non-zoomed view.">Reset</button>
