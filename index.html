@@ -941,6 +941,7 @@ td.name[contenteditable=true]:focus {
   top: -40px;
   left: -40px;
   padding: 40px;
+  z-index: 1;
 }
 
 .dialog_box {
@@ -1002,6 +1003,8 @@ td.name[contenteditable=true]:focus {
   border-bottom-left-radius: 6px;
   border-bottom-right-radius: 6px;
   box-shadow: 1px 1px 6px -3px rgba(0, 0, 0, 0.22);
+  resize: both;
+  overflow: auto;
 }
 
 .dialog_box .dialog_body > .gradient_editor {
@@ -1009,6 +1012,30 @@ td.name[contenteditable=true]:focus {
   padding-left: 4px;
   padding-right: 1.85em;
   padding-bottom: 5px;
+}
+
+#keyhelp > table {
+  border: 1px inset rgba(0,0,0,0.4);
+  margin: 0.8em 1em;
+  padding: 2px;
+  border-radius: 5px;
+}
+
+#keyhelp .key {
+  font-family: monospace;
+}
+
+#keyhelp th {
+  text-align: left;
+}
+
+#keyhelp th,
+#keyhelp td {
+  padding: 3px 5px;
+}
+
+#keyhelp tr:nth-child(even) td {
+  background: #DBDDE0;
 }
 
     </style>
@@ -1041,6 +1068,47 @@ td.name[contenteditable=true]:focus {
       </div>
 
       <div class="ui panel">
+        <div id="keyhelp" class="hidden">
+          <table>
+            <tr>
+              <th>Key</th>
+              <th>Function</th>
+            </tr>
+            <tr>
+              <td class="key">SPACE</td>
+              <td>Pause the C-cursor movement (same as Left-Click)</td>
+            </tr>
+            <tr>
+              <td class="key">UP / DOWN / LEFT / RIGHT</td>
+              <td>Move the C-cursor.</td>
+            </tr>
+            <tr>
+              <td class="key">SHIFT</td>
+              <td>Reducve arrow key movement speed by <strong>1/3</strong></td>
+            </tr>
+            <tr>
+              <td class="key">CTRL</td>
+              <td>Reducve arrow key movement speed by <strong>1/10</strong></td>
+            </tr>
+            <tr>
+              <td class="key">ALT</td>
+              <td>Reducve arrow key movement speed by <strong>1/100</strong></td>
+            </tr>
+            <tr>
+              <td class="key">N / ENTER</td>
+              <td>Show <strong>next</strong> highlight item</td>
+            </tr>
+            <tr>
+              <td class="key">P / BACKSPACE</td>
+              <td>Show <strong>previous</strong> highlight item</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="keyhelpbox buttonbox">
+          <button id="show_keyhelp" class="tt ttright" data-title="Show Keyboard Controls">Keys</button>
+        </div>
+
         <div class="zoombox buttonbox">
           <spasn class="title">Zoom</span>
           <button id="button_reset" class="tt ttright" data-title="Reset back to original non-zoomed view.">Reset</button>
@@ -1832,7 +1900,8 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
-  var slice = [].slice;
+  var slice = [].slice,
+    modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
   window.Motion || (window.Motion = {});
 
@@ -1852,15 +1921,45 @@ td.name[contenteditable=true]:focus {
         default:
           APP.debug("new Highlight.Point() called with " + args.length + " args: " + (args.join(', ')));
       }
+      this.complex = APP.canvas_to_complex(this.x, this.y);
+      this.polar_radius = Math.sqrt((this.complex.r * this.complex.r) + (this.complex.i * this.complex.i));
+      this.polar_angle = Math.atan2(this.complex.i, this.complex.r);
+      if (this.polar_angle < 0) {
+        this.polar_angle += Math.TAU;
+      }
     }
 
-    Point.prototype.linear_interp_to = function(other, t) {
-      var inv_t;
-      inv_t = 1 - t;
+    Point.prototype.lerp = function(a, b, t) {
+      return (a * (1 - t)) + (b * t);
+    };
+
+    Point.prototype.lerp2 = function(a, b, t) {
       return {
-        x: (this.x * inv_t) + (other.x * t),
-        y: (this.y * inv_t) + (other.y * t)
+        x: this.lerp(a.x, b.x, t),
+        y: this.lerp(a.y, b.y, t)
       };
+    };
+
+    Point.prototype.linear_interp_to = function(other, t) {
+      return this.lerp2(this, other, t);
+    };
+
+    Point.prototype.polar_interp_to = function(other, t) {
+      var a, b, dt, inv_t, r, theta;
+      inv_t = 1 - t;
+      r = (this.polar_radius * inv_t) + (other.polar_radius * t);
+      a = this.polar_angle;
+      b = other.polar_angle;
+      if (b < a) {
+        b += Math.TAU;
+      }
+      dt = modulo(b - a, Math.TAU);
+      theta = dt < Math.PI ? this.polar_angle + (dt * t) : (dt = Math.TAU - dt, this.polar_angle - (dt * t));
+      theta = modulo(theta, Math.TAU);
+      return APP.complex_to_canvas({
+        r: r * Math.cos(theta),
+        i: r * Math.sin(theta)
+      });
     };
 
     Point.prototype.ease_in_out_quart = function(t) {
@@ -1872,7 +1971,16 @@ td.name[contenteditable=true]:focus {
     };
 
     Point.prototype.ease_to = function(other, t) {
-      return this.linear_interp_to(other, this.ease_in_out_quart(t));
+      var linear, maxlinear, polar, r;
+      polar = this.polar_interp_to(other, this.ease_in_out_quart(t));
+      r = Math.min(this.polar_radius, other.polar_radius);
+      maxlinear = 0.85;
+      if (r < maxlinear) {
+        linear = this.linear_interp_to(other, this.ease_in_out_quart(t));
+        return this.lerp2(linear, polar, r / maxlinear);
+      } else {
+        return polar;
+      }
     };
 
     return Point;
@@ -1911,6 +2019,10 @@ td.name[contenteditable=true]:focus {
       var channel;
       channel = 255 * this.remaining();
       return "rgb(" + channel + "," + channel + ",0)";
+    };
+
+    Anim.prototype.finished_color = function() {
+      return "rgb(0,0,0)";
     };
 
     return Anim;
@@ -2504,40 +2616,48 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
-  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    hasProp = {}.hasOwnProperty;
 
   window.Dialog || (window.Dialog = {});
 
-  Dialog.PopOut = (function() {
-    function PopOut(content_id, title) {
-      this.content_id = content_id;
-      this.title = title;
+  Dialog.Base = (function() {
+    function Base() {
       this.on_header_mousemove = bind(this.on_header_mousemove, this);
       this.on_header_mouseup = bind(this.on_header_mouseup, this);
       this.on_header_mousedown = bind(this.on_header_mousedown, this);
       this.on_close_click = bind(this.on_close_click, this);
-      this.on_move_to_dialog_click = bind(this.on_move_to_dialog_click, this);
-      this.move_to_dialog_id = this.content_id + "_move_to_dialog";
+      this.on_show_dialog_click = bind(this.on_show_dialog_click, this);
       this.mousewrap_margin = 40;
       this.content_el = document.getElementById(this.content_id);
       if (this.content_el == null) {
         APP.warn("Cannot find Dialog.Wrap target #" + this.content_id);
       }
-      this.move_to_dialog_el = document.getElementById(this.move_to_dialog_id);
-      if (this.move_to_dialog_el == null) {
-        APP.warn("Cannot find Dialog.Wrap move_to_dialog button #" + this.content_id);
+      this.show_dialog_el = document.getElementById(this.show_dialog_id);
+      if (this.show_dialog_el == null) {
+        APP.warn("Cannot find Dialog.Wrap show_dialog button #" + this.show_dialogid);
       }
-      this.move_to_dialog_el.addEventListener('click', this.on_move_to_dialog_click);
+      this.show_dialog_el.addEventListener('click', this.on_show_dialog_click);
     }
 
-    PopOut.prototype.on_move_to_dialog_click = function(event) {
-      return this.popout();
+    Base.prototype.on_show_dialog_click = function(event) {
+      if (this.wrap_el != null) {
+        return this.hide();
+      } else {
+        return this.show();
+      }
     };
 
-    PopOut.prototype.popout = function() {
-      this.move_to_dialog_el.classList.add('hidden');
-      this.x = 0;
-      this.y = 0;
+    Base.prototype.show = function() {
+      if (this.wrap_el != null) {
+        return;
+      }
+      if (this.before_show != null) {
+        this.before_show();
+      }
+      this.x || (this.x = 0);
+      this.y || (this.y = 0);
       this.original_parent = this.content_el.parentNode;
       this.mousewrap_el = document.createElement('div');
       this.mousewrap_el.classList.add('dialog_mousewrap');
@@ -2566,10 +2686,19 @@ td.name[contenteditable=true]:focus {
       this.mousewrap_el.addEventListener('mouseup', this.on_header_mouseup);
       this.mousewrap_el.addEventListener('mousemove', this.on_header_mousemove);
       this.mousewrap_el.addEventListener("mouseleave", this.on_header_mouseleave);
-      return this.set_position();
+      this.set_position();
+      if (this.after_show != null) {
+        return this.after_show();
+      }
     };
 
-    PopOut.prototype.unpopout = function() {
+    Base.prototype.hide = function() {
+      if (this.wrap_el == null) {
+        return;
+      }
+      if (this.before_hide != null) {
+        this.before_hide();
+      }
       if ((this.mousewrap_el != null) && (this.original_parent != null) && (this.content_el != null)) {
         this.original_parent.insertBefore(this.content_el, this.mousewrap_el);
       }
@@ -2597,20 +2726,22 @@ td.name[contenteditable=true]:focus {
         this.mousewrap_el.remove();
         this.mousewrap_el = null;
       }
-      return this.move_to_dialog_el.classList.remove('hidden');
+      if (this.after_hide != null) {
+        return this.after_hide();
+      }
     };
 
-    PopOut.prototype.on_close_click = function(event) {
-      return this.unpopout();
+    Base.prototype.on_close_click = function(event) {
+      return this.hide();
     };
 
-    PopOut.prototype.on_header_mousedown = function(event) {
+    Base.prototype.on_header_mousedown = function(event) {
       this.drag = true;
       this.drag_x = event.pageX;
       return this.drag_y = event.pageY;
     };
 
-    PopOut.prototype.update_drag_position = function(event) {
+    Base.prototype.update_drag_position = function(event) {
       var delta_x, delta_y, ox, oy;
       delta_x = event.pageX - this.drag_x;
       delta_y = event.pageY - this.drag_y;
@@ -2623,22 +2754,24 @@ td.name[contenteditable=true]:focus {
       return this.drag_y = event.pageY;
     };
 
-    PopOut.prototype.on_header_mouseup = function(event) {
-      this.update_drag_position(event);
-      return this.drag = false;
+    Base.prototype.on_header_mouseup = function(event) {
+      if (this.drag) {
+        this.update_drag_position(event);
+        return this.drag = false;
+      }
     };
 
-    PopOut.prototype.on_header_mousemove = function(event) {
+    Base.prototype.on_header_mousemove = function(event) {
       if (this.drag) {
         return this.update_drag_position(event);
       }
     };
 
-    PopOut.prototype.on_header_mouseleave = function(event) {
+    Base.prototype.on_header_mouseleave = function(event) {
       return this.drag = false;
     };
 
-    PopOut.prototype.set_position = function() {
+    Base.prototype.set_position = function() {
       var maxheight, maxwidth, x, y;
       maxwidth = document.body.clientWidth - this.wrap_el.clientWidth + this.mousewrap_margin;
       maxheight = document.body.clientHeight - this.wrap_el.clientHeight + this.mousewrap_margin;
@@ -2660,9 +2793,53 @@ td.name[contenteditable=true]:focus {
       return this.mousewrap_el.style.top = y + "px";
     };
 
-    return PopOut;
+    return Base;
 
   })();
+
+  Dialog.Static = (function(superClass) {
+    extend(Static, superClass);
+
+    function Static(content_id, title) {
+      this.content_id = content_id;
+      this.title = title;
+      this.show_dialog_id = "show_" + this.content_id;
+      Static.__super__.constructor.call(this, this.content_id, this.title);
+    }
+
+    Static.prototype.after_show = function() {
+      return this.content_el.classList.remove('hidden');
+    };
+
+    Static.prototype.before_hide = function() {
+      return this.content_el.classList.add('hidden');
+    };
+
+    return Static;
+
+  })(Dialog.Base);
+
+  Dialog.PopOut = (function(superClass) {
+    extend(PopOut, superClass);
+
+    function PopOut(content_id, title) {
+      this.content_id = content_id;
+      this.title = title;
+      this.show_dialog_id = this.content_id + "_move_to_dialog";
+      PopOut.__super__.constructor.call(this, this.content_id, this.title);
+    }
+
+    PopOut.prototype.before_show = function() {
+      return this.show_dialog_el.classList.add('hidden');
+    };
+
+    PopOut.prototype.after_hide = function() {
+      return this.show_dialog_el.classList.remove('hidden');
+    };
+
+    return PopOut;
+
+  })(Dialog.Base);
 
 }).call(this);
 
@@ -3391,7 +3568,7 @@ td.name[contenteditable=true]:focus {
 
   window.APP = null;
 
-  TAU = 2 * Math.PI;
+  TAU = Math.TAU = 2 * Math.PI;
 
   MandelIter = (function() {
     MandelIter.deferred_background_render_callback = null;
@@ -3430,6 +3607,7 @@ td.name[contenteditable=true]:focus {
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.set_highlight_msg = bind(this.set_highlight_msg, this);
+      this.hide_highlight_msg = bind(this.hide_highlight_msg, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
       this.on_mandel_use_color_preset_click = bind(this.on_mandel_use_color_preset_click, this);
       this.on_mandel_color_change = bind(this.on_mandel_color_change, this);
@@ -3556,6 +3734,7 @@ td.name[contenteditable=true]:focus {
       this.save_to_file.addEventListener('click', this.on_save_to_file_click);
       this.mandel_redraw.addEventListener('click', this.on_mandel_redraw_click);
       this.mandel_use_color_preset.addEventListener('click', this.on_mandel_use_color_preset_click);
+      this.keyhelp_dialog = new Dialog.Static('keyhelp', 'Keyboard Controls');
       this.mandel_external_color_dialog = new Dialog.PopOut('mandel_external_color', 'Mandelbrot Color');
       this.option = {
         show_tooltips: new UI.BoolOption('show_tooltips', true),
@@ -3685,6 +3864,7 @@ td.name[contenteditable=true]:focus {
       this.render_lines_per_pass = 24;
       this.julia_max_rendertime = 200;
       this.defer_highres_timeout = this.defer_highres_timeout_length = 650;
+      this.highlight_msg_fade_time = 3000;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
@@ -5270,7 +5450,7 @@ td.name[contenteditable=true]:focus {
       pos = this.pause_anim.next();
       this.set_mouse_position(pos.x, pos.y, true);
       if (this.pause_anim.finished()) {
-        this.msg.style.color = this.pause_anim.saved_color;
+        this.msg.style.color = this.pause_anim.finished_color();
         return this.pause_anim = null;
       } else {
         this.msg.style.color = this.pause_anim.highlight_color();
