@@ -1900,7 +1900,8 @@ td.name[contenteditable=true]:focus {
 }).call(this);
 
 (function() {
-  var slice = [].slice;
+  var slice = [].slice,
+    modulo = function(a, b) { return (+a % (b = +b) + b) % b; };
 
   window.Motion || (window.Motion = {});
 
@@ -1920,15 +1921,45 @@ td.name[contenteditable=true]:focus {
         default:
           APP.debug("new Highlight.Point() called with " + args.length + " args: " + (args.join(', ')));
       }
+      this.complex = APP.canvas_to_complex(this.x, this.y);
+      this.polar_radius = Math.sqrt((this.complex.r * this.complex.r) + (this.complex.i * this.complex.i));
+      this.polar_angle = Math.atan2(this.complex.i, this.complex.r);
+      if (this.polar_angle < 0) {
+        this.polar_angle += Math.TAU;
+      }
     }
 
-    Point.prototype.linear_interp_to = function(other, t) {
-      var inv_t;
-      inv_t = 1 - t;
+    Point.prototype.lerp = function(a, b, t) {
+      return (a * (1 - t)) + (b * t);
+    };
+
+    Point.prototype.lerp2 = function(a, b, t) {
       return {
-        x: (this.x * inv_t) + (other.x * t),
-        y: (this.y * inv_t) + (other.y * t)
+        x: this.lerp(a.x, b.x, t),
+        y: this.lerp(a.y, b.y, t)
       };
+    };
+
+    Point.prototype.linear_interp_to = function(other, t) {
+      return this.lerp2(this, other, t);
+    };
+
+    Point.prototype.polar_interp_to = function(other, t) {
+      var a, b, dt, inv_t, r, theta;
+      inv_t = 1 - t;
+      r = (this.polar_radius * inv_t) + (other.polar_radius * t);
+      a = this.polar_angle;
+      b = other.polar_angle;
+      if (b < a) {
+        b += Math.TAU;
+      }
+      dt = modulo(b - a, Math.TAU);
+      theta = dt < Math.PI ? this.polar_angle + (dt * t) : (dt = Math.TAU - dt, this.polar_angle - (dt * t));
+      theta = modulo(theta, Math.TAU);
+      return APP.complex_to_canvas({
+        r: r * Math.cos(theta),
+        i: r * Math.sin(theta)
+      });
     };
 
     Point.prototype.ease_in_out_quart = function(t) {
@@ -1940,7 +1971,16 @@ td.name[contenteditable=true]:focus {
     };
 
     Point.prototype.ease_to = function(other, t) {
-      return this.linear_interp_to(other, this.ease_in_out_quart(t));
+      var linear, maxlinear, polar, r;
+      polar = this.polar_interp_to(other, this.ease_in_out_quart(t));
+      r = Math.min(this.polar_radius, other.polar_radius);
+      maxlinear = 0.85;
+      if (r < maxlinear) {
+        linear = this.linear_interp_to(other, this.ease_in_out_quart(t));
+        return this.lerp2(linear, polar, r / maxlinear);
+      } else {
+        return polar;
+      }
     };
 
     return Point;
@@ -1979,6 +2019,10 @@ td.name[contenteditable=true]:focus {
       var channel;
       channel = 255 * this.remaining();
       return "rgb(" + channel + "," + channel + ",0)";
+    };
+
+    Anim.prototype.finished_color = function() {
+      return "rgb(0,0,0)";
     };
 
     return Anim;
@@ -3524,7 +3568,7 @@ td.name[contenteditable=true]:focus {
 
   window.APP = null;
 
-  TAU = 2 * Math.PI;
+  TAU = Math.TAU = 2 * Math.PI;
 
   MandelIter = (function() {
     MandelIter.deferred_background_render_callback = null;
@@ -3563,6 +3607,7 @@ td.name[contenteditable=true]:focus {
       this.on_highlight_prev_click = bind(this.on_highlight_prev_click, this);
       this.on_highlight_group_changed = bind(this.on_highlight_group_changed, this);
       this.set_highlight_msg = bind(this.set_highlight_msg, this);
+      this.hide_highlight_msg = bind(this.hide_highlight_msg, this);
       this.on_show_tooltips_change = bind(this.on_show_tooltips_change, this);
       this.on_mandel_use_color_preset_click = bind(this.on_mandel_use_color_preset_click, this);
       this.on_mandel_color_change = bind(this.on_mandel_color_change, this);
@@ -3819,6 +3864,7 @@ td.name[contenteditable=true]:focus {
       this.render_lines_per_pass = 24;
       this.julia_max_rendertime = 200;
       this.defer_highres_timeout = this.defer_highres_timeout_length = 650;
+      this.highlight_msg_fade_time = 3000;
       this.rendering_note = this.context.getElementById('rendering_note');
       this.rendering_note_hdr = this.context.getElementById('rendering_note_hdr');
       this.rendering_note_value = this.context.getElementById('rendering_note_value');
@@ -5404,7 +5450,7 @@ td.name[contenteditable=true]:focus {
       pos = this.pause_anim.next();
       this.set_mouse_position(pos.x, pos.y, true);
       if (this.pause_anim.finished()) {
-        this.msg.style.color = this.pause_anim.saved_color;
+        this.msg.style.color = this.pause_anim.finished_color();
         return this.pause_anim = null;
       } else {
         this.msg.style.color = this.pause_anim.highlight_color();

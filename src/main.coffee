@@ -1,6 +1,6 @@
 window.APP = null
 
-TAU = 2 * Math.PI
+TAU = Math.TAU = 2 * Math.PI
 
 class MandelIter
   @deferred_background_render_callback = null
@@ -238,6 +238,8 @@ class MandelIter
     @julia_max_rendertime = 200
     @defer_highres_timeout = 
     @defer_highres_timeout_length = 650
+    @highlight_msg_fade_time = 3000
+
     @rendering_note          = @context.getElementById('rendering_note')
     @rendering_note_hdr      = @context.getElementById('rendering_note_hdr')
     @rendering_note_value    = @context.getElementById('rendering_note_value')
@@ -499,7 +501,7 @@ class MandelIter
     else
       @content_el.classList.remove('show_tt')
 
-  hide_highlight_msg: ->
+  hide_highlight_msg: =>
     if @msg_visible
       @msg.textContent = ''
       @msgbox.classList.add('hidden')
@@ -1557,7 +1559,7 @@ class MandelIter
     pos = @pause_anim.next()
     @set_mouse_position(pos.x, pos.y, true)
     if @pause_anim.finished()
-      @msg.style.color = @pause_anim.saved_color
+      @msg.style.color = @pause_anim.finished_color()
       @pause_anim = null
     else
       @msg.style.color = @pause_anim.highlight_color()
